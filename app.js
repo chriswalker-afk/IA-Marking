@@ -14,17 +14,38 @@ let pdfRendererLoad = null;
   const CRITERIA_GUIDANCE={A:'Coherence, organisation and concision of the exploration.',B:'Appropriate and consistent mathematical communication, notation and representations.',C:'Authentic mathematical choices and independent engagement with the investigation.',D:'The significance and critical depth of reflection on the mathematics.',E:'Relevant, accurate and understood mathematics appropriate for the course. SL and HL descriptors differ.'};
   const CRITERION_KEYS = Object.keys(CRITERIA);
   const BANK = window.IA_COMMENT_BANK || [];
-  const STAMP_DEFAULTS = Object.freeze({size:20,strengthColor:'#477b97',limitationColor:'#b7803c'});
-  const NOTE_FONT = 9.25, NOTE_LINE = 12.4, NOTE_PAD = 6;
-  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(170,Math.min(350,Math.round(Number(value)/10)*10)) : 250;
+  const STAMP_DEFAULTS = Object.freeze({
+    size:20,strengthColor:'#477b97',limitationColor:'#b7803c',
+    fontSize:9.5,textColor:'#263d4f',fillColor:'#fbfdff',borderColor:'#477b97',noteWidth:250,
+  });
+  const NOTE_PAD=6;
+  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(170,Math.min(450,Math.round(Number(value)/5)*5)) : 250;
+  const normalNoteHeight = value => value===null || value===undefined || value==='' ? null :
+    Number.isFinite(Number(value)) ? Math.max(55,Math.min(750,Math.round(Number(value)))) : null;
+  const normalFontSize = value => value!==null && value!==undefined && value!=='' && Number.isFinite(Number(value)) ?
+    Math.max(7,Math.min(18,Math.round(Number(value)*2)/2)) : STAMP_DEFAULTS.fontSize;
+  const noteLineHeight = size => Math.round(normalFontSize(size)*1.35*10)/10;
   const normalSize = value => Number.isFinite(Number(value)) ? Math.max(14,Math.min(42,Math.round(Number(value)))) : STAMP_DEFAULTS.size;
   const normalColor = (value,fallback) => typeof value==='string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
   function normalStyle(value={}) {
-    return {size:normalSize(value?.size),strengthColor:normalColor(value?.strengthColor,STAMP_DEFAULTS.strengthColor),limitationColor:normalColor(value?.limitationColor,STAMP_DEFAULTS.limitationColor)};
+    return {
+      size:normalSize(value?.size),
+      strengthColor:normalColor(value?.strengthColor,STAMP_DEFAULTS.strengthColor),
+      limitationColor:normalColor(value?.limitationColor,STAMP_DEFAULTS.limitationColor),
+      fontSize:normalFontSize(value?.fontSize),
+      textColor:normalColor(value?.textColor,STAMP_DEFAULTS.textColor),
+      fillColor:normalColor(value?.fillColor,STAMP_DEFAULTS.fillColor),
+      borderColor:normalColor(value?.borderColor,STAMP_DEFAULTS.borderColor),
+      noteWidth:normalNoteWidth(value?.noteWidth),
+    };
   }
   function stampColor(stamp) {
     return normalColor(stamp?.color,stamp?.tone==='limitation'?state.stampStyle.limitationColor:state.stampStyle.strengthColor);
   }
+  function noteFontSize(stamp){return normalFontSize(stamp?.fontSize ?? state.stampStyle.fontSize);}
+  function noteTextColor(stamp){return normalColor(stamp?.textColor,state.stampStyle.textColor);}
+  function noteFillColor(stamp){return normalColor(stamp?.fillColor,state.stampStyle.fillColor);}
+  function noteBorderColor(stamp){return normalColor(stamp?.borderColor,state.stampStyle.borderColor);}
   function brightColor(hex) {
     const [r,g,b]=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
     return (r*299+g*587+b*114)/1000>=158;
@@ -132,6 +153,13 @@ let pdfRendererLoad = null;
     $('defaultStampSizeValue').textContent=`${size} pt`;
     $('strengthStampColour').value=state.stampStyle.strengthColor;
     $('limitationStampColour').value=state.stampStyle.limitationColor;
+    $('defaultNoteFont').value=String(state.stampStyle.fontSize);
+    $('defaultNoteFontValue').textContent=`${state.stampStyle.fontSize} pt`;
+    $('defaultNoteTextColour').value=state.stampStyle.textColor;
+    $('defaultNoteFillColour').value=state.stampStyle.fillColor;
+    $('defaultNoteBorderColour').value=state.stampStyle.borderColor;
+    $('defaultNoteWidth').value=String(state.stampStyle.noteWidth);
+    $('defaultNoteWidthValue').textContent=`${state.stampStyle.noteWidth} pt`;
     for(const [id,tone,letter] of [['previewStrength','strength','A'],['previewLimitation','limitation','D']]) {
       const el=$(id),stamp={tone};const color=stampColor(stamp);
       el.style.cssText=`width:${Math.min(size+4,42)}px;height:${Math.min(size+4,42)}px;background:${color};color:${stampTextColor(stamp)}`;
@@ -290,27 +318,73 @@ let pdfRendererLoad = null;
     const item = getComments().find(c=>c.id===id);
     if(!item) return;
     selectedStampId = null; movingStampId = null;
-    draft = {...item,size:state.stampStyle.size,noteWidth:250,color:item.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor};
+    draft = {...item,
+      size:state.stampStyle.size,noteWidth:state.stampStyle.noteWidth,noteHeight:null,
+      fontSize:state.stampStyle.fontSize,textColor:state.stampStyle.textColor,
+      fillColor:state.stampStyle.fillColor,borderColor:state.stampStyle.borderColor,
+      color:item.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor};
     renderEditor();renderBank();renderStamps();setInstruction();
     if(!isReady()) toast('Comment selected. Upload a PDF to place the stamp.');
   }
   function appearanceEditor(item,prefix) {
     const size=normalSize(item.size),color=stampColor(item);
-    return `<div class="individual-stamp-style"><label for="${prefix}Size">Stamp size <output id="${prefix}SizeValue">${size} pt</output><input id="${prefix}Size" type="range" min="14" max="42" step="2" value="${size}"></label><label for="${prefix}Color">Stamp colour <input id="${prefix}Color" type="color" value="${color}"></label><label class="note-width-field" for="${prefix}Width">On-page comment width <output id="${prefix}WidthValue">${normalNoteWidth(item.noteWidth)} pt</output><input id="${prefix}Width" type="range" min="170" max="350" step="10" value="${normalNoteWidth(item.noteWidth)}"></label></div>`;
+    const width=normalNoteWidth(item.noteWidth ?? state.stampStyle.noteWidth);
+    const fontSize=noteFontSize(item);
+    const natural=noteLayout({...item,noteWidth:width,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+    const manualHeight=normalNoteHeight(item.noteHeight);
+    const heightValue=manualHeight??Math.min(750,natural);
+    return `<div class="individual-stamp-style">
+      <span class="comment-style-heading">Criterion circle</span>
+      <label for="${prefix}Size">Circle size <output id="${prefix}SizeValue">${size} pt</output><input id="${prefix}Size" type="range" min="14" max="42" step="2" value="${size}"></label>
+      <label for="${prefix}Color">Circle colour <input id="${prefix}Color" type="color" value="${color}"></label>
+      <span class="comment-style-heading">Full comment formatting</span>
+      <label class="note-dimension-field" for="${prefix}Font">Font size <output id="${prefix}FontValue">${fontSize} pt</output><input id="${prefix}Font" type="range" min="7" max="18" step=".5" value="${fontSize}" aria-label="Font size for the full teacher comment"></label>
+      <div class="note-colours">
+        <label for="${prefix}TextColor">Text colour <input id="${prefix}TextColor" type="color" value="${noteTextColor(item)}"></label>
+        <label for="${prefix}FillColor">Box background <input id="${prefix}FillColor" type="color" value="${noteFillColor(item)}"></label>
+        <label for="${prefix}BorderColor">Box border <input id="${prefix}BorderColor" type="color" value="${noteBorderColor(item)}"></label>
+      </div>
+      <span class="comment-style-heading">Text box dimensions</span>
+      <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="170" max="450" step="5" value="${width}"></label>
+      <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="55" max="750" step="5" value="${heightValue}"></label>
+      <button id="${prefix}HeightAuto" type="button" class="text-button note-fit-button">Fit box height to full comment</button>
+      <small class="note-format-help">Drag the bottom-right handle on a placed comment to resize both dimensions. Export will stop if text is clipped.</small>
+    </div>`;
   }
   function bindAppearanceEditor(item,prefix,existing) {
+    const refresh=()=>{
+      const natural=noteLayout({...item,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+      const height=normalNoteHeight(item.noteHeight);
+      $(`${prefix}HeightValue`).textContent=height===null?`Auto · ${natural} pt`:`${height} pt`;
+      if(height===null)$(`${prefix}Height`).value=String(Math.min(750,natural));
+      if(existing){renderStamps();scheduleSave();}
+    };
     $(`${prefix}Size`).addEventListener('input',e=>{
-      item.size=normalSize(e.target.value);$(`${prefix}SizeValue`).textContent=`${item.size} pt`;
-      if(existing){renderStamps();scheduleSave();}
+      item.size=normalSize(e.target.value);$(`${prefix}SizeValue`).textContent=`${item.size} pt`;refresh();
     });
-    $(`${prefix}Color`).addEventListener('input',e=>{
-      item.color=normalColor(e.target.value,stampColor(item));
-      if(existing){renderStamps();scheduleSave();}
-    });
+    $(`${prefix}Color`).addEventListener('input',e=>{item.color=normalColor(e.target.value,stampColor(item));refresh();});
     $(`${prefix}Width`).addEventListener('input',e=>{
       item.noteWidth=normalNoteWidth(e.target.value);
-      $(`${prefix}WidthValue`).textContent=`${item.noteWidth} pt`;
-      if(existing){renderStamps();scheduleSave();}
+      $(`${prefix}WidthValue`).textContent=`${item.noteWidth} pt`;refresh();
+    });
+    $(`${prefix}Font`).addEventListener('input',e=>{
+      item.fontSize=normalFontSize(e.target.value);
+      $(`${prefix}FontValue`).textContent=`${item.fontSize} pt`;refresh();
+    });
+    for(const [suffix,key,fallback] of [
+      ['TextColor','textColor',noteTextColor],
+      ['FillColor','fillColor',noteFillColor],
+      ['BorderColor','borderColor',noteBorderColor],
+    ]){
+      $(`${prefix}${suffix}`).addEventListener('input',e=>{
+        item[key]=normalColor(e.target.value,fallback(item));refresh();
+      });
+    }
+    $(`${prefix}Height`).addEventListener('input',e=>{
+      item.noteHeight=normalNoteHeight(e.target.value);refresh();
+    });
+    $(`${prefix}HeightAuto`).addEventListener('click',()=>{
+      item.noteHeight=null;refresh();
     });
   }
   function renderEditor() {
@@ -346,14 +420,19 @@ let pdfRendererLoad = null;
     catch(e) { return {widthOfTextAtSize:(txt,size)=>txt.length*size*.51}; }
   }
   function noteLayout(stamp,pageWidth,pageHeight,font=pdfMeasureFont()) {
-    const width=Math.min(normalNoteWidth(stamp.noteWidth),Math.max(100,pageWidth-2*NOTE_PAD));
+    const width=Math.min(normalNoteWidth(stamp.noteWidth ?? state.stampStyle.noteWidth),Math.max(100,pageWidth-2*NOTE_PAD));
     const circle=normalSize(stamp.size),textX=Math.max(circle+17,42);
-    const rows=pdfWrap(stamp.text,font,NOTE_FONT,Math.max(30,width-textX-8));
-    const height=Math.max(circle+20,39+rows.length*NOTE_LINE);
+    const fontSize=noteFontSize(stamp),lineHeight=noteLineHeight(fontSize);
+    const headerFontSize=Math.max(8,Math.min(12,Math.round(fontSize*.85*10)/10));
+    const rows=pdfWrap(stamp.text,font,fontSize,Math.max(30,width-textX-8));
+    const minHeight=Math.ceil(Math.max(circle+20,39+rows.length*lineHeight));
+    const height=normalNoteHeight(stamp.noteHeight) ?? minHeight;
     const fits=height<=pageHeight-2*NOTE_PAD;
+    const contentFits=height>=minHeight;
     const x=Math.min(Math.max(NOTE_PAD,Number(stamp.x||0)*pageWidth),Math.max(NOTE_PAD,pageWidth-width-NOTE_PAD));
     const y=Math.min(Math.max(NOTE_PAD,Number(stamp.y||0)*pageHeight),Math.max(NOTE_PAD,pageHeight-height-NOTE_PAD));
-    return {x,y,width,height,circle,textX,rows,fits,pageWidth,pageHeight};
+    return {x,y,width,height,circle,textX,rows,fontSize,headerFontSize,lineHeight,minHeight,contentFits,fits,
+      textColor:noteTextColor(stamp),fillColor:noteFillColor(stamp),borderColor:noteBorderColor(stamp),pageWidth,pageHeight};
   }
   function noteOverlap(a,b) {
     return a.x<b.x+b.width-3 && a.x+a.width>b.x+3 && a.y<b.y+b.height-3 && a.y+a.height>b.y+3;
@@ -363,7 +442,8 @@ let pdfRendererLoad = null;
     const problems=[];
     for(let i=0;i<items.length;i++) {
       const current=items[i];
-      if(!current.layout.fits) problems.push(`${stampLabel(current.stamp)} is too long to fit on page ${current.stamp.page}`);
+      if(!current.layout.fits) problems.push(`${stampLabel(current.stamp)} box is too tall for page ${current.stamp.page}`);
+      if(!current.layout.contentFits) problems.push(`${stampLabel(current.stamp)} needs at least ${current.layout.minHeight} pt height for its complete comment (currently ${current.layout.height} pt)`);
       for(let j=0;j<i;j++) if(noteOverlap(current.layout,items[j].layout)) {
         problems.push(`${stampLabel(current.stamp)} overlaps ${stampLabel(items[j].stamp)} on page ${current.stamp.page}`);
       }
@@ -399,7 +479,7 @@ let pdfRendererLoad = null;
     const el=$('annotationNotice');
     if(!el)return;
     if(!problems.length){el.classList.add('hidden');el.textContent='';return;}
-    el.textContent=`On-page annotations need attention: ${problems.join('; ')}. Move a comment, widen its box or shorten it before exporting.`;
+    el.textContent=`On-page annotations need attention: ${problems.join('; ')}. Move or resize a box, increase its height, reduce the font size, or shorten the comment before exporting.`;
     el.classList.remove('hidden');
   }
   function renderStamps() {
@@ -413,19 +493,26 @@ let pdfRendererLoad = null;
       const label=stampLabel(stamp),color=stampColor(stamp);
       const lines=layout.rows.map(line=>`<span class="onpage-note-line">${escapeHtml(line)}</span>`).join('');
       const mismatch=preview.problems.some(issue=>issue.includes(label));
-      return `<button type="button" class="onpage-stamp ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};border-width:${Math.max(.7,1*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag to reposition this complete on-page comment">
+      return `<div role="button" tabindex="0" class="onpage-stamp ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};background:${layout.fillColor};border-color:${layout.borderColor};color:${layout.textColor};border-width:${Math.max(.7,1.25*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag comment to move; drag bottom-right corner to resize">
+        <span class="onpage-border-accent" style="background:${layout.borderColor};width:${Math.max(2,3*scale)}px"></span>
         <span class="onpage-circle" style="left:${8*scale}px;top:${11*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
-        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${10*scale}px;font-size:${8.5*scale}px;line-height:${12*scale}px">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':'Limitation'}</span>
-        <span class="onpage-note-body" style="left:${layout.textX*scale}px;top:${25*scale}px;font-size:${NOTE_FONT*scale}px;line-height:${NOTE_LINE*scale}px">${lines}</span>
-      </button>`;
+        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${10*scale}px;font-size:${layout.headerFontSize*scale}px;line-height:${Math.max(12,layout.headerFontSize*1.12)*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':'Limitation'}</span>
+        <span class="onpage-note-body" style="left:${layout.textX*scale}px;top:${25*scale}px;font-size:${layout.fontSize*scale}px;line-height:${layout.lineHeight*scale}px;color:${layout.textColor}">${lines}</span>
+        <button type="button" class="note-resize-handle" data-resize-pin="${escapeHtml(stamp.id)}" aria-label="Resize width and height of ${escapeHtml(label)} comment" title="Drag to resize comment width and height"></button>
+      </div>`;
     }).join('');
     $('stampLayer').querySelectorAll('[data-pin-id]').forEach(btn=>{
+      const select=()=>{
+        const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
+        selectedStampId=stamp.id;draft=null;movingStampId=null;
+        renderStamps();renderEditor();renderBank();setInstruction();
+      };
       let moved=false,startX=0,startY=0,originX=0,originY=0;
       btn.addEventListener('pointerdown',e=>{
-        if(e.button!==0)return;
+        if(e.button!==0 || e.target.closest('.note-resize-handle'))return;
         const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
         const layout=noteLayout(stamp,pageWidth,pageHeight);
-        startX=e.clientX;startY=e.clientY;originX=layout.x;originY=layout.y;
+        moved=false;startX=e.clientX;startY=e.clientY;originX=layout.x;originY=layout.y;
         btn.setPointerCapture?.(e.pointerId);
       });
       btn.addEventListener('pointermove',e=>{
@@ -433,7 +520,8 @@ let pdfRendererLoad = null;
         const dx=e.clientX-startX,dy=e.clientY-startY;
         if(Math.hypot(dx,dy)<4&&!moved)return;
         moved=true;
-        const l=noteLayout({...state.stamps.find(x=>x.id===btn.dataset.pinId),x:(originX+dx/(viewScale||1))/pageWidth,y:(originY+dy/(viewScale||1))/pageHeight},pageWidth,pageHeight);
+        const l=noteLayout({...state.stamps.find(x=>x.id===btn.dataset.pinId),
+          x:(originX+dx/(viewScale||1))/pageWidth,y:(originY+dy/(viewScale||1))/pageHeight},pageWidth,pageHeight);
         btn.style.left=`${l.x*(viewScale||1)}px`;btn.style.top=`${l.y*(viewScale||1)}px`;
       });
       btn.addEventListener('pointerup',e=>{
@@ -443,12 +531,68 @@ let pdfRendererLoad = null;
           const y=(originY+(e.clientY-startY)/(viewScale||1))/pageHeight;
           const layout=noteLayout({...stamp,x,y},pageWidth,pageHeight);
           stamp.x=layout.x/pageWidth;stamp.y=layout.y/pageHeight;
-          scheduleSave();toast('On-page comment moved. Its position will be preserved in the exported PDF.');
+          scheduleSave();toast('On-page comment moved; the exported PDF uses this position.');
         }
-        selectedStampId=stamp.id;draft=null;movingStampId=null;
-        renderStamps();renderEditor();renderBank();setInstruction();e.stopPropagation();
+        select();e.stopPropagation();
+      });
+      btn.addEventListener('keydown',e=>{
+        if(e.target===btn && (e.key==='Enter'||e.key===' ')){e.preventDefault();select();}
       });
       btn.addEventListener('click',e=>e.stopPropagation());
+      const handle=btn.querySelector('.note-resize-handle');
+      let resizing=false,fromX=0,fromY=0,originalWidth=0,originalHeight=0,anchorX=0,anchorY=0;
+      const resizeTo=(event)=>{
+        const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return null;
+        const scale=viewScale||1;
+        const maxWidth=Math.min(450,pageWidth-NOTE_PAD-anchorX);
+        const maxHeight=Math.min(750,pageHeight-NOTE_PAD-anchorY);
+        const desiredWidth=Math.max(170,Math.min(maxWidth,originalWidth+(event.clientX-fromX)/scale));
+        const desiredHeight=Math.max(55,Math.min(maxHeight,originalHeight+(event.clientY-fromY)/scale));
+        const mock={...stamp,noteWidth:desiredWidth,noteHeight:desiredHeight};
+        const layout=noteLayout(mock,pageWidth,pageHeight);
+        btn.style.width=`${layout.width*scale}px`;
+        btn.style.height=`${layout.height*scale}px`;
+        btn.classList.toggle('note-conflict',!layout.contentFits||!layout.fits);
+        btn.querySelector('.onpage-note-body').innerHTML=layout.rows.map(row=>`<span class="onpage-note-line">${escapeHtml(row)}</span>`).join('');
+        return {width:layout.width,height:layout.height};
+      };
+      handle.addEventListener('pointerdown',e=>{
+        if(e.button!==0)return;
+        const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
+        const layout=noteLayout(stamp,pageWidth,pageHeight);
+        resizing=true;fromX=e.clientX;fromY=e.clientY;originalWidth=layout.width;originalHeight=layout.height;
+        anchorX=layout.x;anchorY=layout.y;
+        handle.setPointerCapture?.(e.pointerId);e.stopPropagation();e.preventDefault();
+      });
+      handle.addEventListener('pointermove',e=>{
+        if(resizing && handle.hasPointerCapture?.(e.pointerId))resizeTo(e);
+        e.stopPropagation();
+      });
+      handle.addEventListener('pointerup',e=>{
+        if(!resizing)return;
+        const next=resizeTo(e);
+        resizing=false;
+        const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);
+        if(stamp&&next){
+          stamp.noteWidth=normalNoteWidth(next.width);stamp.noteHeight=normalNoteHeight(next.height);
+          selectedStampId=stamp.id;draft=null;movingStampId=null;
+          renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
+          toast('Comment box resized. Check that all text fits before export.');
+        }
+        e.stopPropagation();e.preventDefault();
+      });
+      handle.addEventListener('pointercancel',e=>{resizing=false;renderStamps();e.stopPropagation();});
+      handle.addEventListener('click',e=>e.stopPropagation());
+      handle.addEventListener('keydown',e=>{
+        if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;
+        e.preventDefault();e.stopPropagation();
+        const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
+        const l=noteLayout(stamp,pageWidth,pageHeight);
+        const nextWidth=l.width+(e.key==='ArrowLeft'?-5:e.key==='ArrowRight'?5:0);
+        const nextHeight=l.height+(e.key==='ArrowUp'?-5:e.key==='ArrowDown'?5:0);
+        stamp.noteWidth=normalNoteWidth(nextWidth);stamp.noteHeight=normalNoteHeight(nextHeight);
+        selectedStampId=stamp.id;renderStamps();renderEditor();scheduleSave();
+      });
     });
     const container=$('stampsList');
     const sorted=[...state.stamps].sort((a,b)=>a.page-b.page||a.y-b.y);
@@ -480,7 +624,13 @@ let pdfRendererLoad = null;
     }
     if(!draft)return;
     if(!draft.text.trim()){toast('Write a comment before placing the stamp.');return;}
-    const stamp = {id:makeId(),page:currentPage,x:position.x,y:position.y,criterion:draft.criterion,tone:draft.tone,topic:draft.topic,text:draft.text.trim(),size:normalSize(draft.size),noteWidth:normalNoteWidth(draft.noteWidth),color:stampColor(draft),libraryId:draft.id,createdAt:now()};
+    const stamp = {
+      id:makeId(),page:currentPage,x:position.x,y:position.y,criterion:draft.criterion,tone:draft.tone,
+      topic:draft.topic,text:draft.text.trim(),size:normalSize(draft.size),color:stampColor(draft),
+      noteWidth:normalNoteWidth(draft.noteWidth),noteHeight:normalNoteHeight(draft.noteHeight),
+      fontSize:noteFontSize(draft),textColor:noteTextColor(draft),fillColor:noteFillColor(draft),
+      borderColor:noteBorderColor(draft),libraryId:draft.id,createdAt:now(),
+    };
     if(pageWidthPt&&pageHeightPt)placeNoteInFreeSpace(stamp,pageStamps(currentPage),pageWidthPt,pageHeightPt);
     state.stamps.push(stamp);selectedStampId=stamp.id;draft=null;
     renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
@@ -661,6 +811,11 @@ let pdfRendererLoad = null;
       id:String(s.id||makeId()),page:s.page,x:Math.min(.99,Math.max(.01,s.x)),y:Math.min(.99,Math.max(.01,s.y)),criterion:s.criterion,
       tone:s.tone,topic:String(s.topic||'Evidence').slice(0,100),text:String(s.text||'').slice(0,1800),
       size:normalSize(s.size),color:normalColor(s.color,s.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor),
+      noteWidth:normalNoteWidth(s.noteWidth ?? state.stampStyle.noteWidth),noteHeight:normalNoteHeight(s.noteHeight),
+      fontSize:normalFontSize(s.fontSize ?? state.stampStyle.fontSize),
+      textColor:normalColor(s.textColor,state.stampStyle.textColor),
+      fillColor:normalColor(s.fillColor,state.stampStyle.fillColor),
+      borderColor:normalColor(s.borderColor,state.stampStyle.borderColor),
       libraryId:String(s.libraryId||''),createdAt:String(s.createdAt||now()),
     }));
     $('course').value=state.course;$('candidate').value=state.candidate;$('session').value=state.session;updateFrameworkNotice();
@@ -744,10 +899,10 @@ let pdfRendererLoad = null;
     if(line)rows.push(line);
     return rows.length?rows:[''];
   }
-  function pdfColor(stamp) {
-    const hex=stampColor(stamp);
+  function pdfHexColor(hex) {
     return window.PDFLib.rgb(...[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255));
   }
+  function pdfColor(stamp) {return pdfHexColor(stampColor(stamp));}
   function pdfTextColor(stamp){return brightColor(stampColor(stamp))?window.PDFLib.rgb(.09,.16,.25):window.PDFLib.rgb(1,1,1);}
   function pdfNoteColor(stamp){return brightColor(stampColor(stamp))?window.PDFLib.rgb(.17,.25,.33):pdfColor(stamp);}
 
@@ -777,7 +932,7 @@ let pdfRendererLoad = null;
         allProblems.push(...pagePlan.problems);
       }
       if(allProblems.length){
-        const message='Cannot export: on-page comment boxes must fit without overlapping. '+allProblems.join('; ')+'. Move them, increase the box width or shorten the comment, then retry.';
+        const message='Cannot export: every on-page comment must fit inside its box without overlapping another. '+allProblems.join('; ')+'. Resize or move the boxes, use Fit to text, or change the font size and retry.';
         toast(message);
         $('annotationNotice').textContent=message;$('annotationNotice').classList.remove('hidden');
         return;
@@ -788,15 +943,16 @@ let pdfRendererLoad = null;
           const color=pdfColor(stamp),label=stampLabel(stamp);
           const bottom=height-layout.y-layout.height;
           page.drawRectangle({x:layout.x,y:bottom,width:layout.width,height:layout.height,
-            color:rgb(.985,.992,1),borderColor:color,borderWidth:1.25});
-          page.drawRectangle({x:layout.x,y:bottom,width:3,height:layout.height,color});
+            color:pdfHexColor(layout.fillColor),borderColor:pdfHexColor(layout.borderColor),borderWidth:1.25});
+          page.drawRectangle({x:layout.x,y:bottom,width:3,height:layout.height,color:pdfHexColor(layout.borderColor)});
           const radius=layout.circle/2;
           const cx=layout.x+8+radius,cy=height-layout.y-11-radius;
           page.drawCircle({x:cx,y:cy,size:radius,color,borderWidth:1.1,borderColor:rgb(1,1,1)});
           const letterSize=Math.min(layout.circle*.55,18);
           pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
-          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,8.5,bold,pdfNoteColor(stamp));
-          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.textX,height-layout.y-33-index*NOTE_LINE,NOTE_FONT,font,ink));
+          const fullTextColor=pdfHexColor(layout.textColor);
+          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,layout.headerFontSize,bold,fullTextColor);
+          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.textX,height-layout.y-33-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
         }
       }
       // A clear criterion summary is included as teacher assessment evidence.
@@ -847,13 +1003,38 @@ let pdfRendererLoad = null;
   }
 
   function initStampStyleEvents() {
-    $('defaultStampSize').addEventListener('input',e=>{state.stampStyle.size=normalSize(e.target.value);renderStampStyle();saveLibrarySettings();});
-    $('strengthStampColour').addEventListener('input',e=>{state.stampStyle.strengthColor=normalColor(e.target.value,STAMP_DEFAULTS.strengthColor);renderStampStyle();saveLibrarySettings();});
-    $('limitationStampColour').addEventListener('input',e=>{state.stampStyle.limitationColor=normalColor(e.target.value,STAMP_DEFAULTS.limitationColor);renderStampStyle();saveLibrarySettings();});
+    $('defaultStampSize').addEventListener('input',e=>{
+      state.stampStyle.size=normalSize(e.target.value);renderStampStyle();saveLibrarySettings();
+    });
+    $('strengthStampColour').addEventListener('input',e=>{
+      state.stampStyle.strengthColor=normalColor(e.target.value,STAMP_DEFAULTS.strengthColor);renderStampStyle();saveLibrarySettings();
+    });
+    $('limitationStampColour').addEventListener('input',e=>{
+      state.stampStyle.limitationColor=normalColor(e.target.value,STAMP_DEFAULTS.limitationColor);renderStampStyle();saveLibrarySettings();
+    });
+    $('defaultNoteFont').addEventListener('input',e=>{
+      state.stampStyle.fontSize=normalFontSize(e.target.value);renderStampStyle();saveLibrarySettings();
+    });
+    for(const [id,key] of [
+      ['defaultNoteTextColour','textColor'],['defaultNoteFillColour','fillColor'],['defaultNoteBorderColour','borderColor'],
+    ]){
+      $(id).addEventListener('input',e=>{
+        state.stampStyle[key]=normalColor(e.target.value,STAMP_DEFAULTS[key]);renderStampStyle();saveLibrarySettings();
+      });
+    }
+    $('defaultNoteWidth').addEventListener('input',e=>{
+      state.stampStyle.noteWidth=normalNoteWidth(e.target.value);renderStampStyle();saveLibrarySettings();
+    });
     $('applyStampStyle').addEventListener('click',()=>{
-      if(!state.stamps.length){toast('No placed stamps yet. These settings will be used for new stamps.');return;}
-      for(const stamp of state.stamps){stamp.size=state.stampStyle.size;stamp.color=stamp.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor;}
-      renderStamps();renderEditor();scheduleSave();toast(`Updated the appearance of all ${state.stamps.length} existing stamps.`);
+      if(!state.stamps.length){toast('No placed comments yet. These styles will apply to new comments.');return;}
+      for(const stamp of state.stamps){
+        stamp.size=state.stampStyle.size;
+        stamp.color=stamp.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor;
+        stamp.fontSize=state.stampStyle.fontSize;stamp.textColor=state.stampStyle.textColor;
+        stamp.fillColor=state.stampStyle.fillColor;stamp.borderColor=state.stampStyle.borderColor;
+      }
+      renderStamps();renderEditor();scheduleSave();
+      toast(`Updated circle, font and colours for all ${state.stamps.length} placed comments. Individual box dimensions are preserved.`);
     });
   }
   function initEvents() {

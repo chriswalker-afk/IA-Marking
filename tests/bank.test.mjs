@@ -112,3 +112,28 @@ test('visible full comments are burned onto original PDF pages, with export coll
   assert.ok(css.includes('white-space:pre-wrap'),'Sidebar comments should be complete');
   assert.ok(!css.includes('-webkit-line-clamp:2'),'Sidebar comments should never be truncated');
 });
+
+test('full on-page comment styles and box resizing are accessible and preserved in PDF', () => {
+  const html=readFileSync('index.html','utf8');
+  const app=readFileSync('app.js','utf8');
+  const css=readFileSync('styles.css','utf8');
+  for (const id of [
+    'defaultNoteFont','defaultNoteTextColour','defaultNoteFillColour',
+    'defaultNoteBorderColour','defaultNoteWidth',
+  ]) assert.ok(html.includes('id="'+id+'"'), 'Missing default comment setting: '+id);
+  for (const part of [
+    'noteFontSize(stamp)','noteTextColor(stamp)','noteFillColor(stamp)',
+    'noteBorderColor(stamp)','normalNoteHeight(stamp.noteHeight)',
+    'page.drawRectangle({x:layout.x,y:bottom',
+    'color:pdfHexColor(layout.fillColor)',
+    'borderColor:pdfHexColor(layout.borderColor)',
+    'layout.fontSize,font,fullTextColor',
+    'data-resize-pin=',
+    'note-resize-handle',
+    'HeightAuto','FontValue','TextColor','FillColor','BorderColor',
+    'contentFits','noteHeight:normalNoteHeight(s.noteHeight)',
+  ]) assert.ok(app.includes(part), 'Missing preview/export sizing or colour handling: '+part);
+  assert.ok(css.includes('.note-resize-handle'), 'Missing drag resize control');
+  assert.ok(css.includes('.note-defaults'), 'Missing configurable new-comment defaults');
+  assert.ok(app.includes('if(!current.layout.contentFits)'), 'Clipped comments should block export');
+});
