@@ -850,6 +850,7 @@ let pdfRendererLoad = null;
     } catch(e){console.warn('Browser autosave failed',e);}
   }
   function scheduleSave() {
+    if(reviewPreview.bytes)invalidateReviewPreview();
     clearTimeout(savingTimer);
     savingTimer=setTimeout(storeAutosave,1400);
   }
@@ -1037,7 +1038,13 @@ let pdfRendererLoad = null;
   let reviewPreviewTask=null;
   let reviewPreviewLoading=false;
   function previewSignature(){
-    return JSON.stringify(projectData(false));
+    // Exclude volatile project timestamps. Any visible/printed change
+    // (including mark rationales and box positions) must invalidate approval.
+    return JSON.stringify({
+      course:state.course,candidate:state.candidate,session:state.session,
+      marks:state.marks,justifications:state.justifications,
+      stamps:state.stamps,pdfName:state.pdfName,pdfSize:state.pdfBytes?.length||0,
+    });
   }
   function invalidateReviewPreview(){
     reviewPreview.bytes=null;
@@ -1333,7 +1340,19 @@ let pdfRendererLoad = null;
       $('customDialog').close();tab=item.criterion;tone=item.tone;search='';$('commentSearch').value='';renderTabs();renderTone();renderBank();prepareComment(item.id);
       toast('Personal comment saved to this browser and selected.');
     });
-    $('openReview').addEventListener('click',()=>{renderReview();$('reviewDialog').showModal();});
+    $('openReview').addEventListener('click',()=>{
+      renderReview();$('reviewDialog').showModal();invalidateReviewPreview();
+      $('buildReviewPreview').textContent='Generate actual PDF preview';
+    });
+    $('reviewDialog').addEventListener('close',invalidateReviewPreview);
+    $('buildReviewPreview').addEventListener('click',prepareModeratorPreview);
+    $('reviewPreviewPrevious').addEventListener('click',()=>{
+      if(reviewPreview.pdf && reviewPreview.page>1){reviewPreview.page--;renderModeratorPreviewPage().catch(console.error);}
+    });
+    $('reviewPreviewNext').addEventListener('click',()=>{
+      if(reviewPreview.pdf && reviewPreview.page<reviewPreview.pdf.numPages){reviewPreview.page++;renderModeratorPreviewPage().catch(console.error);}
+    });
+    $('reviewConfirmed').addEventListener('change',updateReviewGate);
     $('openCriteria').addEventListener('click',openCriteriaDialog);
     $('reviewOpenCriteria').addEventListener('click',()=>{$('reviewDialog').close();openCriteriaDialog();});
     $('closeCriteria').addEventListener('click',()=>$('criteriaDialog').close());
