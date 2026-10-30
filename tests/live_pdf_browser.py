@@ -328,6 +328,96 @@ with tempfile.TemporaryDirectory() as folder:
         assert mobile_note['x']>=mobile_page['x']-1 and mobile_note['x']+mobile_note['width']<=mobile_page['x']+mobile_page['width']+2
         page.screenshot(path=str(ROOT/'qa-inline-mobile.png'),full_page=True)
 
+        # Pass 8: the evidence navigator must remain usable on an iPhone.
+        expect(page.locator('#undoMark')).to_be_disabled()  # history is reset when project is reopened
+        page.locator('#openEvidence').click()
+        expect(page.locator('#evidenceDialog[open]')).to_be_visible()
+        assert page.locator('#evidenceResults .evidence-result').count()==2
+        assert revised_text in page.locator('#evidenceResults').inner_text()
+        dialog=page.locator('#evidenceDialog').bounding_box()
+        assert dialog and dialog['width']>=429 and dialog['height']>=849
+        page.screenshot(path=str(ROOT/'qa-pass8-mobile-evidence.png'))
+        page.locator('#evidenceResults [data-evidence-pin]').first.click()
+        expect(page.locator('#evidenceDialog')).not_to_be_visible()
+        assert revised_text in page.locator('#stampTextEdit').input_value()
+
+        # Favourites persist outside the PDF project and can be chosen while
+        # viewing the actual PDF. Recently used is based on placed stamps.
+        page.set_viewport_size({'width':1450,'height':930})
+        favourite=page.locator('#commentList [data-favourite-comment]').first.get_attribute('data-favourite-comment')
+        page.locator('#commentList [data-favourite-comment]').first.click()
+        page.locator('[data-bank-quick="favorites"]').click()
+        expect(page.locator('#commentList [data-comment-id]')).to_have_count(1)
+        assert page.locator('#commentList [data-comment-id]').first.get_attribute('data-comment-id')==favourite
+        assert page.locator('#quickStampPicker option[value="'+favourite+'"]').count()>0
+        page.locator('#nextPage').click()
+        expect(page.locator('#pageNumber')).to_have_value('2')
+        page.locator('#quickStampPicker').select_option(favourite)
+        expect(page.locator('#draftTextEdit')).to_be_visible()
+
+        # Repeat mode retains the customised wording and format for each
+        # additional placement, while every action is reversible.
+        page.locator('#draftTextEdit').fill('Evidence of appropriate mathematical notation in the conclusion.')
+        page.locator('#repeatStamp').click()
+        expect(page.locator('#repeatStamp')).to_have_attribute('aria-pressed','true')
+        page.locator('#stampLayer').click(position={'x':130,'y':230})
+        expect(page.locator('#allPinCount')).to_have_text('3')
+        expect(page.locator('#draftTextEdit')).to_be_visible()
+        page.locator('#stampLayer').click(position={'x':360,'y':450})
+        expect(page.locator('#allPinCount')).to_have_text('4')
+        expect(page.locator('#undoMark')).to_be_enabled()
+        page.locator('#undoMark').click()
+        expect(page.locator('#allPinCount')).to_have_text('3')
+        page.locator('#redoMark').click()
+        expect(page.locator('#allPinCount')).to_have_text('4')
+        page.keyboard.press('Control+z')
+        expect(page.locator('#allPinCount')).to_have_text('3')
+        page.keyboard.press('Control+Shift+z')
+        expect(page.locator('#allPinCount')).to_have_text('4')
+
+        # Recent comments and a duplicate can be prepared without searching.
+        page.locator('[data-bank-quick="recent"]').click()
+        assert page.locator('#commentList [data-comment-id="'+favourite+'"]').count()==1
+        page.locator('#repeatStamp').click()
+        expect(page.locator('#repeatStamp')).to_have_attribute('aria-pressed','false')
+        page.locator('.onpage-stamp').last.click()
+        page.locator('#duplicateStamp').click()
+        expect(page.locator('#draftTextEdit')).to_have_value('Evidence of appropriate mathematical notation in the conclusion.')
+        page.locator('#cancelPlacement').click()
+
+        # A–E navigator covers both pages and jumps directly to the selected
+        # annotation, where the complete text can be edited.
+        page.locator('#openEvidence').click()
+        expect(page.locator('#evidenceResults .evidence-result')).to_have_count(4)
+        page.locator('#evidenceResults [data-evidence-pin]').first.click()
+        expect(page.locator('#pageNumber')).to_have_value('1')
+        expect(page.locator('#stampTextEdit')).to_be_visible()
+        assert revised_text in page.locator('#stampTextEdit').input_value()
+        page.locator('#openEvidence').click()
+        page.locator('#evidenceResults [data-evidence-pin]').last.click()
+        expect(page.locator('#pageNumber')).to_have_value('2')
+
+        # Delete -> Undo restores original comment. Text editing is grouped into
+        # one undo step rather than a separate step per character typed.
+        page.locator('.onpage-stamp').last.click()
+        old_text=page.locator('#stampTextEdit').input_value()
+        page.locator('#stampTextEdit').fill('Temporarily revised moderator evidence.')
+        page.locator('#stampTextEdit').evaluate('(el)=>el.blur()')
+        expect(page.locator('#undoMark')).to_be_enabled()
+        page.locator('#undoMark').click()
+        page.locator('.onpage-stamp').last.click()
+        assert page.locator('#stampTextEdit').input_value()==old_text
+        page.locator('#deleteStamp').click()
+        expect(page.locator('#allPinCount')).to_have_text('3')
+        page.locator('#undoMark').click()
+        expect(page.locator('#allPinCount')).to_have_text('4')
+
+        # No previously approved export is reused after these modifications.
+        page.locator('#openReview').click()
+        expect(page.locator('#exportAnnotated')).to_be_disabled()
+        page.locator('#closeReview').click()
+        page.screenshot(path=str(ROOT/'qa-pass8-desktop-quick-tools.png'),full_page=True)
+
         assert errors==[], f'Browser JS errors: {errors}'
         context.close()
 
