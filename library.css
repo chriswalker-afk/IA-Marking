@@ -40,3 +40,8 @@ body{background:#f2f5f8}
 /* Pass 8: stars also usable from the full standalone comment library. */
 .ref-comment-actions .ref-is-favourite,#referenceFavoritesOnly[aria-pressed="true"]{color:#8b651d;background:#fff7df;border-color:#e7d39a}
 .ref-comment-actions [data-action="favourite"]{font-weight:800}
+
+.reference-mode-nav{display:flex;align-items:center;gap:8px;padding:11px 0 16px;flex-wrap:wrap}
+.reference-mode-nav a{display:inline-flex;padding:9px 13px;border-radius:8px;border:1px solid #d4e0e7;background:#fff;text-decoration:none;color:#56748a;font-weight:750;font-size:11px}
+.reference-mode-nav a:hover{background:#f3f9fa}
+.reference-mode-nav a[aria-current="page"]{background:#e5f0f4;color:#28526d;border-color:#b8d3de}
