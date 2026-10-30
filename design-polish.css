@@ -1,0 +1,378 @@
+/*
+  IA Marking Desk — Design polish, Pass 1 (2026)
+  A deliberately small design layer over the established annotation styles.
+  Tokens are shared by the workspace and the standalone reference library.
+  No changes to PDF geometry, annotations, exports or local storage.
+*/
+:root {
+  color-scheme: light;
+  --ink: #33495a;
+  --heading: #1a3448;
+  --muted: #607588;
+  --border: #dce5eb;
+  --border-strong: #bacbd7;
+  --surface: #ffffff;
+  --canvas: #eff3f6;
+  --warm: #f6f8fa;
+  --navy: #25526e;
+  --navy-deep: #1b4059;
+  --blue: #497b96;
+  --blue-pale: #eef5f9;
+  --amber: #9e692b;
+  --amber-pale: #fbf4e9;
+  --shadow: 0 12px 32px rgba(20, 51, 74, .08);
+  --radius: 12px;
+  --ui-focus: #237ab4;
+  --ui-micro: #5d7283;
+  --ui-divider: #e5ecf1;
+}
+html, body {
+  background: var(--warm);
+  color: var(--ink);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button, input, select, textarea {font-family: inherit}
+button {touch-action: manipulation}
+button:focus-visible, a:focus-visible, summary:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible,
+label.file-label:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+button:disabled {opacity: .5}
+::selection {background: #d5e9f5;color: #12344b}
+h2 {font-size: 19px;letter-spacing: -.025em;line-height: 1.3}
+.eyebrow {color: #617888;font-size: 10px;letter-spacing: .10em;font-weight: 800}
+.btn {
+  min-height: 38px;
+  padding: 9px 13px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .005em;
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+.btn.subtle {color: #36576f;background: #fff;border-color: #d6e1e8}
+.btn.subtle:hover {background: #f1f6f9;border-color: #afc5d4}
+.btn.primary {background: var(--navy-deep);border-color: var(--navy-deep);color: #fff}
+.btn.primary:hover {background: #2d5d7c;border-color: #2d5d7c}
+.icon-button {min-height: 34px;min-width: 34px;border-radius: 8px}
+.icon-button:hover {background: #eaf3f7}
+.link-button, .text-button {color: #245c7d}
+.link-button:hover, .text-button:hover {color: #153f5b;text-decoration: underline}
+.masthead {
+  height: auto;
+  min-height: 75px;
+  padding: 13px 24px;
+  gap: 17px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.brand {gap: 12px;min-width: 230px}
+.brand-mark {
+  background: #1d4863;
+  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 3px 8px rgba(23, 57, 82, .12);
+}
+.brand strong {font-size: 16px;letter-spacing: -.027em}
+.brand small {font-size: 11px;color: #6c8190}
+.teacher-chip {background: #f3f8f8;border-color: #d9e9e7;color: #416c68}
+.privacy-note {color: #657b8b}
+.header-actions {flex-wrap: wrap;gap: 7px;justify-content: flex-end}
+.header-actions .btn {white-space: nowrap}
+.header-actions #openReview {box-shadow: 0 2px 7px rgba(21, 50, 71, .12)}
+.header-actions #openReview:hover {box-shadow: 0 4px 12px rgba(21, 50, 71, .2)}
+.local-save-state {color: #466b77;font-weight: 700}
+.project-dashboard-trigger span {background: #e8f2f7;color: #275c77}
+.review-mode-bar {
+  background: #fafcfd;
+  border-bottom-color: var(--border);
+  gap: 20px;
+  padding: 11px 24px;
+}
+.review-mode-tabs {
+  gap: 5px;
+  background: #eaf0f4;
+  padding: 4px;
+  border-radius: 12px;
+  flex-basis: 620px;
+}
+.review-mode-tab {
+  border-radius: 9px;
+  padding: 10px 14px;
+  gap: 3px;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.review-mode-tab strong {font-size: 13px;font-weight: 750}
+.review-mode-tab span {font-size: 11px;line-height: 1.4;opacity: 1}
+.review-mode-tab.is-selected {
+  background: #fff;
+  color: #234c67;
+  border-color: #c8dbe6;
+  box-shadow: 0 2px 7px rgba(38, 77, 99, .1);
+}
+.review-mode-bar p {font-size: 12px;line-height: 1.6;color: #536b7d}
+body.feedback-mode .review-mode-tab.is-selected {border-color: #b0d3c9;color: #235e53}
+.assessment-bar {
+  border-bottom-color: var(--ui-divider);
+  padding-top: 12px;
+  padding-bottom: 12px;
+  gap: 16px;
+  min-height: 88px;
+}
+.assessment-fields label {font-size: 11px;gap: 6px;color: #526b7e}
+.assessment-fields input, .assessment-fields select {
+  min-height: 38px;
+  font-size: 13px;
+  border-radius: 8px;
+  border-color: #c8d7e1;
+}
+.assessment-fields input:focus, .assessment-fields select:focus {
+  border-color: #4a8cb2;
+  box-shadow: 0 0 0 2px #b9daee70;
+}
+.score-item {background: #f8fafb;border-color: #dfe8ee;border-radius: 10px}
+.score-letter {background: #e5eff5;color: #2b5875;font-size: 12px}
+.score-info>span {font-size: 10.5px;color: #607588}
+.score-info select {font-size: 13px;font-weight: 750}
+.total-card strong {color: #1d435f}
+.framework-notice {
+  color: #587182;
+  background: #f5f9fb;
+  font-size: 11px;
+  padding: 7px 23px;
+}
+.framework-notice.warning {color: #7c501c;background: #fff1d9}
+.reference-bar {
+  padding: 9px 24px;
+  gap: 9px;
+  background: #fbfcfd;
+}
+.reference-help {font-size: 11px;color: #687e8e}
+.workspace {background: var(--canvas)}
+.document-pane, .bank-pane {
+  background: #fff;
+  gap: 13px;
+  padding-top: 21px;
+}
+.pane-heading h2 {font-size: 19px}
+.pane-help {color: #577488;cursor: help}
+.upload-card {
+  border: 1.5px dashed #b9cfdd;
+  background: linear-gradient(140deg, #f3f8fb, #fff);
+  border-radius: 12px;
+}
+.upload-card:hover, .upload-card.dragover {border-color: #4681a6;background: #eaf4fa}
+.upload-card strong {font-size: 13px}
+.upload-card>span:not(.upload-icon):not(.upload-action) {font-size: 11.5px;color: #597488}
+.upload-action {font-size: 11px;color: #2f688b;border-color: #c4d9e6}
+.document-meta {border-radius: 10px;background: #f5f9fb}
+.doc-info strong {font-size: 12px}
+.doc-info small {font-size: 11px;color: #5b7486}
+.subhead {font-size: 12.5px;color: #3d596b}
+.legend {font-size: 11px;color: #5b7182;gap: 12px;flex-wrap: wrap}
+.counter {font-size: 10.5px;font-weight: 700}
+.stamps-list p {font-size: 12px}
+.stamp-row {padding: 11px 8px;gap: 9px;border-radius: 9px}
+.stamp-row:hover {background: #f1f7fa}
+.stamp-row .stamp-info strong {font-size: 11px;color: #40596b}
+.stamp-row .stamp-info span {font-size: 12px;line-height: 1.5;color: #405568}
+.stamp-row.is-selected {background: #edf6fa;border-color: #aacbde}
+.document-footer {color: #607588;font-size: 11px;align-items: center}
+.lock-icon {font-size: 14px;color: #427977}
+
+/* Default appearance is intentionally collapsed until the teacher needs it. */
+.stamp-style-panel {
+  display: block;
+  background: #f7fafc;
+  border: 1px solid #dce6ed;
+  padding: 0;
+  border-radius: 11px;
+  overflow: visible;
+}
+.stamp-style-panel > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 9px;
+  list-style: none;
+  cursor: pointer;
+  min-height: 53px;
+  padding: 9px 11px;
+  border-radius: inherit;
+}
+.stamp-style-panel > summary::-webkit-details-marker,
+.individual-appearance > summary::-webkit-details-marker {display:none}
+.stamp-style-panel > summary::after,
+.individual-appearance > summary::after {
+  content: "⌄";
+  flex: none;
+  color: #587e94;
+  font-size: 18px;
+  font-weight: 700;
+  transition: transform .15s ease;
+}
+.stamp-style-panel[open] > summary::after,
+.individual-appearance[open] > summary::after {transform: rotate(180deg)}
+.stamp-style-panel > summary:hover {background: #edf5f9}
+.stamp-style-summary-text {display:flex;flex:1;min-width:0;flex-direction:column;gap:2px}
+.stamp-style-summary-text strong {font-size: 12px;color: #254b65}
+.stamp-style-summary-text small {font-size: 10.5px;color: #5d7889;line-height:1.3}
+.stamp-preview {margin-left:auto}
+.stamp-style-body {
+  display:flex;flex-direction:column;gap:9px;
+  padding: 12px 11px 13px;
+  border-top: 1px solid #e0eaf0;
+}
+.stamp-style-panel:not([open]) > .stamp-style-body {display:none}
+.stamp-style-panel .stamp-size-field,
+.stamp-style-panel .stamp-colour-fields label {font-size:11px;color:#4f6c7f}
+.stamp-style-panel .stamp-size-field output {font-size:11px}
+.stamp-style-panel p {font-size: 10.5px;line-height:1.55;color:#647e8d}
+.note-defaults>summary {font-size: 11px;color:#34617a}
+.viewer-pane {background: #ecf1f5}
+.viewer-toolbar {
+  background: #f9fbfc;
+  border-bottom: 1px solid var(--border);
+  min-height: 57px;
+}
+.toolbar-left strong {font-size: 13px;font-weight: 750}
+.viewer-bottom {background: #fafcfd;color:#5f7484}
+.instruction-bar {color:#47687d;font-size:12px;line-height:1.5;background:#f0f7fa}
+.instruction-bar.placing {color:#805921;background:#fff8e9}
+.pdf-scroll {
+  background: radial-gradient(circle at 1px 1px, rgba(130,150,167,.10) .8px,transparent 1.1px) 0 0/24px 24px,#edf2f6;
+}
+.page-shell {box-shadow:0 12px 36px rgba(24,49,68,.17),0 0 0 1px rgba(36,67,89,.08)}
+.viewer-bottom>span:last-child {max-width:50%;line-height:1.4}
+.bank-intro {font-size: 12px;line-height: 1.6;color:#546f81}
+.bank-total {font-size: 11px;background: #edf4f8;color:#406d85}
+.criterion-tabs {gap: 5px}
+.criterion-tab {border-radius:8px;min-height:36px;font-size:13px;color:#496a82}
+.criterion-tab.active {color:#fff;background:#27536e;border-color:#27536e}
+.bank-filters input {min-height:40px;background:#fcfdfe;border-color:#c9d9e4;font-size:12.5px}
+.tone-toggle {padding:4px;background:#eef3f6}
+.tone-btn {font-size:11px;min-height:33px;color:#516d81}
+.tone-btn.active {color:#234c66}
+.bank-quick-heading {color:#4f6a7d}
+.bank-quick-tab {min-height:30px}
+.bank-list-heading strong {font-size: 12px;color:#304a60}
+.library-open-button {border-color:#dbe7ee;background:#f5f9fc}
+.library-independent-link {font-size: 11px;color: #416d85}
+.comment-list {scrollbar-color:#bfccd5 transparent}
+.comment-card {border-color:#dfe9ef;border-radius:10px;padding:12px;margin-bottom:9px}
+.comment-card:hover {background:#f9fcfe;border-color:#aac5d6}
+.comment-card.is-active {background:#edf6fb;border-color:#8fb5cc}
+.comment-card .topic {font-size: 11px;color: #526d80}
+.comment-card p {font-size: 12.5px;line-height: 1.62;color: #314a5c}
+.comment-card-actions button {font-size: 11px;min-height:29px}
+.polarity {font-size:10px;letter-spacing: .02em}
+.polarity.strength {color:#326984;background:#e8f2f7}
+.polarity.limitation {color:#8a591f;background:#fff1de}
+.selection-editor {padding-top:15px;border-top:1px solid #dce6ee}
+.selection-title strong {font-size: 13px}
+.selection-title small {font-size: 11px;color: #5c7788}
+.selection-active textarea {
+  width:100%;
+  min-height: 100px;
+  max-height: 220px;
+  background:#fff;
+  font-size: 12.5px;
+  line-height: 1.65;
+  border-color:#bfcfda;
+}
+.selection-actions small {font-size: 11px;line-height: 1.5;color:#627a8c}
+.edit-stamp-toolbar {flex-wrap:wrap;gap:6px}
+.edit-stamp-toolbar button {min-height:32px;font-size: 11px}
+.bank-caption {color:#627d8c;font-size: 10.5px;line-height: 1.55}
+.individual-appearance {margin-top: 11px;border:1px solid #dce6ec;border-radius:10px;background:#f8fbfc}
+.individual-appearance-summary {
+  cursor:pointer;
+  min-height:41px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:9px 11px;
+  list-style:none;
+  color:#345c72;
+  border-radius:10px;
+}
+.individual-appearance-summary:hover {background:#edf5f8}
+.individual-appearance-summary span {font-size: 11.5px;font-weight: 750}
+.individual-appearance-summary small {font-size: 10px;color:#617c8d;margin-left:auto}
+.individual-appearance .individual-stamp-style {
+  margin:0;
+  padding:12px 11px 14px;
+  background:transparent;
+  border:0;
+  border-top:1px solid #e2ebf0;
+  border-radius:0;
+  gap: 10px;
+}
+.individual-appearance:not([open])>.individual-stamp-style {display:none}
+.note-format-help {font-size:10.5px;line-height:1.5;color:#5a7182}
+.review-modal,.library-modal,.evidence-modal,.criteria-modal,
+.projects-modal,.custom-modal {box-shadow:0 24px 70px rgba(13, 37, 56, .23)}
+.review-header h2, .modal-heading h2 {font-size: 23px}
+.review-header p {font-size: 12px;color:#597283}
+.review-status {font-size: 12.5px;line-height:1.6}
+.review-score {border-color:#dfe7ed}
+.review-score small {font-size: 11px}
+.review-score textarea {font-size: 12.5px;line-height:1.6}
+.review-preview-hint {font-size: 11.5px}
+.feedback-review-heading p {font-size: 12px}
+.feedback-task-text {font-size:12.5px}
+.feedback-task-meta {font-size:11px}
+.feedback-strengths p {font-size:12px}
+.feedback-integrity-note {font-size:11.5px}
+.library-entry p {font-size: 12.5px;line-height:1.65}
+.library-entry-header strong {font-size: 12px}
+.library-entry-actions button {font-size: 11px;min-height:32px}
+.reference-intro p, .reference-summary, .reference-note {color:#516c7f}
+.ref-comment p {font-size:12.5px;line-height:1.65}
+.ref-comment-actions button {min-height:32px}
+.reference-mode-nav a {font-size:12px;min-height:36px}
+.reference-mode-nav a[aria-current="page"] {background:#e9f3f8;border-color:#a9cbdc;color:#2a5875}
+body.feedback-mode .reference-bar {background:#f9fcfb}
+body.feedback-mode .feedback-review-heading h3 {color:#255b53}
+@media(max-width:1390px){
+  .masthead {padding:11px 16px}
+  .review-mode-bar {padding:9px 16px}
+  .reference-bar {padding:9px 16px}
+}
+@media(max-width:860px){
+  .review-mode-bar {gap:8px}
+  .review-mode-tabs {width:100%;flex-basis:auto;grid-template-columns:repeat(2,minmax(0,1fr));min-width:0}
+  .review-mode-bar p {font-size:11.5px}
+  .masthead {padding:11px 15px}
+  .viewer-toolbar {padding:0 12px}
+}
+@media(max-width:600px){
+  .brand {min-width:0}
+  .header-actions {gap:6px;justify-content:stretch}
+  .header-actions .btn {flex:1 1 auto;min-height:39px;padding:9px 8px;font-size:11.5px}
+  .header-actions #openReview {flex-grow:2}
+  .review-mode-tab {min-width:0;padding:9px}
+  .review-mode-tab strong {font-size:12px}
+  .review-mode-tab span {font-size:10px}
+  .review-mode-bar p {font-size:11px}
+  .reference-bar .btn {min-height:36px;font-size:11.5px}
+  .reference-help {width:100%;font-size:10.5px}
+  .document-pane, .bank-pane {padding:15px 12px}
+  .viewer-bottom>span:last-child {font-size:10px}
+  .comment-list {max-height:380px}
+  .comment-card p {font-size:12.5px}
+  input[type="text"], input[type="search"], input[type="number"], textarea, select {font-size:16px}
+  .assessment-fields select, .assessment-fields input {font-size:16px}
+  .score-info select {font-size:12px}
+  .bank-filters input {font-size:16px}
+  .selection-active textarea {font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  *, *::before, *::after {scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}
+}
