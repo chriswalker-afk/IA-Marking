@@ -524,9 +524,8 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('[data-score="A"]').select_option('0')
         expect(page.locator('#localSaveState')).to_have_text('Saved on this device',timeout=25000)
         page.locator('#openProjects').click()
-        expect(page.locator('#projectsRows .project-card')).to_have_count(1)
-        # Previous search remains in effect: clear it to see the full cohort.
-        page.locator('#projectsSearch').fill('')
+        expect(page.locator('#projectsSearch')).to_have_value('')
+        # Opening the dashboard clears stale filters so every IA is visible.
         expect(page.locator('#projectsRows .project-card')).to_have_count(3)
         page.locator('#projectsCourse').select_option('AA SL')
         expect(page.locator('#projectsRows .project-card')).to_have_count(3)
