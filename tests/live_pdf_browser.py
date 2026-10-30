@@ -228,6 +228,13 @@ with tempfile.TemporaryDirectory() as folder:
         expect(page.locator('#reviewPreviewPage')).to_have_text('Page 1 / 3',timeout=30000)
         assert page.locator('#reviewConfirmed').is_disabled()
         assert page.locator('#reviewPreviewCanvas').get_attribute('width') != '0'
+        fit_width=page.locator('#reviewPreviewCanvas').bounding_box()['width']
+        page.locator('#reviewPreviewZoomIn').click()
+        expect(page.locator('#reviewPreviewZoomLabel')).to_have_text('150%',timeout=20000)
+        zoomed_width=page.locator('#reviewPreviewCanvas').bounding_box()['width']
+        assert zoomed_width > fit_width*1.3, 'PDF zoom did not enlarge text for moderator inspection.'
+        page.locator('#reviewPreviewZoomOut').click()
+        expect(page.locator('#reviewPreviewZoomLabel')).to_have_text('Fit',timeout=20000)
         page.screenshot(path=str(ROOT/'qa-exact-pdf-preview.png'),full_page=True)
         page.set_viewport_size({'width':390,'height':844})
         page.screenshot(path=str(ROOT/'qa-moderation-mobile.png'))
