@@ -15,6 +15,8 @@ let pdfRendererLoad = null;
   const CRITERION_KEYS = Object.keys(CRITERIA);
   const BANK = window.IA_COMMENT_BANK || [];
   const STAMP_DEFAULTS = Object.freeze({size:20,strengthColor:'#477b97',limitationColor:'#b7803c'});
+  const NOTE_FONT = 9.25, NOTE_LINE = 12.4, NOTE_PAD = 6;
+  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(170,Math.min(350,Math.round(Number(value)/10)*10)) : 250;
   const normalSize = value => Number.isFinite(Number(value)) ? Math.max(14,Math.min(42,Math.round(Number(value)))) : STAMP_DEFAULTS.size;
   const normalColor = (value,fallback) => typeof value==='string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
   function normalStyle(value={}) {
@@ -68,6 +70,7 @@ let pdfRendererLoad = null;
   let toastTimer = null;
   let database = null;
   let viewScale = 1;
+  let pageWidthPt = 0, pageHeightPt = 0;
   let libraryEditingId = null;
   const MAX_BANK_VISIBLE = 42;
 
@@ -92,7 +95,7 @@ let pdfRendererLoad = null;
       $('instructionText').textContent = `Placing criterion ${draft.criterion} ${draft.tone === 'strength' ? 'strength' : 'limitation'}: click beside the relevant evidence on the PDF.`;
       bar.classList.add('placing'); cancel.classList.remove('hidden');
     } else {
-      $('instructionText').textContent = 'Select a comment from the bank, then click the relevant place on the PDF to add its stamp.';
+      $('instructionText').textContent = 'Select a comment, then click on clear space on the actual PDF page. Its full text will be printed there for moderation.';
       bar.classList.remove('placing'); cancel.classList.add('hidden');
     }
     $('stampLayer').classList.toggle('placing',Boolean(draft || movingStampId));
@@ -287,13 +290,13 @@ let pdfRendererLoad = null;
     const item = getComments().find(c=>c.id===id);
     if(!item) return;
     selectedStampId = null; movingStampId = null;
-    draft = {...item,size:state.stampStyle.size,color:item.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor};
+    draft = {...item,size:state.stampStyle.size,noteWidth:250,color:item.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor};
     renderEditor();renderBank();renderStamps();setInstruction();
     if(!isReady()) toast('Comment selected. Upload a PDF to place the stamp.');
   }
   function appearanceEditor(item,prefix) {
     const size=normalSize(item.size),color=stampColor(item);
-    return `<div class="individual-stamp-style"><label for="${prefix}Size">Stamp size <output id="${prefix}SizeValue">${size} pt</output><input id="${prefix}Size" type="range" min="14" max="42" step="2" value="${size}"></label><label for="${prefix}Color">Stamp colour <input id="${prefix}Color" type="color" value="${color}"></label></div>`;
+    return `<div class="individual-stamp-style"><label for="${prefix}Size">Stamp size <output id="${prefix}SizeValue">${size} pt</output><input id="${prefix}Size" type="range" min="14" max="42" step="2" value="${size}"></label><label for="${prefix}Color">Stamp colour <input id="${prefix}Color" type="color" value="${color}"></label><label class="note-width-field" for="${prefix}Width">On-page comment width <output id="${prefix}WidthValue">${normalNoteWidth(item.noteWidth)} pt</output><input id="${prefix}Width" type="range" min="170" max="350" step="10" value="${normalNoteWidth(item.noteWidth)}"></label></div>`;
   }
   function bindAppearanceEditor(item,prefix,existing) {
     $(`${prefix}Size`).addEventListener('input',e=>{
@@ -302,6 +305,11 @@ let pdfRendererLoad = null;
     });
     $(`${prefix}Color`).addEventListener('input',e=>{
       item.color=normalColor(e.target.value,stampColor(item));
+      if(existing){renderStamps();scheduleSave();}
+    });
+    $(`${prefix}Width`).addEventListener('input',e=>{
+      item.noteWidth=normalNoteWidth(e.target.value);
+      $(`${prefix}WidthValue`).textContent=`${item.noteWidth} pt`;
       if(existing){renderStamps();scheduleSave();}
     });
   }
@@ -331,83 +339,124 @@ let pdfRendererLoad = null;
 
   function pageStamps(page) { return state.stamps.filter(s=>s.page===page); }
   function stampLabel(stamp) { return `${stamp.criterion}${1+state.stamps.filter(s=>s.criterion===stamp.criterion).findIndex(s=>s.id===stamp.id)}`; }
-  function renderPageNotes(stampsOnPage) {
-    const rail=$('pageNotes');
-    if(!rail)return;
-    const notes=[...stampsOnPage].sort((a,b)=>a.y-b.y);
-    const pageHeight=Number.parseFloat($('pdfCanvas').style.height)||0;
-    const beside=$('pageShell').dataset.notesLayout!=='below';
-    rail.innerHTML=notes.length?notes.map(stamp=>{
-      const color=stampColor(stamp),label=stampLabel(stamp);
-      return `<button type="button" class="page-note ${stamp.id===selectedStampId?'is-selected':''}" data-note-pin="${escapeHtml(stamp.id)}" style="--note-color:${color}" aria-label="Select ${escapeHtml(label)} evidence stamp">
-        <span class="page-note-circle" style="background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
-        <span class="page-note-content"><span class="page-note-kicker">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':'Limitation'}</span>
-        <span class="page-note-fulltext">${escapeHtml(stamp.text)}</span></span>
-      </button>`;
-    }).join(''):'<p class="page-notes-empty">Full assessment comments will appear beside their A–E criterion circles when you place stamps.</p>';
-    if(pageHeight>0) {
-      if(beside) {
-        let occupied=0;
-        const nodes=[...rail.querySelectorAll('[data-note-pin]')];
-        nodes.forEach((node,index)=>{
-          const target=Math.max(0,Math.round(notes[index].y*pageHeight-35));
-          const top=Math.max(target,occupied ? occupied+9 : 0);
-          node.style.top=`${top}px`;
-          occupied=top+node.offsetHeight;
-        });
-        const height=Math.max(pageHeight,occupied+10);
-        rail.style.height=`${height}px`;
-        $('pageShell').style.height=`${height}px`;
-      } else {
-        rail.style.height='auto';
-        $('pageShell').style.height=`${pageHeight+14+rail.scrollHeight+4}px`;
+  // A placed comment is on the original student page, not in a separate
+  // margin. The same PDF-point measurements are used for preview and export.
+  function pdfMeasureFont() {
+    try { return window.PDFLib?.StandardFontEmbedder.for(window.PDFLib.StandardFonts.Helvetica); }
+    catch(e) { return {widthOfTextAtSize:(txt,size)=>txt.length*size*.51}; }
+  }
+  function noteLayout(stamp,pageWidth,pageHeight,font=pdfMeasureFont()) {
+    const width=Math.min(normalNoteWidth(stamp.noteWidth),Math.max(100,pageWidth-2*NOTE_PAD));
+    const circle=normalSize(stamp.size),textX=Math.max(circle+17,42);
+    const rows=pdfWrap(stamp.text,font,NOTE_FONT,Math.max(30,width-textX-8));
+    const height=Math.max(circle+20,39+rows.length*NOTE_LINE);
+    const fits=height<=pageHeight-2*NOTE_PAD;
+    const x=Math.min(Math.max(NOTE_PAD,Number(stamp.x||0)*pageWidth),Math.max(NOTE_PAD,pageWidth-width-NOTE_PAD));
+    const y=Math.min(Math.max(NOTE_PAD,Number(stamp.y||0)*pageHeight),Math.max(NOTE_PAD,pageHeight-height-NOTE_PAD));
+    return {x,y,width,height,circle,textX,rows,fits,pageWidth,pageHeight};
+  }
+  function noteOverlap(a,b) {
+    return a.x<b.x+b.width-3 && a.x+a.width>b.x+3 && a.y<b.y+b.height-3 && a.y+a.height>b.y+3;
+  }
+  function pageLayoutProblems(stamps,pageWidth,pageHeight,font=pdfMeasureFont()) {
+    const items=stamps.map(stamp=>({stamp,layout:noteLayout(stamp,pageWidth,pageHeight,font)}));
+    const problems=[];
+    for(let i=0;i<items.length;i++) {
+      const current=items[i];
+      if(!current.layout.fits) problems.push(`${stampLabel(current.stamp)} is too long to fit on page ${current.stamp.page}`);
+      for(let j=0;j<i;j++) if(noteOverlap(current.layout,items[j].layout)) {
+        problems.push(`${stampLabel(current.stamp)} overlaps ${stampLabel(items[j].stamp)} on page ${current.stamp.page}`);
       }
     }
-    rail.querySelectorAll('[data-note-pin]').forEach(button=>button.addEventListener('click',()=>{
-      const stamp=state.stamps.find(item=>item.id===button.dataset.notePin);
-      if(!stamp)return;
-      selectedStampId=stamp.id;draft=null;movingStampId=null;
-      renderEditor();renderBank();setInstruction();renderStamps();
-    }));
+    return {items,problems};
   }
-
+  function placeNoteInFreeSpace(stamp,stamps,pageWidth,pageHeight) {
+    const others=stamps.filter(item=>item.id!==stamp.id).map(item=>noteLayout(item,pageWidth,pageHeight));
+    let best=noteLayout(stamp,pageWidth,pageHeight);
+    if(!best.fits) return best;
+    if(!others.some(rect=>noteOverlap(best,rect))) {
+      stamp.x=best.x/pageWidth;stamp.y=best.y/pageHeight;return best;
+    }
+    // Nearby clear positions first; never hide or truncate the comment.
+    // The teacher can subsequently drag the annotation into better whitespace.
+    const step=20;
+    const desiredX=best.x,desiredY=best.y;
+    const candidates=[];
+    for(let radius=step;radius<=Math.max(pageWidth,pageHeight);radius+=step) {
+      for(let dy=-radius;dy<=radius;dy+=step) for(const dx of [-radius,radius]) candidates.push([desiredX+dx,desiredY+dy]);
+      for(let dx=-radius+step;dx<radius;dx+=step) for(const dy of [-radius,radius]) candidates.push([desiredX+dx,desiredY+dy]);
+      if(candidates.length>2000)break;
+    }
+    for(const [x,y] of candidates) {
+      const candidate=noteLayout({...stamp,x:x/pageWidth,y:y/pageHeight},pageWidth,pageHeight);
+      if(!others.some(rect=>noteOverlap(candidate,rect))) {
+        stamp.x=candidate.x/pageWidth;stamp.y=candidate.y/pageHeight;return candidate;
+      }
+    }
+    return best; // Export validation will require clearing any remaining overlap.
+  }
+  function renderStampWarnings(problems) {
+    const el=$('annotationNotice');
+    if(!el)return;
+    if(!problems.length){el.classList.add('hidden');el.textContent='';return;}
+    el.textContent=`On-page annotations need attention: ${problems.join('; ')}. Move a comment, widen its box or shorten it before exporting.`;
+    el.classList.remove('hidden');
+  }
   function renderStamps() {
-    const stampsOnPage = pageStamps(currentPage);
-    $('allPinCount').textContent = state.stamps.length;
-    $('stampLayer').innerHTML = stampsOnPage.map(pin => {
-      const diameter=Math.max(12,Math.round(normalSize(pin.size)*viewScale));
-      return `<button type="button" class="pin ${pin.tone} ${pin.id===selectedStampId?'active':''}" data-pin-id="${escapeHtml(pin.id)}" style="left:${(pin.x*100).toFixed(4)}%;top:${(pin.y*100).toFixed(4)}%;width:${diameter}px;height:${diameter}px;font-size:${Math.max(9,Math.round(diameter*.51))}px;background:${stampColor(pin)};color:${stampTextColor(pin)}" title="${escapeHtml(stampLabel(pin)+': '+pin.text)}" aria-label="${escapeHtml(stampLabel(pin)+': '+pin.text)}">${pin.criterion}<em>${escapeHtml(stampLabel(pin).slice(1))}</em></button>`;
+    const stampsOnPage=pageStamps(currentPage);
+    $('allPinCount').textContent=state.stamps.length;
+    const pageWidth=pageWidthPt||595,pageHeight=pageHeightPt||842;
+    const preview=pageLayoutProblems(stampsOnPage,pageWidth,pageHeight);
+    renderStampWarnings(preview.problems);
+    $('stampLayer').innerHTML=preview.items.map(({stamp,layout})=>{
+      const scale=viewScale||1;
+      const label=stampLabel(stamp),color=stampColor(stamp);
+      const lines=layout.rows.map(line=>`<span class="onpage-note-line">${escapeHtml(line)}</span>`).join('');
+      const mismatch=preview.problems.some(issue=>issue.includes(label));
+      return `<button type="button" class="onpage-stamp ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};border-width:${Math.max(.7,1*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag to reposition this complete on-page comment">
+        <span class="onpage-circle" style="left:${8*scale}px;top:${11*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
+        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${10*scale}px;font-size:${8.5*scale}px;line-height:${12*scale}px">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':'Limitation'}</span>
+        <span class="onpage-note-body" style="left:${layout.textX*scale}px;top:${25*scale}px;font-size:${NOTE_FONT*scale}px;line-height:${NOTE_LINE*scale}px">${lines}</span>
+      </button>`;
     }).join('');
     $('stampLayer').querySelectorAll('[data-pin-id]').forEach(btn=>{
-      let moved = false;
-      let pressX = 0, pressY = 0;
-      btn.addEventListener('pointerdown',e=>{if(e.button!==0)return;pressX=e.clientX;pressY=e.clientY;btn.setPointerCapture?.(e.pointerId);});
+      let moved=false,startX=0,startY=0,originX=0,originY=0;
+      btn.addEventListener('pointerdown',e=>{
+        if(e.button!==0)return;
+        const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
+        const layout=noteLayout(stamp,pageWidth,pageHeight);
+        startX=e.clientX;startY=e.clientY;originX=layout.x;originY=layout.y;
+        btn.setPointerCapture?.(e.pointerId);
+      });
       btn.addEventListener('pointermove',e=>{
         if(!btn.hasPointerCapture?.(e.pointerId))return;
-        if(Math.hypot(e.clientX-pressX,e.clientY-pressY)<4&&!moved)return;
+        const dx=e.clientX-startX,dy=e.clientY-startY;
+        if(Math.hypot(dx,dy)<4&&!moved)return;
         moved=true;
-        const point = positionOnPage(e);
-        btn.style.left=`${point.x*100}%`;btn.style.top=`${point.y*100}%`;
+        const l=noteLayout({...state.stamps.find(x=>x.id===btn.dataset.pinId),x:(originX+dx/(viewScale||1))/pageWidth,y:(originY+dy/(viewScale||1))/pageHeight},pageWidth,pageHeight);
+        btn.style.left=`${l.x*(viewScale||1)}px`;btn.style.top=`${l.y*(viewScale||1)}px`;
       });
       btn.addEventListener('pointerup',e=>{
-        const pin = state.stamps.find(p=>p.id===btn.dataset.pinId);
-        if(!pin)return;
-        if(moved){const pos=positionOnPage(e);pin.x=pos.x;pin.y=pos.y;scheduleSave();renderStamps();toast('Stamp position updated.');}
-        else {selectedStampId=pin.id;draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();renderStamps();}
-        e.stopPropagation();
+        const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
+        if(moved){
+          const x=(originX+(e.clientX-startX)/(viewScale||1))/pageWidth;
+          const y=(originY+(e.clientY-startY)/(viewScale||1))/pageHeight;
+          const layout=noteLayout({...stamp,x,y},pageWidth,pageHeight);
+          stamp.x=layout.x/pageWidth;stamp.y=layout.y/pageHeight;
+          scheduleSave();toast('On-page comment moved. Its position will be preserved in the exported PDF.');
+        }
+        selectedStampId=stamp.id;draft=null;movingStampId=null;
+        renderStamps();renderEditor();renderBank();setInstruction();e.stopPropagation();
       });
       btn.addEventListener('click',e=>e.stopPropagation());
     });
-    renderPageNotes(stampsOnPage);
-    const container = $('stampsList');
-    const sorted = [...state.stamps].sort((a,b)=>a.page-b.page || a.y-b.y);
-    container.innerHTML = sorted.length ? sorted.map(stamp=>`<button type="button" class="stamp-row ${selectedStampId===stamp.id?'is-selected':''}" data-sidebar-pin="${escapeHtml(stamp.id)}"><span class="mini-circle ${stamp.tone}" style="background:${stampColor(stamp)};color:${stampTextColor(stamp)}">${stamp.criterion}</span><span class="stamp-info"><strong>Page ${stamp.page} &middot; ${stamp.tone==='strength'?'Strength':'Limitation'}</strong><span>${escapeHtml(stamp.text)}</span></span></button>`).join('') : '<p class="muted centered">Your evidence annotations will appear here.</p>';
+    const container=$('stampsList');
+    const sorted=[...state.stamps].sort((a,b)=>a.page-b.page||a.y-b.y);
+    container.innerHTML=sorted.length?sorted.map(stamp=>`<button type="button" class="stamp-row ${selectedStampId===stamp.id?'is-selected':''}" data-sidebar-pin="${escapeHtml(stamp.id)}"><span class="mini-circle ${stamp.tone}" style="background:${stampColor(stamp)};color:${stampTextColor(stamp)}">${stamp.criterion}</span><span class="stamp-info"><strong>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':'Limitation'}</strong><span>${escapeHtml(stamp.text)}</span></span></button>`).join(''):'<p class="muted centered">Your evidence annotations will appear here.</p>';
     container.querySelectorAll('[data-sidebar-pin]').forEach(button=>button.addEventListener('click',()=>{
-      const stamp=state.stamps.find(s=>s.id===button.dataset.sidebarPin);
-      if (!stamp)return;
+      const stamp=state.stamps.find(s=>s.id===button.dataset.sidebarPin);if(!stamp)return;
       selectedStampId=stamp.id;draft=null;movingStampId=null;
-      if(currentPage!==stamp.page)navigate(stamp.page);
-      else renderStamps();
+      if(currentPage!==stamp.page)navigate(stamp.page);else renderStamps();
       renderEditor();renderBank();setInstruction();
     }));
   }
@@ -419,18 +468,20 @@ let pdfRendererLoad = null;
     };
   }
   function handlePageClick(event) {
-    if(!isReady()||event.target.closest('.pin'))return;
+    if(!isReady()||event.target.closest('.onpage-stamp'))return;
     const position = positionOnPage(event);
     if(movingStampId) {
       const stamp = state.stamps.find(s=>s.id===movingStampId);
       if(!stamp)return;
       stamp.x=position.x;stamp.y=position.y;stamp.page=currentPage;
+      if(pageWidthPt&&pageHeightPt)placeNoteInFreeSpace(stamp,pageStamps(currentPage),pageWidthPt,pageHeightPt);
       selectedStampId=stamp.id;movingStampId=null;renderStamps();renderEditor();setInstruction();scheduleSave();toast('Stamp moved.');
       return;
     }
     if(!draft)return;
     if(!draft.text.trim()){toast('Write a comment before placing the stamp.');return;}
-    const stamp = {id:makeId(),page:currentPage,x:position.x,y:position.y,criterion:draft.criterion,tone:draft.tone,topic:draft.topic,text:draft.text.trim(),size:normalSize(draft.size),color:stampColor(draft),libraryId:draft.id,createdAt:now()};
+    const stamp = {id:makeId(),page:currentPage,x:position.x,y:position.y,criterion:draft.criterion,tone:draft.tone,topic:draft.topic,text:draft.text.trim(),size:normalSize(draft.size),noteWidth:normalNoteWidth(draft.noteWidth),color:stampColor(draft),libraryId:draft.id,createdAt:now()};
+    if(pageWidthPt&&pageHeightPt)placeNoteInFreeSpace(stamp,pageStamps(currentPage),pageWidthPt,pageHeightPt);
     state.stamps.push(stamp);selectedStampId=stamp.id;draft=null;
     renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
     toast(`${stamp.criterion} ${stamp.tone} stamp placed on page ${currentPage}.`);
@@ -486,12 +537,10 @@ let pdfRendererLoad = null;
       const page = await pdfDoc.getPage(currentPage);
       if(token!==rendering)return;
       const original = page.getViewport({scale:1});
-      const scrollWidth=$('pdfScroll').clientWidth;
-      const beside=scrollWidth>=555;
-      const railWidth=beside?Math.min(238,Math.max(195,Math.round(scrollWidth*.37))):0;
-      const baseWidth=beside?Math.max(285,scrollWidth-railWidth-66):Math.max(280,scrollWidth-44);
-      const scale = Math.min(1.5,baseWidth/original.width) * zoom;
-      const viewport = page.getViewport({scale});
+      pageWidthPt=original.width;pageHeightPt=original.height;
+      const baseWidth=Math.max(280,$('pdfScroll').clientWidth-60);
+      const scale=Math.min(1.5,baseWidth/original.width)*zoom;
+      const viewport=page.getViewport({scale});
       viewScale=viewport.width/original.width;
       const displayRatio = Math.min(window.devicePixelRatio || 1,2);
       const canvas = $('pdfCanvas');
@@ -499,15 +548,11 @@ let pdfRendererLoad = null;
       canvas.height = Math.floor(viewport.height*displayRatio);
       canvas.style.width = `${viewport.width}px`;
       canvas.style.height = `${viewport.height}px`;
-      const pageShell=$('pageShell'),rail=$('pageNotes');
-      pageShell.dataset.notesLayout=beside?'beside':'below';
-      pageShell.style.width=`${viewport.width+(beside?railWidth+12:0)}px`;
+      const pageShell=$('pageShell');
+      pageShell.style.width=`${viewport.width}px`;
       pageShell.style.height=`${viewport.height}px`;
       $('stampLayer').style.width=`${viewport.width}px`;
       $('stampLayer').style.height=`${viewport.height}px`;
-      rail.style.left=`${beside?viewport.width+12:0}px`;
-      rail.style.top=`${beside?0:viewport.height+14}px`;
-      rail.style.width=`${beside?railWidth:viewport.width}px`;
       const context=canvas.getContext('2d',{alpha:false});
       activeRenderTask = page.render({canvasContext:context,viewport,transform:displayRatio!==1?[displayRatio,0,0,displayRatio,0,0]:null});
       await activeRenderTask.promise;
@@ -650,7 +695,7 @@ let pdfRendererLoad = null;
     if((isReady()||state.stamps.length)&&!confirm('Start a new project? Unsaved project changes will be cleared.'))return;
     state={...state,course:'AA SL',candidate:'',session:'',marks:freshMarks(),justifications:freshJustifications(),stamps:[],pdfName:'',pdfBytes:null};
     rendering++;if(activeRenderTask){try{activeRenderTask.cancel();}catch(_){}}
-    pdfDoc=null;currentPage=1;zoom=1;viewScale=1;draft=null;selectedStampId=null;movingStampId=null;
+    pdfDoc=null;currentPage=1;zoom=1;viewScale=1;pageWidthPt=0;pageHeightPt=0;draft=null;selectedStampId=null;movingStampId=null;
     $('course').value='AA SL';$('candidate').value='';$('session').value='';
     $('emptyViewer').classList.remove('hidden');$('pageShell').classList.add('hidden');
     $('documentMeta').classList.add('hidden');$('uploadTitle').textContent='Upload student IA';$('uploadSubtext').textContent='Drop a PDF here or browse files';
@@ -715,83 +760,43 @@ let pdfRendererLoad = null;
     const button=$('exportAnnotated');button.disabled=true;button.textContent='Preparing PDF...';
     try {
       const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
-      const source=await PDFDocument.load(state.pdfBytes,{ignoreEncryption:false});
-      const output=await PDFDocument.create();
+      // Draw *onto the existing PDF pages*. No widened pages, side rail,
+      // hidden popups or separate continuation notes: the moderator sees
+      // exactly the full evidence comment where the teacher placed it.
+      const output=await PDFDocument.load(state.pdfBytes,{ignoreEncryption:false});
       const font=await output.embedFont(StandardFonts.Helvetica);
       const bold=await output.embedFont(StandardFonts.HelveticaBold);
-      const pages=source.getPages();
-      const embeds=await output.embedPages(pages);
-      const COL=304;const PADDING=14;const ink=rgb(.17,.25,.33),muted=rgb(.45,.53,.60),line=rgb(.83,.88,.90);
-      const overflow=[];
+      const pages=output.getPages();
+      const ink=rgb(.17,.25,.33),muted=rgb(.45,.53,.60),line=rgb(.83,.88,.90);
+      const allProblems=[];
+      const plans=[];
       for(let i=0;i<pages.length;i++){
-        const sourceSize=pages[i].getSize();const w=sourceSize.width,h=sourceSize.height;
-        const p=output.addPage([w+COL,h]);
-        p.drawRectangle({x:0,y:0,width:w+COL,height:h,color:rgb(1,1,1)});
-        p.drawPage(embeds[i],{x:0,y:0,width:w,height:h});
-        p.drawLine({start:{x:w+1,y:0},end:{x:w+1,y:h},thickness:.8,color:line});
-        pdfText(p,`PAGE ${i+1} | ASSESSMENT EVIDENCE`,w+15,h-21,9,bold,muted);
-        p.drawLine({start:{x:w+15,y:h-31},end:{x:w+COL-15,y:h-31},thickness:.5,color:line});
-        const notes=pageStamps(i+1).sort((a,b)=>a.y-b.y);
-        let occupiedTop=41;
-        for(const stamp of notes){
-          const c=pdfColor(stamp);const noteColor=pdfNoteColor(stamp);const label=stampLabel(stamp);const radius=normalSize(stamp.size)/2;
-          const x=Math.min(w-radius-2,Math.max(radius+2,stamp.x*w));const y=Math.min(h-radius-2,Math.max(radius+2,(1-stamp.y)*h));
-          p.drawCircle({x,y,size:radius,color:c,borderWidth:Math.max(1.2,radius*.14),borderColor:rgb(1,1,1)});
-          const letterSize=Math.min(21,Math.max(9,radius*.97));
-          const tW=bold.widthOfTextAtSize(stamp.criterion,letterSize);
-          pdfText(p,stamp.criterion,x-tW/2,y-letterSize*.34,letterSize,bold,pdfTextColor(stamp));
-          const number=label.slice(1),smallRadius=Math.max(4,radius*.47);
-          const nx=x+radius*.82,ny=y-radius*.84;
-          p.drawCircle({x:nx,y:ny,size:smallRadius,color:rgb(1,1,1),borderWidth:.65,borderColor:c});
-          const numberSize=Math.max(5,Math.min(8,smallRadius*.98));
-          pdfText(p,number,nx-bold.widthOfTextAtSize(number,numberSize)/2,ny-numberSize*.32,numberSize,bold,noteColor);
-          // Each full-text note is visibly paired with its own A-E circle.
-          // The text remains in the added margin, not over student mathematics.
-          const rows=pdfWrap(stamp.text,font,9.45,COL-82);
-          const boxHeight=38+rows.length*12;
-          const idealTop=Math.max(42,h-y-32);
-          const top=Math.max(idealTop,occupiedTop);
-          if(top+boxHeight > h-15){overflow.push({stamp,page:i+1});continue;}
-          const bottom=h-top-boxHeight;
-          p.drawRectangle({x:w+13,y:bottom,width:COL-27,height:boxHeight,color:pdfFaint(stamp.tone),borderColor:line,borderWidth:.5});
-          p.drawRectangle({x:w+13,y:bottom,width:3,height:boxHeight,color:c});
-          const noteCircleX=w+35,noteCircleY=bottom+boxHeight-34,noteLetterSize=12;
-          p.drawCircle({x:noteCircleX,y:noteCircleY,size:11,color:c,borderWidth:1.1,borderColor:rgb(1,1,1)});
-          pdfText(p,stamp.criterion,noteCircleX-bold.widthOfTextAtSize(stamp.criterion,noteLetterSize)/2,noteCircleY-noteLetterSize*.34,noteLetterSize,bold,pdfTextColor(stamp));
-          pdfText(p,`${label}  ${stamp.tone==='strength'?'STRENGTH':'LIMITATION'}`,w+58,bottom+boxHeight-16,9,bold,noteColor);
-          rows.forEach((row,idx)=>pdfText(p,row,w+58,bottom+boxHeight-33-idx*12,9.45,font,ink));
-          occupiedTop=top+boxHeight+8;
-        }
-        if(!notes.length)pdfText(p,'No evidence stamps on this page.',w+15,h-54,9.5,font,muted);
-        const pageBottom=`IA Marking Desk | ${sanitizePdfText(state.candidate||'Unidentified assessment')}`;
-        pdfText(p,pageBottom,w+15,9,7.2,font,muted);
+        const {width,height}=pages[i].getSize();
+        const pagePlan=pageLayoutProblems(pageStamps(i+1),width,height,font);
+        plans.push(pagePlan);
+        allProblems.push(...pagePlan.problems);
       }
-      // Crowded margin notes continue with their letter circles and complete
-      // text, including unusually long teacher-written annotations.
-      if(overflow.length){
-        let page=null,y=0;
-        for(const item of overflow){
-          const stamp=item.stamp,label=stampLabel(stamp),rows=pdfWrap(stamp.text,font,10.5,475);
-          let index=0,part=0;
-          while(index<rows.length){
-            if(!page||y<105){
-              page=output.addPage([595,842]);
-              page.drawRectangle({x:0,y:0,width:595,height:842,color:rgb(1,1,1)});
-              pdfText(page,'CONTINUED ASSESSMENT EVIDENCE',35,795,16,bold,ink);
-              y=759;
-            }
-            const linesFit=Math.max(1,Math.floor((y-79)/14));
-            const chunk=rows.slice(index,index+linesFit);
-            const color=pdfColor(stamp),circleY=y-25,letterSize=13;
-            page.drawCircle({x:49,y:circleY,size:13,color,borderColor:rgb(1,1,1),borderWidth:1.2});
-            pdfText(page,stamp.criterion,49-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,circleY-letterSize*.34,letterSize,bold,pdfTextColor(stamp));
-            const heading=`${label} | Original page ${item.page} | ${stamp.tone}${part?' (continued)':''}`;
-            pdfText(page,heading,75,y-13,10.5,bold,pdfNoteColor(stamp));
-            chunk.forEach((row,rowIndex)=>pdfText(page,row,75,y-35-rowIndex*14,10.5,font,ink));
-            y-=45+chunk.length*14;
-            index+=chunk.length;
-            part++;
-          }
+      if(allProblems.length){
+        const message='Cannot export: on-page comment boxes must fit without overlapping. '+allProblems.join('; ')+'. Move them, increase the box width or shorten the comment, then retry.';
+        toast(message);
+        $('annotationNotice').textContent=message;$('annotationNotice').classList.remove('hidden');
+        return;
+      }
+      for(let i=0;i<pages.length;i++){
+        const page=pages[i],{height}=page.getSize();
+        for(const {stamp,layout} of plans[i].items){
+          const color=pdfColor(stamp),label=stampLabel(stamp);
+          const bottom=height-layout.y-layout.height;
+          page.drawRectangle({x:layout.x,y:bottom,width:layout.width,height:layout.height,
+            color:rgb(.985,.992,1),borderColor:color,borderWidth:1.25});
+          page.drawRectangle({x:layout.x,y:bottom,width:3,height:layout.height,color});
+          const radius=layout.circle/2;
+          const cx=layout.x+8+radius,cy=height-layout.y-11-radius;
+          page.drawCircle({x:cx,y:cy,size:radius,color,borderWidth:1.1,borderColor:rgb(1,1,1)});
+          const letterSize=Math.min(layout.circle*.55,18);
+          pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
+          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,8.5,bold,pdfNoteColor(stamp));
+          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.textX,height-layout.y-33-index*NOTE_LINE,NOTE_FONT,font,ink));
         }
       }
       // A clear criterion summary is included as teacher assessment evidence.
@@ -836,7 +841,7 @@ let pdfRendererLoad = null;
       output.setProducer('IA Marking Desk - local browser export');
       const data=await output.save();
       download(new Blob([data],{type:'application/pdf'}),`${saveSafeName()}-annotated.pdf`);
-      toast('Annotated PDF exported. Open it and inspect page layout, comments and anonymity.');
+      toast('Exported with complete comments printed directly on the original IA pages. Check legibility before moderation.');
     }catch(err){console.error(err);toast('PDF export failed. Please save your editable project and check the console.');}
     finally {button.disabled=false;button.innerHTML='Export annotated PDF <span aria-hidden="true">&#8595;</span>';}
   }
@@ -871,6 +876,16 @@ let pdfRendererLoad = null;
     $('zoomOut').addEventListener('click',()=>{zoom=Math.max(.65,Math.round((zoom-.15)*100)/100);renderPage();});
     $('zoomIn').addEventListener('click',()=>{zoom=Math.min(2.2,Math.round((zoom+.15)*100)/100);renderPage();});
     $('stampLayer').addEventListener('click',handlePageClick);
+    $('arrangeNotes').addEventListener('click',()=>{
+      if(!isReady()||!pageWidthPt)return;
+      const notes=pageStamps(currentPage);let updated=0;
+      for(const stamp of notes){
+        const oldX=stamp.x,oldY=stamp.y;
+        placeNoteInFreeSpace(stamp,notes.filter(x=>x.id!==stamp.id),pageWidthPt,pageHeightPt);
+        if(oldX!==stamp.x||oldY!==stamp.y)updated++;
+      }
+      renderStamps();scheduleSave();toast(updated?'Moved on-page comments into available positions. Check legibility before export.':'No clear rearrangement was needed.');
+    });
     $('cancelPlacement').addEventListener('click',()=>{draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();});
     $('commentSearch').addEventListener('input',e=>{search=e.target.value;bankShowAll=false;renderBank();});
     document.querySelectorAll('[data-tone]').forEach(button=>button.addEventListener('click',()=>{tone=button.dataset.tone;bankShowAll=false;renderTone();renderBank();}));
