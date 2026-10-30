@@ -1183,11 +1183,26 @@ let pdfRendererLoad = null;
     $('reviewOpenCriteria').addEventListener('click',()=>{$('reviewDialog').close();openCriteriaDialog();});
     $('closeCriteria').addEventListener('click',()=>$('criteriaDialog').close());
     $('criteriaDone').addEventListener('click',()=>$('criteriaDialog').close());
-    $('criteriaDialog').addEventListener('close',closeCriteriaGuide);
+    $('criteriaJumpBar').querySelectorAll('[data-criteria-jump]').forEach(button=>{
+      button.addEventListener('click',()=>{
+        const card=$('criteriaCard_'+button.dataset.criteriaJump);
+        if(card)card.scrollIntoView({behavior:'smooth',block:'start'});
+      });
+    });
+    $('criteriaOpenGuide').addEventListener('click',()=>{
+      $('criteriaOfficialGuideDetails').open=true;
+      $('criteriaOfficialGuideDetails').scrollIntoView({behavior:'smooth',block:'start'});
+    });
+    $('removeCriteriaGuide').addEventListener('click',closeCriteriaGuide);
+    $('criteriaDialog').addEventListener('close',()=>{
+      closeCriteriaGuide();
+      $('criteriaOfficialGuideDetails').open=false;
+    });
     $('criteriaGuideInput').addEventListener('change',e=>{
       const file=e.target.files?.[0];if(!file)return;
       if(!file.name.toLowerCase().endsWith('.pdf')&&file.type!=='application/pdf'){toast('Choose the authorised official guide as a PDF.');e.target.value='';return;}
       closeCriteriaGuide();guideObjectUrl=URL.createObjectURL(file);
+      $('criteriaOfficialGuideDetails').open=true;
       $('criteriaGuideFrame').src=guideObjectUrl;$('criteriaGuideLocalLink').href=guideObjectUrl;$('criteriaGuidePreview').classList.remove('hidden');
     });
     $('closeReview').addEventListener('click',()=> $('reviewDialog').close());
