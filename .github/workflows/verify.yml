@@ -1,0 +1,46 @@
+name: Verify marking desk and PDF build
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --omit=optional --ignore-scripts --no-audit --no-fund
+      - name: Check comment bank, UI and script syntax
+        run: npm test
+      - name: Build the actual deployable website
+        run: npm run build
+      - name: Confirm PDF libraries are included
+        run: |
+          test -s dist/vendor/pdf.mjs
+          test -s dist/vendor/pdf.worker.mjs
+          test -s dist/vendor/pdf-lib.min.js
+          test -s dist/library.html
+          test -s dist/library.js
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install browser test dependencies
+        run: |
+          python -m pip install --disable-pip-version-check playwright pymupdf
+          python -m playwright install --with-deps chromium
+      - name: Test real PDF upload, annotation and export in Chromium
+        run: python tests/live_pdf_browser.py
+      - name: Upload browser-testable site
+        uses: actions/upload-artifact@v4
+        with:
+          name: ia-marking-verified-site
+          path: dist
+          retention-days: 3

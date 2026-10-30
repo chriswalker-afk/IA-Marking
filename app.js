@@ -1,5 +1,5 @@
-import * as pdfjsLib from './vendor/pdf.mjs';
-window.pdfjsLib = pdfjsLib;
+let pdfjsLib = window.pdfjsLib || null;
+let pdfRendererLoad = null;
 (() => {
   'use strict';
 
@@ -10,6 +10,8 @@ window.pdfjsLib = pdfjsLib;
     D: { name: 'Reflection', max: 3 },
     E: { name: 'Use of mathematics', max: 6 },
   };
+  const GUIDE_LINKS={AA:'https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/mathematics-analysis-approaches-guide.pdf#page=90',AI:'https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-applications-and-interpretation-guide-en.pdf#page=91'};
+  const CRITERIA_GUIDANCE={A:'Coherence, organisation and concision of the exploration.',B:'Appropriate and consistent mathematical communication, notation and representations.',C:'Authentic mathematical choices and independent engagement with the investigation.',D:'The significance and critical depth of reflection on the mathematics.',E:'Relevant, accurate and understood mathematics appropriate for the course. SL and HL descriptors differ.'};
   const CRITERION_KEYS = Object.keys(CRITERIA);
   const BANK = window.IA_COMMENT_BANK || [];
   const STAMP_DEFAULTS = Object.freeze({size:20,strengthColor:'#477b97',limitationColor:'#b7803c'});
@@ -156,6 +158,7 @@ window.pdfjsLib = pdfjsLib;
     state.marks[key] = score;
     updateScores(); scheduleSave();
     if ($('reviewDialog').open) renderReview();
+    if ($('criteriaDialog').open) renderCriteria();
   }
   function updateScores() {
     $('scoreStrip').querySelectorAll('[data-score]').forEach(select => {
@@ -163,7 +166,27 @@ window.pdfjsLib = pdfjsLib;
     });
     const total = totalScore();
     $('totalMark').innerHTML = `${total === null ? '--' : total}<small>/20</small>`;
+    if($('criteriaDialog').open)$('criteriaTotal').textContent=`Total: ${total??'--'} / 20`;
   }
+  let guideObjectUrl=null;
+  function renderCriteria() {
+    const family=state.course.startsWith('AI')?'AI':'AA';
+    $('criteriaGuideLink').href=GUIDE_LINKS[family];
+    $('criteriaGuideLink').textContent='Open full official '+family+' descriptors in the IB guide PDF ↗';
+    $('criteriaCards').innerHTML=CRITERION_KEYS.map(key=>{
+      const criterion=CRITERIA[key];
+      return `<section class="criteria-card"><div class="criteria-card-heading"><span class="mini-circle">${key}</span><div><strong>Criterion ${key}: ${escapeHtml(criterion.name)}</strong><small>Maximum ${criterion.max} marks</small></div><label>Teacher mark<select data-criteria-score="${key}" aria-label="Criterion ${key} mark"><option value="">Not marked</option>${Array.from({length:criterion.max+1},(_,n)=>`<option value="${n}" ${state.marks[key]===n?'selected':''}>${n} / ${criterion.max}</option>`).join('')}</select></label></div><p class="criteria-guidance">${escapeHtml(CRITERIA_GUIDANCE[key])} ${key==='E'?'Currently marking '+escapeHtml(state.course)+'. ':''}This is a summary, not an official level descriptor.</p><label class="criteria-rationale">Assessment rationale<textarea data-criteria-rationale="${key}" rows="2" maxlength="5000" placeholder="Evidence supporting the selected mark...">${escapeHtml(state.justifications[key])}</textarea></label></section>`;
+    }).join('');
+    $('criteriaCards').querySelectorAll('[data-criteria-score]').forEach(select=>select.addEventListener('change',()=>setScore(select.dataset.criteriaScore,select.value)));
+    $('criteriaCards').querySelectorAll('[data-criteria-rationale]').forEach(area=>area.addEventListener('input',e=>{state.justifications[e.target.dataset.criteriaRationale]=e.target.value;scheduleSave();}));
+    $('criteriaTotal').textContent='Total: '+(totalScore()??'--')+' / 20';
+  }
+  function openCriteriaDialog(){renderCriteria();$('criteriaDialog').showModal();}
+  function closeCriteriaGuide(){
+    $('criteriaGuideFrame').removeAttribute('src');$('criteriaGuideLocalLink').removeAttribute('href');$('criteriaGuidePreview').classList.add('hidden');$('criteriaGuideInput').value='';
+    if(guideObjectUrl){URL.revokeObjectURL(guideObjectUrl);guideObjectUrl=null;}
+  }
+
   function renderTabs() {
     $('criterionTabs').innerHTML = ['all',...CRITERION_KEYS].map(key => `<button class="criterion-tab ${tab===key?'active':''}" data-criterion="${key}" type="button" aria-pressed="${tab===key}">${key === 'all' ? 'All' : key}</button>`).join('');
     $('criterionTabs').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {tab = b.dataset.criterion;bankShowAll = false;renderTabs();renderBank();}));
@@ -371,15 +394,36 @@ window.pdfjsLib = pdfjsLib;
     renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
     toast(`${stamp.criterion} ${stamp.tone} stamp placed on page ${currentPage}.`);
   }
+  async function ensurePdfRenderer() {
+    if (pdfjsLib) return pdfjsLib;
+    if (!pdfRendererLoad) {
+      pdfRendererLoad = import('./vendor/pdf.mjs').then(module => {
+        pdfjsLib = module;
+        window.pdfjsLib = module;
+        module.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.mjs';
+        $('pdfLibraryStatus').classList.add('hidden');
+        return module;
+      }).catch(error => {
+        console.error('IA Marking Desk: PDF renderer failed to load from deployed vendor assets.',error);
+        pdfRendererLoad = null;
+        $('pdfLibraryStatus').textContent = 'The PDF viewer is missing from this deployment. The comment library and marking criteria are still available. The site must be published from its compiled GitHub Actions build.';
+        $('pdfLibraryStatus').classList.remove('hidden');
+        return null;
+      });
+    }
+    return pdfRendererLoad;
+  }
+
   async function loadPdf(bytes,name,keepStamps=false) {
-    if(!window.pdfjsLib){toast('PDF renderer unavailable. Check your connection and reload.');return false;}
+    const renderer = await ensurePdfRenderer();
+    if(!renderer) { toast('PDF viewer missing from this deployment. Open the reference library while the site build is corrected.'); return false; }
     const clone = new Uint8Array(bytes);
     try {
-      const loaded = await pdfjsLib.getDocument({
+      const loaded = await renderer.getDocument({
         data:new Uint8Array(clone),isEvalSupported:false,
         cMapUrl:'vendor/cmaps/',cMapPacked:true,standardFontDataUrl:'vendor/standard_fonts/',wasmUrl:'vendor/wasm/'
       }).promise;
-      if(!keepStamps){state.stamps=[];state.marks=freshMarks();state.justifications=freshJustifications();selectedStampId=null;movingStampId=null;draft=null;}
+      if(!keepStamps){const replacingExistingPdf=isReady();state.stamps=[];if(replacingExistingPdf){state.marks=freshMarks();state.justifications=freshJustifications();}selectedStampId=null;movingStampId=null;draft=null;}
       pdfDoc=loaded;state.pdfBytes=clone;state.pdfName=name || 'uploaded-ia.pdf';
       currentPage=1;zoom=1;
       $('emptyViewer').classList.add('hidden');$('pageShell').classList.remove('hidden');
@@ -391,7 +435,7 @@ window.pdfjsLib = pdfjsLib;
       updateScores();renderEditor();renderStamps();setInstruction();
       await renderPage();scheduleSave();
       return true;
-    } catch(e) {console.error(e);toast('Could not open the PDF. It may be password-protected or damaged.');return false;}
+    } catch(e) {console.error(e);const reason=e?.name==='PasswordException'?'This PDF is password protected. Please use an unlocked copy.':e?.name==='InvalidPDFException'?'The file is not recognised as a valid PDF.':'The PDF could not be opened. Please check the file and retry.';$('pdfLibraryStatus').textContent=reason;$('pdfLibraryStatus').classList.remove('hidden');toast(reason);return false;}
   }
   async function renderPage() {
     if(!isReady())return;
@@ -738,7 +782,7 @@ window.pdfjsLib = pdfjsLib;
     });
   }
   function initEvents() {
-    $('course').addEventListener('change',e=>{state.course=e.target.value;renderBank();scheduleSave();});
+    $('course').addEventListener('change',e=>{state.course=e.target.value;renderBank();if($('criteriaDialog').open)renderCriteria();scheduleSave();});
     $('candidate').addEventListener('input',e=>{state.candidate=e.target.value;scheduleSave();});
     $('session').addEventListener('input',e=>{state.session=e.target.value;updateFrameworkNotice();scheduleSave();});
     $('pdfInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(file)handlePdfFile(file);e.target.value='';});
@@ -786,6 +830,17 @@ window.pdfjsLib = pdfjsLib;
       toast('Personal comment saved to this browser and selected.');
     });
     $('openReview').addEventListener('click',()=>{renderReview();$('reviewDialog').showModal();});
+    $('openCriteria').addEventListener('click',openCriteriaDialog);
+    $('reviewOpenCriteria').addEventListener('click',()=>{$('reviewDialog').close();openCriteriaDialog();});
+    $('closeCriteria').addEventListener('click',()=>$('criteriaDialog').close());
+    $('criteriaDone').addEventListener('click',()=>$('criteriaDialog').close());
+    $('criteriaDialog').addEventListener('close',closeCriteriaGuide);
+    $('criteriaGuideInput').addEventListener('change',e=>{
+      const file=e.target.files?.[0];if(!file)return;
+      if(!file.name.toLowerCase().endsWith('.pdf')&&file.type!=='application/pdf'){toast('Choose the authorised official guide as a PDF.');e.target.value='';return;}
+      closeCriteriaGuide();guideObjectUrl=URL.createObjectURL(file);
+      $('criteriaGuideFrame').src=guideObjectUrl;$('criteriaGuideLocalLink').href=guideObjectUrl;$('criteriaGuidePreview').classList.remove('hidden');
+    });
     $('closeReview').addEventListener('click',()=> $('reviewDialog').close());
     $('exportAnnotated').addEventListener('click',exportPdf);
     window.addEventListener('resize',()=>{if(isReady())renderPage();});
@@ -801,15 +856,15 @@ window.pdfjsLib = pdfjsLib;
     if(isReady()&&(state.stamps.length||Object.values(state.marks).some(v=>v!==null))&&!confirm('Replace the source PDF and clear the existing stamps and marks?'))return;
     const bytes=new Uint8Array(await file.arrayBuffer());
     const result=await loadPdf(bytes,file.name);
-    if(result)toast(`${file.name} is ready for evidence stamps.`);
+    if(result){$('pdfLibraryStatus').classList.add('hidden');toast(`${file.name} is ready for evidence stamps.`);}
   }
   function init() {
     try {state.customComments=JSON.parse(localStorage.getItem('ia-marking-desk-comments')||'[]');if(!Array.isArray(state.customComments))state.customComments=[];}catch(e){state.customComments=[];}
     try {const edits=JSON.parse(localStorage.getItem('ia-marking-desk-edits')||'{}');state.commentEdits=edits && !Array.isArray(edits) && typeof edits==='object' ? edits:{};}catch(e){state.commentEdits={};}
     try {state.stampStyle=normalStyle(JSON.parse(localStorage.getItem('ia-marking-desk-stamp-style')||'{}'));}catch(e){state.stampStyle=normalStyle();}
-    if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.mjs';
+    if(pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.mjs';
     initScores();renderStampStyle();renderTabs();renderTone();renderBank();renderEditor();renderStamps();setInstruction();updateFrameworkNotice();initEvents();initDatabase();
-    if(!window.pdfjsLib||!window.PDFLib)console.warn('Local PDF libraries not loaded. Use the GitHub Pages Actions build or run npm run build to create vendor files.');
+    if(!window.PDFLib)console.warn('PDF export library missing from this deployment; evidence reference tools remain available.');
   }
   init();
 })();

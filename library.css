@@ -1,0 +1,38 @@
+body{background:#f2f5f8}
+.reference-header{background:#fff;border-bottom:1px solid #e1e7ed;display:flex;align-items:center;justify-content:space-between;padding:18px clamp(16px,4vw,58px);gap:15px}
+.reference-brand{display:flex;align-items:center;gap:11px}
+.reference-brand strong{font-size:15px;display:block;color:#1e364f}.reference-brand small{font-size:11px;color:#8393a2;display:block;margin-top:2px}
+.reference-mark{width:43px;height:43px;border-radius:12px;background:#233e5c;color:#fff;font-family:Georgia,serif;font-weight:900;display:grid;place-items:center;font-size:14px}
+.reference-main{max-width:1280px;margin:0 auto;padding:clamp(18px,4vw,44px);min-height:85vh}
+.reference-intro{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:0 0 25px}
+.reference-intro h1{font-size:clamp(25px,3vw,36px);letter-spacing:-.045em;margin:9px 0;color:#18314b}
+.reference-intro p{margin:7px 0 0;max-width:720px;line-height:1.6;color:#708297;font-size:13px}
+.reference-stat{display:flex;flex-direction:column;background:#fff;padding:19px 24px;border-radius:12px;border:1px solid #dee7ef;min-width:145px;text-align:center}
+.reference-stat strong{font-size:27px;letter-spacing:-.04em;color:#315473}
+.reference-stat span{font-size:11px;color:#768ba0}
+.reference-controls{display:grid;grid-template-columns:minmax(240px,2.1fr) repeat(3,minmax(120px,1fr));gap:12px;background:#fff;border:1px solid #e0e7ed;padding:17px 18px;border-radius:13px}
+.reference-controls label{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:700;color:#738499}
+.reference-controls input,.reference-controls select{width:100%;height:42px;font-size:12px}
+.reference-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 13px;color:#73899d;font-size:12px}
+.reference-summary>div{display:flex;gap:8px;flex-wrap:wrap}
+.reference-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;align-items:stretch}
+.ref-comment{background:#fff;border:1px solid #dfe8ef;border-radius:12px;padding:17px 18px 15px;display:flex;flex-direction:column;gap:11px}
+.ref-comment-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.ref-comment-head strong{font-size:12px;color:#314a63}
+.ref-comment-head small{margin-left:auto;color:#93a1ae;font-size:10px}
+.ref-comment p{font-size:13px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;flex:1;color:#3c5268}
+.ref-comment-actions{display:flex;flex-wrap:wrap;gap:7px}
+.ref-comment-actions button{background:#f4f8fb;border:1px solid #d5e2ed;border-radius:7px;font-size:11px;font-weight:700;color:#3c6787;padding:8px 10px}
+.ref-comment-actions button:hover{background:#e7f1f8}
+.ref-comment-actions button.ref-delete{color:#9d5457;background:#fff7f6;border-color:#edd4d4}
+.reference-empty{grid-column:1/-1;text-align:center;color:#8294a5;background:#fff;padding:55px 25px;border-radius:12px}
+.reference-note{margin:25px 0;font-size:11px;color:#7d8fa0;line-height:1.6}
+.reference-dialog{width:min(560px,calc(100% - 24px));border:0;border-radius:13px;padding:0;box-shadow:0 22px 70px #102a4370}
+.reference-dialog form{display:flex;flex-direction:column;gap:14px;padding:23px}
+.reference-dialog-head{display:flex;justify-content:space-between;align-items:start}
+.reference-dialog label{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:750;color:#687e91}
+.reference-dialog label input,.reference-dialog label select,.reference-dialog label textarea{width:100%;font-size:12px}
+.reference-dialog p{margin:0;color:#778a9c;line-height:1.5;font-size:11px}
+.reference-dialog-actions{display:flex;justify-content:flex-end;gap:8px}
+@media(max-width:850px){.reference-controls{grid-template-columns:repeat(3,minmax(0,1fr))}.ref-search-label{grid-column:1/-1}}
+@media(max-width:650px){.reference-header{padding:13px 15px}.reference-brand small{font-size:9px}.reference-header .btn{padding:8px 9px;font-size:10px}.reference-intro{align-items:flex-start}.reference-stat{min-width:86px;padding:12px}.reference-stat strong{font-size:21px}.reference-stat span{font-size:9px}.reference-controls{grid-template-columns:1fr 1fr;gap:9px;padding:12px}.reference-controls label:last-child{grid-column:1/-1}.reference-results{grid-template-columns:1fr}.reference-summary{align-items:start;flex-direction:column}.ref-comment{padding:13px}.reference-main{padding:20px 13px}}

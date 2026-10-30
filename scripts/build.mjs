@@ -4,7 +4,7 @@ import { join } from 'node:path';
 const out = 'dist';
 const vendor = join(out, 'vendor');
 mkdirSync(vendor, { recursive: true });
-for (const file of ['index.html', 'app.js', 'comments.js', 'styles.css']) {
+for (const file of ['index.html', 'app.js', 'comments.js', 'styles.css', 'library.html', 'library.css', 'library.js']) {
   copyFileSync(file, join(out, file));
 }
 const deps = [
@@ -21,4 +21,5 @@ for (const directory of ['cmaps','standard_fonts','wasm']) {
   if (existsSync(source)) cpSync(source,join(vendor,directory),{recursive:true});
 }
 writeFileSync(join(out, '.nojekyll'), '');
-console.log('Built self-hosted, static IA Marking Desk in dist/');
+for (const file of ['vendor/pdf.mjs','vendor/pdf.worker.mjs','vendor/pdf-lib.min.js','library.html','library.js']) { if (!existsSync(join(out,file))) throw new Error('Deployment missing required asset: '+file); }
+console.log('Built self-hosted, static IA Marking Desk and independent library in dist/');

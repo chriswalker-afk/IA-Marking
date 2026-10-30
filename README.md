@@ -7,8 +7,8 @@
 - Upload a final IA PDF (rendered within your browser, not uploaded to this repository or a server).
 - Select AA SL, AI SL, AA HL or AI HL; add an anonymous assessment ID and exam session.
 - Place **circular A-E evidence stamps** on pages, with an individually editable strength/limitation observation attached. Choose the default **diameter (14–42 PDF points)** and separate strength/limitation colours, customise any placed or prepared stamp individually, or apply the default appearance to all existing stamps. Drag a stamp or move it to another page; use the side panel to revisit it.
-- Search **294 original assessment-evidence comments** from the supplied 2021–2026 examiner-feedback synthesis (147 strengths, 147 limitations), organised by criterion and searchable topic. Use **Browse the full comment library** to see all comments in one searchable view, copy an individual comment, copy all filtered comments, edit an existing library entry or add your own reusable comments. This works even before uploading an IA.
-- Award A /4, B /4, C /3, D /3 and E /6 manually, and add criterion-level rationales. Neither stamps nor comment counts determine marks.
+- Search **294 original assessment-evidence comments** from the supplied 2021–2026 examiner-feedback synthesis (147 strengths, 147 limitations), organised by criterion and searchable topic. Open the independent **[full comment library](library.html)** (it works even when the PDF renderer is missing) to see all comments in one searchable view, copy an individual comment, copy all filtered comments, edit an existing library entry or add your own reusable comments. This works even before uploading an IA.
+- Open the optional **IB criteria & marks** panel to consult the applicable complete official AA/AI subject-guide PDF, or view an authorised guide copy locally. Award A /4, B /4, C /3, D /3 and E /6 manually, and add criterion-level rationales. Neither stamps nor comment counts determine marks.
 - Export a new annotated PDF with the original student pages retained, evidence notes in a right-side margin, continuation pages for crowded annotations, and a criterion summary.
 - Save a portable `.iamark.json` project (includes the uploaded PDF, stamp appearance, custom comments and edited library wording), or resume your own locally autosaved draft through IndexedDB. Existing version-1 projects continue to open, with defaults applied to older stamps.
 
@@ -39,7 +39,7 @@ python -m http.server 8000 --directory dist
 
 Open `http://localhost:8000` to use the built app. PDF.js 6.4.299 and pdf-lib 1.17.1 are copied from locally installed npm dependencies to `dist/vendor/`. The deployed webpage requests only **self-hosted** scripts. There is no backend, account, external upload or telemetry.
 
-For automatic deployment, go to **Settings > Pages > Build and deployment > Source: GitHub Actions**. On every push to `main`, `.github/workflows/pages.yml` runs the data checks, builds the self-hosted static files, then deploys to GitHub Pages. The expected URL after Pages is enabled is `https://chriswalker-afk.github.io/IA-Marking/`. If Pages has not yet been enabled, the deploy step may fail even though source and tests are fine.
+**Important:** GitHub Pages must publish the compiled Actions build, **not** the raw `main` branch. The raw source does not contain `vendor/pdf.mjs` or its worker, so PDF upload fails (and the older version prevented the library from loading). In GitHub **Settings > Pages > Build and deployment**, set **Source = GitHub Actions**. If you still see the old site, use a hard refresh after the deployment completes. PDF loading now fails with a visible notice rather than breaking all reference tools.\n\nFor automatic deployment, go to **Settings > Pages > Build and deployment > Source: GitHub Actions**. On every push to `main`, `.github/workflows/pages.yml` runs the data checks, builds the self-hosted static files, then deploys to GitHub Pages. The expected URL after Pages is enabled is `https://chriswalker-afk.github.io/IA-Marking/`. If Pages has not yet been enabled, the deploy step may fail even though source and tests are fine.
 
 ## Privacy and boundaries
 
@@ -53,15 +53,15 @@ For automatic deployment, go to **Settings > Pages > Build and deployment > Sour
 
 ## Repository map
 
-- `index.html`, `styles.css` - three-column PDF, evidence bank and score workspace
+- `index.html`, `styles.css` - PDF marking workspace and optional official-criteria reference dialog\n- `library.html`, `library.css`, `library.js` - PDF-independent full searchable, copyable and editable comment library
 - `app.js` - placement, editing, manual marks, local storage, review and PDF export
 - `comments.js` - browser comment library
 - `comments.json` - structured authoring library (includes source page and course tags)
 - `build_bank.py` - source script for generating comment bank
 - `tests/bank.test.mjs` - consistency, coverage and interface contract checks
-- `tests/smoke_browser.py` - optional local Chromium smoke test for library editing/copying, stamp appearance and mocked PDF workflows
+- `tests/smoke_browser.py` - mocked PDF UI smoke test\n- `tests/live_pdf_browser.py` - real Chromium PDF upload, page render, stamp and PDF export test, run by CI
 - `scripts/build.mjs` - copies version-pinned libraries and source into a deployable static `dist/`
-- `.github/workflows/pages.yml` - verify and publish
+- `.github/workflows/pages.yml` - verify and publish from a compiled `dist/` site\n- `.github/workflows/verify.yml` - test PRs and run the real PDF end-to-end browser check
 
 ## Next improvements
 

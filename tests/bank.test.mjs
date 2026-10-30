@@ -35,7 +35,7 @@ test('browser comment bundle matches authoring JSON', () => {
 });
 
 test('application script syntax and dependencies are pinned', () => {
-  for (const filename of ['app.js', 'comments.js']) {
+  for (const filename of ['app.js', 'comments.js', 'library.js']) {
     execFileSync(process.execPath,['--check',filename]);
   }
   const html=readFileSync('index.html','utf8');
@@ -64,4 +64,37 @@ test('stamp appearance and full-library controls are wired into the UI', () => {
   assert.ok(app.includes('state.commentEdits[id]={text:'));
   assert.ok(app.includes('stamp.text=e.target.value'));
   assert.ok(!app.includes('state.stamps.forEach(stamp=>stamp.text'));
+});
+
+test('missing PDF vendor does not prevent the teacher library or criteria from initialising', () => {
+  const app=readFileSync('app.js','utf8');
+  assert.ok(app.includes("import('./vendor/pdf.mjs')"), 'PDF dependency should load lazily');
+  assert.ok(!app.startsWith("import * as pdfjsLib"), 'Top-level import must not block all UI on missing vendor');
+  assert.ok(app.includes('ensurePdfRenderer')&&app.includes('pdfLibraryStatus'));
+  const html=readFileSync('index.html','utf8');
+  for(const id of ['openCriteria','criteriaDialog','criteriaCards','criteriaGuideLink','criteriaGuideInput','criteriaGuideFrame','pdfLibraryStatus']) {
+    assert.ok(html.includes('id="'+id+'"'),id);
+  }
+  assert.ok(html.includes('href="library.html"'));
+  assert.ok(app.includes('GUIDE_LINKS')&&app.includes('data-criteria-score'));
+});
+
+test('standalone teacher library is independent of PDF viewer and allows copying/editing comments', () => {
+  const html=readFileSync('library.html','utf8'),app=readFileSync('library.js','utf8');
+  assert.ok(html.includes('src="comments.js"')&&html.includes('src="library.js"'));
+  assert.ok(!html.includes('vendor/pdf'));
+  assert.ok(!app.includes('pdfjsLib'));
+  for(const id of ['referenceResults','referenceCopyVisible','refSearch','refCriterion','refCourse','refTone','referenceEditDialog']) {
+    assert.ok(html.includes('id="'+id+'"'),id);
+  }
+  for(const key of ['ia-marking-desk-comments','ia-marking-desk-edits','navigator.clipboard','referenceSaveEdit']) {
+    assert.ok(app.includes(key),key);
+  }
+});
+
+test('build includes independent library and checks PDF assets', () => {
+  const script=readFileSync('scripts/build.mjs','utf8');
+  for(const target of ['library.html','library.css','library.js','pdf.mjs','pdf.worker.mjs','pdf-lib.min.js']){
+    assert.ok(script.includes(target),target);
+  }
 });
