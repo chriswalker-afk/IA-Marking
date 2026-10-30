@@ -1,5 +1,6 @@
 import {createUnicodeFonts,normaliseAnnotationText,pdfFontError} from './unicode-fonts.js';
 import {MarkingHistory,sanitizeQuickPicks} from './marking-history.js';
+import {openLocalIAProjectVault,createLocalProjectId} from './project-vault.js';
 import {inspectModerationPages} from './moderation-preflight.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
@@ -97,7 +98,12 @@ let pdfRendererLoad = null;
   let activeRenderTask = null;
   let savingTimer = null;
   let toastTimer = null;
-  let database = null;
+  // Browser-local IA cohort vault. Autosaves are serialized and revisioned;
+  // switching projects waits for a completed write before leaving an IA.
+  let projectVault=null,activeProjectId=null;
+  let projectRevision=0,persistedRevision=0,activeSavedAt=null;
+  let saveChain=Promise.resolve(),projectLoading=false,storageError=null;
+  let cachedProjectSummaries=[];
   let viewScale = 1;
   let pageWidthPt = 0, pageHeightPt = 0;
   let libraryEditingId = null;
