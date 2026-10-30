@@ -4,7 +4,7 @@ import { join } from 'node:path';
 const out = 'dist';
 const vendor = join(out, 'vendor');
 mkdirSync(vendor, { recursive: true });
-for (const file of ['index.html', 'app.js', 'comments.js', 'rubric.js', 'unicode-fonts.js', 'moderation-preflight.js', 'styles.css', 'library.html', 'library.css', 'library.js']) {
+for (const file of ['index.html', 'app.js', 'comments.js', 'rubric.js', 'unicode-fonts.js', 'moderation-preflight.js', 'marking-history.js', 'styles.css', 'library.html', 'library.css', 'library.js']) {
   copyFileSync(file, join(out, file));
 }
 const deps = [
