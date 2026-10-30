@@ -98,3 +98,18 @@ test('build includes independent library and checks PDF assets', () => {
     assert.ok(script.includes(target),target);
   }
 });
+
+test('complete criterion-stamp comments are placed beside the circles, not truncated', () => {
+  const html=readFileSync('index.html','utf8');
+  const app=readFileSync('app.js','utf8');
+  const css=readFileSync('styles.css','utf8');
+  for(const control of ['id="pageNotes"','aria-label="Full comment text beside criterion stamps"']) {
+    assert.ok(html.includes(control),control);
+  }
+  for(const required of ['renderPageNotes(stampsOnPage)','page-note-fulltext','page-note-circle','noteCircleX','pdfWrap(stamp.text,font,9.45,COL-82)']) {
+    assert.ok(app.includes(required),required);
+  }
+  assert.ok(!css.includes('-webkit-line-clamp:2'),'Previously placed sidebar comments must not be cut off');
+  assert.ok(css.includes('white-space:pre-wrap'),'Newlines should remain visible in full teacher comments');
+  assert.ok(css.includes('.page-shell[data-notes-layout="below"]'),'Phone-width callouts should not cover the PDF');
+});
