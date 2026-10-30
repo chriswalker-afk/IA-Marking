@@ -1891,9 +1891,71 @@ let pdfRendererLoad = null;
           const letterSize=Math.min(layout.circle*.55,18);
           pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
           const fullTextColor=pdfHexColor(layout.textColor);
-          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,layout.headerFontSize,bold,fullTextColor);
+          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':isFeedback()?'Action':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,layout.headerFontSize,bold,fullTextColor);
           layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.textX,height-layout.y-33-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
         }
+      }
+      if(isFeedback()){
+        // The original draft pages come first. A checklist is appended in its
+        // own pages, keeping every student calculation and teacher action intact.
+        // No criterion scores or teacher mark rationales enter this PDF.
+        const tasks=studentChecklistItems(state.stamps,state.feedbackCompleted);
+        const strengths=studentFeedbackStrengths(state.stamps);
+        let sheet=null,cursor=0,pageIndex=0;
+        function newFeedbackSheet(){
+          sheet=output.addPage([595,842]);pageIndex++;
+          sheet.drawRectangle({x:0,y:0,width:595,height:842,color:rgb(1,1,1)});
+          pdfText(sheet,'FIRST DRAFT - STUDENT FEEDBACK',37,808,17,bold,ink);
+          pdfText(sheet,'IB Mathematics IA | Teacher feedback, not a final assessment',37,788,9,font,muted);
+          sheet.drawLine({start:{x:37,y:777},end:{x:558,y:777},thickness:.8,color:line});
+          pdfText(sheet,'Revision checklist / page '+pageIndex,37,34,8.5,font,muted);
+          cursor=751;
+        }
+        const ensureHeight=height=>{if(!sheet||cursor-height<55)newFeedbackSheet();};
+        function addHeading(title){
+          ensureHeight(43);
+          pdfText(sheet,title,37,cursor,12,bold,ink);cursor-=24;
+        }
+        function addWrapped(text,x=51,size=10){
+          const rows=pdfWrap(text,font,size,548-x);
+          for(const row of rows){
+            ensureHeight(16);
+            pdfText(sheet,row,x,cursor,size,font,ink);
+            cursor-=15;
+          }
+        }
+        function addEntry(header,text){
+          ensureHeight(30);
+          pdfText(sheet,header,43,cursor,10.3,bold,ink);cursor-=17;
+          addWrapped(text,56,10);
+          cursor-=10;
+        }
+        newFeedbackSheet();
+        addWrapped('Course: '+state.course+'   Assessment ID: '+(state.candidate||'Not entered')+'   Session: '+(state.session||'Not entered'),37,10);
+        cursor-=7;
+        addWrapped('Use these prompts to revise your own mathematical reasoning. Your teacher has not provided replacement solutions or a final mark.',37,9.5);
+        cursor-=16;
+        addHeading('What is working well ('+strengths.length+')');
+        if(!strengths.length)addWrapped('No strengths recorded yet.');
+        strengths.forEach(stamp=>addEntry(stamp.label+' | Page '+stamp.page,stamp.text));
+        cursor-=8;
+        addHeading('Your revision checklist ('+tasks.length+' actions)');
+        if(!tasks.length)addWrapped('No changes have been requested yet.');
+        let previousPriority='';
+        for(const item of tasks){
+          if(previousPriority!==item.priority){
+            previousPriority=item.priority;
+            addHeading(({high:'HIGH PRIORITY',normal:'STANDARD REVISIONS',low:'LOWER PRIORITY - POLISH'})[item.priority]);
+          }
+          const mark=item.completed?'[x]':'[ ]';
+          addEntry(mark+'  '+item.label+' | Page '+item.page+' | '+item.topic,item.text);
+        }
+        cursor-=8;
+        addWrapped('Tick each task as you revise. Check the corresponding stamp on the draft page for context. Make the mathematical decisions and revisions yourself.',37,9.5);
+        output.setTitle('Mathematics IA first draft feedback - '+(state.candidate||'exploration'));
+        output.setSubject('Teacher-annotated first draft with student revision checklist; no marks');
+        output.setProducer('IA Marking Desk - browser-local student feedback');
+        return await output.save();
       }
       // A clear criterion summary is included as teacher assessment evidence.
       let sum=null;
@@ -1953,7 +2015,7 @@ let pdfRendererLoad = null;
         getPageStamps:pageStamps,
         noteLayout,
         pageLayoutProblems,
-        criterionKeys:CRITERION_KEYS,
+        criterionKeys:isFeedback()?[]:CRITERION_KEYS,
         marks:state.marks,
       });
       const errorCount=renderPreflightIssues(issues);
@@ -1988,8 +2050,8 @@ let pdfRendererLoad = null;
       && reviewPreview.visited.size===reviewPreview.pdf?.numPages && $('reviewConfirmed').checked;
     if(!valid){toast('Inspect and approve the exact PDF preview before exporting.');return;}
     // Use exactly the bytes that were inspected - no separate re-rendering.
-    download(new Blob([reviewPreview.bytes],{type:'application/pdf'}),saveSafeName()+'-annotated.pdf');
-    toast('Exported the exact PDF reviewed on every page. Check it once more after downloading.');
+    download(new Blob([reviewPreview.bytes],{type:'application/pdf'}),saveSafeName()+(isFeedback()?'-draft-feedback.pdf':'-annotated.pdf'));
+    toast(isFeedback()?'Exported the annotated draft and complete student revision checklist.':'Exported the exact PDF reviewed on every page. Check it once more after downloading.');
   }
 
   function initStampStyleEvents() {
