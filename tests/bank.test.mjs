@@ -99,17 +99,16 @@ test('build includes independent library and checks PDF assets', () => {
   }
 });
 
-test('complete criterion-stamp comments are placed beside the circles, not truncated', () => {
-  const html=readFileSync('index.html','utf8');
-  const app=readFileSync('app.js','utf8');
-  const css=readFileSync('styles.css','utf8');
-  for(const control of ['id="pageNotes"','aria-label="Full comment text beside criterion stamps"']) {
-    assert.ok(html.includes(control),control);
+test('visible full comments are burned onto original PDF pages, with export collision checks', () => {
+  const html=readFileSync('index.html','utf8'),app=readFileSync('app.js','utf8'),css=readFileSync('styles.css','utf8');
+  for(const id of ['id="stampLayer"','id="annotationNotice"','id="arrangeNotes"'])assert.ok(html.includes(id),id);
+  assert.ok(!html.includes('id="pageNotes"'),'No external sidebar/margin annotations');
+  for(const part of ['function noteLayout(','function pageLayoutProblems(','function placeNoteInFreeSpace(','onpage-note-body','page.drawRectangle({x:layout.x','const output=await PDFDocument.load(state.pdfBytes','if(allProblems.length)']){
+    assert.ok(app.includes(part),part);
   }
-  for(const required of ['renderPageNotes(stampsOnPage)','page-note-fulltext','page-note-circle','noteCircleX','pdfWrap(stamp.text,font,9.45,COL-82)']) {
-    assert.ok(app.includes(required),required);
-  }
-  assert.ok(!css.includes('-webkit-line-clamp:2'),'Previously placed sidebar comments must not be cut off');
-  assert.ok(css.includes('white-space:pre-wrap'),'Newlines should remain visible in full teacher comments');
-  assert.ok(css.includes('.page-shell[data-notes-layout="below"]'),'Phone-width callouts should not cover the PDF');
+  assert.ok(!app.includes('output.addPage([w+COL,h])'),'Source pages must not be widened');
+  assert.ok(!app.includes('CONTINUED ASSESSMENT EVIDENCE'),'Comments must not be relegated to continuation sheets');
+  assert.ok(css.includes('.onpage-stamp{'),'Visible PDF-page text boxes missing');
+  assert.ok(css.includes('white-space:pre-wrap'),'Sidebar comments should be complete');
+  assert.ok(!css.includes('-webkit-line-clamp:2'),'Sidebar comments should never be truncated');
 });
