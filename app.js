@@ -2025,11 +2025,35 @@ let pdfRendererLoad = null;
     });
   }
   async function handlePdfFile(file) {
-    if(!file.name.toLowerCase().endsWith('.pdf')&&!file.type.includes('pdf')){toast('Please select a PDF file.');return;}
-    if(isReady()&&(state.stamps.length||Object.values(state.marks).some(v=>v!==null))&&!confirm('Replace the source PDF and clear the existing stamps and marks?'))return;
+    if(!file.name.toLowerCase().endsWith('.pdf')&&!file.type.includes('pdf')){
+      toast('Please select a PDF file.');return;
+    }
+    const wasOpen=isReady();
+    if(wasOpen&&!confirm('Open this PDF as a new IA? The current assessment will remain saved in My IAs and its marks will not be carried into the new project.'))return;
+    if(wasOpen&&!await preserveActiveProject())return;
     const bytes=new Uint8Array(await file.arrayBuffer());
-    const result=await loadPdf(bytes,file.name);
-    if(result){$('pdfLibraryStatus').classList.add('hidden');toast(`${file.name} is ready for evidence stamps.`);}
+    projectLoading=true;
+    let success=false;
+    try{
+      success=await loadPdf(bytes,file.name);
+      if(!success)return;
+      // Previously entered marks before the FIRST PDF upload are retained.
+      // Replacing a different student's PDF must never inherit their identity.
+      if(wasOpen){
+        state.course='AA SL';state.candidate='';state.session='';
+        $('course').value='AA SL';$('candidate').value='';$('session').value='';
+        updateFrameworkNotice();updateScores();renderBank();
+      }
+      activeProjectId=createLocalProjectId();projectRevision=0;persistedRevision=-1;activeSavedAt=null;
+    }finally{projectLoading=false;}
+    if(success){
+      $('pdfLibraryStatus').classList.add('hidden');
+      scheduleSave();
+      const saved=await storeAutosave();
+      await refreshProjectDashboard();
+      toast(saved?file.name+' is ready and saved as a separate local IA.':
+        file.name+' is ready, but local storage failed. Download a project backup.');
+    }
   }
   function init() {
     try {state.customComments=JSON.parse(localStorage.getItem('ia-marking-desk-comments')||'[]');if(!Array.isArray(state.customComments))state.customComments=[];}catch(e){state.customComments=[];}
