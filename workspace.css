@@ -38,6 +38,8 @@
   line-height:1;
 }
 .pane-close-button:hover {background:#e7f2f8}
+/* The comment panel is dismissible on desktop too; the Document panel collapses into its rail. */
+.bank-pane .pane-close-button {display:inline-flex}
 .document-rail-toggle {
   display:none;
   appearance:none;
