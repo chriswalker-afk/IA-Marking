@@ -12,6 +12,7 @@
     "pdfjs-dist": "6.4.299",
     "@pdf-lib/fontkit": "1.1.1",
     "@expo-google-fonts/noto-sans": "0.4.2",
-    "@expo-google-fonts/noto-sans-math": "0.4.2"
+    "@expo-google-fonts/noto-sans-math": "0.4.2",
+    "jszip": "3.10.1"
   }
 }
