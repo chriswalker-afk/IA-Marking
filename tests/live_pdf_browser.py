@@ -9,6 +9,7 @@ from threading import Thread
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from functools import partial
 import tempfile
+import json
 
 import fitz
 from playwright.sync_api import sync_playwright, expect
@@ -133,6 +134,21 @@ with tempfile.TemporaryDirectory() as folder:
         exported[0].get_pixmap(matrix=fitz.Matrix(1.5,1.5)).save(ROOT/'qa-inline-export.pdf-page.png')
         exported.close()
         page.locator('#closeReview').click()
+
+        # An editable project save/reopen must restore the full visible
+        # comments and their PDF positions, not merely the letters.
+        with page.expect_download(timeout=10000) as project_download:
+            page.locator('#projectSave').click()
+        portable_path=project_download.value.path()
+        portable=json.loads(Path(portable_path).read_text())
+        assert len(portable['stamps'])==2
+        assert revised_text in [stamp['text'] for stamp in portable['stamps']]
+        assert all('x' in stamp and 'y' in stamp and 'noteWidth' in stamp for stamp in portable['stamps'])
+        page.once('dialog',lambda dialog:dialog.accept())
+        page.locator('#newProject').click()
+        page.locator('#projectOpen').set_input_files({'name':'saved.iamark.json','mimeType':'application/json','buffer':json.dumps(portable).encode()})
+        expect(page.locator('.onpage-stamp')).to_have_count(2,timeout=15000)
+        assert revised_text in ' '.join(page.locator('.onpage-stamp').first.inner_text().split())
 
         # On a narrower display the same complete notes remain inside the PDF
         # page instead of being moved beneath it or to an external margin.
