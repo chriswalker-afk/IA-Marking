@@ -416,14 +416,21 @@ with tempfile.TemporaryDirectory() as folder:
         # reversible history step on the real PDF canvas.
         marker=page.locator('.onpage-stamp').first
         initial_bounds=marker.bounding_box()
+        pdf_area=page.locator('#pdfCanvas').bounding_box()
+        # Move inwards rather than insisting on dragging past the PDF edge.
+        dx=(-32 if initial_bounds['x']+initial_bounds['width']/2 >
+                 pdf_area['x']+pdf_area['width']/2 else 32)
+        dy=(-33 if initial_bounds['y']+initial_bounds['height']/2 >
+                 pdf_area['y']+pdf_area['height']/2 else 33)
         start_x=initial_bounds['x']+55
         start_y=initial_bounds['y']+12
         page.mouse.move(start_x,start_y)
         page.mouse.down()
-        page.mouse.move(start_x+24,start_y+29,steps=6)
+        page.mouse.move(start_x+dx,start_y+dy,steps=6)
         page.mouse.up()
         moved_bounds=page.locator('.onpage-stamp').first.bounding_box()
-        assert moved_bounds['x']>initial_bounds['x']+8 and moved_bounds['y']>initial_bounds['y']+8
+        assert abs(moved_bounds['x']-initial_bounds['x'])>8 and abs(moved_bounds['y']-initial_bounds['y'])>8, (
+            f'Stamp did not move inside the PDF: before={initial_bounds}, after={moved_bounds}, drag=({dx},{dy})')
         page.locator('#undoMark').click()
         returned_bounds=page.locator('.onpage-stamp').first.bounding_box()
         assert abs(returned_bounds['x']-initial_bounds['x'])<3 and abs(returned_bounds['y']-initial_bounds['y'])<3
