@@ -153,7 +153,23 @@ with sync_playwright() as playwright:
     page.locator('#commentList [data-edit-comment]').first.click()
     assert page.locator('#libraryDialog[open]').count()==1
     assert page.locator('#libraryEditText').count()==1
+    page.locator('#libraryEditText').fill('This evidence comment was revised in the reusable library after it was stamped.')
+    page.locator('[data-save-library]').click()
     page.locator('#libraryCloseBottom').click()
+    assert page.locator('#stampTextEdit').input_value()=='The student evaluates the reliability of the model.', 'A library edit must not rewrite already placed evidence'
+
+    # Portable projects restore appearance, customised comments and existing stamps.
+    with page.expect_download() as saved_again:
+      page.locator('#projectSave').click()
+    portable=json.loads(Path(saved_again.value.path()).read_text())
+    assert portable['stamps'][0]['size']==32 and portable['stamps'][0]['color']=='#0f966b'
+    page.on('dialog',lambda dialog: dialog.accept())
+    page.locator('#newProject').click()
+    assert page.locator('#allPinCount').inner_text()=='0'
+    page.locator('#projectOpen').set_input_files({'name':'restored.iamark.json','mimeType':'application/json','buffer':json.dumps(portable).encode()})
+    assert page.locator('#allPinCount').inner_text()=='1'
+    assert '#0f966b' in page.locator('.pin').get_attribute('style')
+    assert page.locator('#defaultStampSizeValue').inner_text()=='32 pt'
 
     page.locator('#session').fill('May 2029')
     assert page.locator('#frameworkNotice').get_attribute('class').endswith('warning')
