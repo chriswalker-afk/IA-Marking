@@ -17,6 +17,10 @@
     <div><span class="eyebrow">TEACHER ASSESSMENT EVIDENCE</span><h1>Full stamp comment library</h1><p>Browse, adapt and copy criterion-specific assessment observations. The library works independently of PDF upload or export.</p></div>
     <div class="reference-stat"><strong id="referenceTotal">294</strong><span>original comments</span></div>
   </section>
+  <nav class="reference-mode-nav" aria-label="Feedback library mode">
+    <a href="library.html" id="referenceMarkingMode">Final assessment comments</a>
+    <a href="library.html?mode=feedback" id="referenceFeedbackMode">First draft feedback prompts</a>
+  </nav>
   <div class="reference-controls">
     <label class="ref-search-label">Search evidence comments<input id="refSearch" type="search" placeholder="Search wording, categories or topics..." autocomplete="off"></label>
     <label>Course<select id="refCourse"><option value="all">All courses</option><option>AA SL</option><option>AI SL</option><option>AA HL</option><option>AI HL</option></select></label>
@@ -39,6 +43,6 @@
   </form>
 </dialog>
 <div id="referenceToast" class="toast hidden" role="status" aria-live="polite"></div>
-<script src="comments.js"></script><script src="library.js" defer></script>
+<script src="comments.js"></script><script src="feedback-comments.js"></script><script src="library.js" defer></script>
 </body>
 </html>
