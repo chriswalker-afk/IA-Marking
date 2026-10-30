@@ -317,21 +317,63 @@ let pdfRendererLoad = null;
   }
   function appearanceEditor(item,prefix) {
     const size=normalSize(item.size),color=stampColor(item);
-    return `<div class="individual-stamp-style"><label for="${prefix}Size">Stamp size <output id="${prefix}SizeValue">${size} pt</output><input id="${prefix}Size" type="range" min="14" max="42" step="2" value="${size}"></label><label for="${prefix}Color">Stamp colour <input id="${prefix}Color" type="color" value="${color}"></label><label class="note-width-field" for="${prefix}Width">On-page comment width <output id="${prefix}WidthValue">${normalNoteWidth(item.noteWidth)} pt</output><input id="${prefix}Width" type="range" min="170" max="350" step="10" value="${normalNoteWidth(item.noteWidth)}"></label></div>`;
+    const width=normalNoteWidth(item.noteWidth ?? state.stampStyle.noteWidth);
+    const fontSize=noteFontSize(item);
+    const natural=noteLayout({...item,noteWidth:width,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+    const manualHeight=normalNoteHeight(item.noteHeight);
+    const heightValue=manualHeight??Math.min(750,natural);
+    return `<div class="individual-stamp-style">
+      <span class="comment-style-heading">Criterion circle</span>
+      <label for="${prefix}Size">Circle size <output id="${prefix}SizeValue">${size} pt</output><input id="${prefix}Size" type="range" min="14" max="42" step="2" value="${size}"></label>
+      <label for="${prefix}Color">Circle colour <input id="${prefix}Color" type="color" value="${color}"></label>
+      <span class="comment-style-heading">Full comment formatting</span>
+      <label class="note-dimension-field" for="${prefix}Font">Font size <output id="${prefix}FontValue">${fontSize} pt</output><input id="${prefix}Font" type="range" min="7" max="18" step=".5" value="${fontSize}" aria-label="Font size for the full teacher comment"></label>
+      <div class="note-colours">
+        <label for="${prefix}TextColor">Text colour <input id="${prefix}TextColor" type="color" value="${noteTextColor(item)}"></label>
+        <label for="${prefix}FillColor">Box background <input id="${prefix}FillColor" type="color" value="${noteFillColor(item)}"></label>
+        <label for="${prefix}BorderColor">Box border <input id="${prefix}BorderColor" type="color" value="${noteBorderColor(item)}"></label>
+      </div>
+      <span class="comment-style-heading">Text box dimensions</span>
+      <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="170" max="450" step="5" value="${width}"></label>
+      <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="55" max="750" step="5" value="${heightValue}"></label>
+      <button id="${prefix}HeightAuto" type="button" class="text-button note-fit-button">Fit box height to full comment</button>
+      <small class="note-format-help">Drag the bottom-right handle on a placed comment to resize both dimensions. Export will stop if text is clipped.</small>
+    </div>`;
   }
   function bindAppearanceEditor(item,prefix,existing) {
+    const refresh=()=>{
+      const natural=noteLayout({...item,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+      const height=normalNoteHeight(item.noteHeight);
+      $(`${prefix}HeightValue`).textContent=height===null?`Auto · ${natural} pt`:`${height} pt`;
+      if(height===null)$(`${prefix}Height`).value=String(Math.min(750,natural));
+      if(existing){renderStamps();scheduleSave();}
+    };
     $(`${prefix}Size`).addEventListener('input',e=>{
-      item.size=normalSize(e.target.value);$(`${prefix}SizeValue`).textContent=`${item.size} pt`;
-      if(existing){renderStamps();scheduleSave();}
+      item.size=normalSize(e.target.value);$(`${prefix}SizeValue`).textContent=`${item.size} pt`;refresh();
     });
-    $(`${prefix}Color`).addEventListener('input',e=>{
-      item.color=normalColor(e.target.value,stampColor(item));
-      if(existing){renderStamps();scheduleSave();}
-    });
+    $(`${prefix}Color`).addEventListener('input',e=>{item.color=normalColor(e.target.value,stampColor(item));refresh();});
     $(`${prefix}Width`).addEventListener('input',e=>{
       item.noteWidth=normalNoteWidth(e.target.value);
-      $(`${prefix}WidthValue`).textContent=`${item.noteWidth} pt`;
-      if(existing){renderStamps();scheduleSave();}
+      $(`${prefix}WidthValue`).textContent=`${item.noteWidth} pt`;refresh();
+    });
+    $(`${prefix}Font`).addEventListener('input',e=>{
+      item.fontSize=normalFontSize(e.target.value);
+      $(`${prefix}FontValue`).textContent=`${item.fontSize} pt`;refresh();
+    });
+    for(const [suffix,key,fallback] of [
+      ['TextColor','textColor',noteTextColor],
+      ['FillColor','fillColor',noteFillColor],
+      ['BorderColor','borderColor',noteBorderColor],
+    ]){
+      $(`${prefix}${suffix}`).addEventListener('input',e=>{
+        item[key]=normalColor(e.target.value,fallback(item));refresh();
+      });
+    }
+    $(`${prefix}Height`).addEventListener('input',e=>{
+      item.noteHeight=normalNoteHeight(e.target.value);refresh();
+    });
+    $(`${prefix}HeightAuto`).addEventListener('click',()=>{
+      item.noteHeight=null;refresh();
     });
   }
   function renderEditor() {
