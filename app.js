@@ -1670,7 +1670,48 @@ let pdfRendererLoad = null;
     }
   }
 
+  function renderFeedbackChecklist(){
+    const tasks=studentChecklistItems(state.stamps,state.feedbackCompleted);
+    const strengths=studentFeedbackStrengths(state.stamps);
+    const complete=tasks.filter(item=>item.completed).length;
+    $('feedbackProgress').textContent=complete+' of '+tasks.length+' actions checked';
+    const strengthsHtml=strengths.length
+      ?'<section class="feedback-strengths"><h4>What is working well ('+strengths.length+')</h4>'
+        +strengths.map(item=>'<p><strong>'+escapeHtml(item.label)+' · Page '+item.page+'</strong> '+escapeHtml(item.text)+'</p>').join('')+'</section>'
+      :'<p class="feedback-muted">No strengths have been stamped yet. You can add supportive comments as well as suggested changes.</p>';
+    let lastPriority='';
+    const taskHtml=tasks.map(item=>{
+      const group=item.priority!==lastPriority;
+      lastPriority=item.priority;
+      const label={high:'High priority - address first',normal:'Standard revisions',low:'Lower priority - final polish'}[item.priority];
+      return (group?'<h4 class="feedback-task-group">'+label+'</h4>':'')
+        +'<label class="feedback-task '+(item.completed?'is-complete':'')+'">'
+        +'<input type="checkbox" data-feedback-done="'+escapeHtml(item.id)+'" '+(item.completed?'checked':'')+' aria-label="Mark revision '+escapeHtml(item.label)+' as complete">'
+        +'<span class="feedback-task-body"><span class="feedback-task-meta"><strong>'+escapeHtml(item.label)+'</strong>'
+        +'<span>Criterion '+escapeHtml(item.criterion)+'</span><span>Page '+item.page+'</span><small>'+escapeHtml(item.topic)+'</small></span>'
+        +'<span class="feedback-task-text">'+escapeHtml(item.text)+'</span></span></label>';
+    }).join('');
+    $('feedbackChecklist').innerHTML=strengthsHtml
+      +'<div class="feedback-action-count"><strong>Your revision checklist</strong><span>'+tasks.length+' action'+(tasks.length===1?'':'s')+'</span></div>'
+      +(tasks.length?'<div class="feedback-tasks">'+taskHtml+'</div>':'<p class="feedback-muted">No improvements have been stamped. Select an improvement prompt and place it beside the relevant part of the draft to add a checklist item.</p>');
+  }
+  function feedbackChecklistExportText(){
+    return studentChecklistText({stamps:feedbackStamps(),completed:state.feedbackCompleted,
+      course:state.course,candidate:state.candidate,session:state.session});
+  }
   function renderReview() {
+    if(isFeedback()){
+      const tasks=studentChecklistItems(state.stamps,state.feedbackCompleted);
+      const strengths=studentFeedbackStrengths(state.stamps);
+      const high=tasks.filter(item=>item.priority==='high').length;
+      $('reviewStatus').className='review-status'+(usesNewFramework()?' warning':'');
+      $('reviewStatus').textContent=usesNewFramework()
+        ?'This A-E feedback workflow is not suitable for the revised May 2029 or later framework. Feedback export is disabled for this session.'
+        :strengths.length+' strengths and '+tasks.length+' revision actions placed, including '+high+' high-priority actions. Every action is included in the checklist.';
+      $('reviewScores').innerHTML='';
+      renderFeedbackChecklist();
+      return;
+    }
     const missing = CRITERION_KEYS.filter(k=>state.marks[k]===null);
     const noEvidence = CRITERION_KEYS.filter(k=>!state.stamps.some(s=>s.criterion===k));
     $('reviewStatus').className=`review-status ${missing.length?'warning':''}`;
@@ -2146,6 +2187,22 @@ let pdfRendererLoad = null;
       renderModeratorPreviewPage().catch(console.error);
     });
     $('reviewConfirmed').addEventListener('change',updateReviewGate);
+    $('feedbackChecklist').addEventListener('change',event=>{
+      const checkbox=event.target.closest('[data-feedback-done]');if(!checkbox||!isFeedback())return;
+      if(checkbox.checked)state.feedbackCompleted[checkbox.dataset.feedbackDone]=true;
+      else delete state.feedbackCompleted[checkbox.dataset.feedbackDone];
+      scheduleSave();renderFeedbackChecklist();updateReviewGate();
+    });
+    $('copyFeedbackChecklist').addEventListener('click',()=>copyCommentText(feedbackChecklistExportText()));
+    $('downloadFeedbackChecklist').addEventListener('click',()=>{
+      if(!isFeedback())return;
+      download(new Blob([feedbackChecklistExportText()],{type:'text/plain;charset=utf-8'}),saveSafeName()+'-revision-checklist.txt');
+      toast('Student revision checklist downloaded.');
+    });
+    $('printFeedbackChecklist').addEventListener('click',()=>{
+      if(!isFeedback())return;
+      window.print();
+    });
     $('openCriteria').addEventListener('click',openCriteriaDialog);
     $('reviewOpenCriteria').addEventListener('click',()=>{$('reviewDialog').close();openCriteriaDialog();});
     $('closeCriteria').addEventListener('click',()=>$('criteriaDialog').close());
