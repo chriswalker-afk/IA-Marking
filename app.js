@@ -288,6 +288,106 @@ let pdfRendererLoad = null;
   function activeCustomComments(){return isFeedback()?state.feedbackComments:state.customComments;}
   function activeCommentEdits(){return isFeedback()?state.feedbackEdits:state.commentEdits;}
   function syncStampsForMode(){if(isFeedback())state.feedbackStamps=state.stamps;else state.markingStamps=state.stamps;}
+  // Pass 2: Presentation-only workspace preferences never enter marking projects
+  // or student PDF backups. The PDF annotation coordinates remain unchanged.
+  const WORKSPACE_LAYOUT_KEY='ia-marking-desk-workspace-layout-v2';
+  const mobileWorkspace=()=>window.matchMedia('(max-width: 1000px)').matches;
+  let documentCollapsed=false,commentCollapsed=false,workspaceView='browse';
+  let focusedPdf=false,mobileDrawer=null,layoutOverride=false,wasMobile=null;
+  function readWorkspacePreferences(){
+    try{
+      const saved=JSON.parse(localStorage.getItem(WORKSPACE_LAYOUT_KEY)||'{}');
+      if(typeof saved.documentCollapsed==='boolean'){
+        documentCollapsed=saved.documentCollapsed;layoutOverride=true;
+      }
+      if(typeof saved.commentCollapsed==='boolean')commentCollapsed=saved.commentCollapsed;
+    }catch(error){console.warn('Workspace layout preferences could not be read',error);}
+  }
+  function saveWorkspacePreferences(){
+    try{localStorage.setItem(WORKSPACE_LAYOUT_KEY,JSON.stringify({documentCollapsed,commentCollapsed}));}
+    catch(error){console.warn('Workspace layout preferences could not be stored',error);}
+  }
+  function updateWorkspaceLayout({rerender=true}={}){
+    const small=mobileWorkspace();
+    if(wasMobile!==null&&small!==wasMobile)mobileDrawer=null;
+    wasMobile=small;
+    const workspace=$('workspace');
+    workspace.classList.toggle('document-collapsed',!small&&(documentCollapsed||focusedPdf));
+    workspace.classList.toggle('bank-collapsed',!small&&(commentCollapsed||focusedPdf));
+    workspace.dataset.mobileDrawer=small?(mobileDrawer||''):'';
+    workspace.dataset.bankView=workspaceView;
+    document.body.classList.toggle('pdf-focus',focusedPdf);
+    document.body.classList.toggle('workspace-drawer-open',small&&Boolean(mobileDrawer));
+    $('workspaceBackdrop').hidden=!(small&&mobileDrawer);
+    $('bankBrowseTab').classList.toggle('is-selected',workspaceView==='browse');
+    $('bankEditorTab').classList.toggle('is-selected',workspaceView==='edit');
+    $('bankBrowseTab').setAttribute('aria-selected',String(workspaceView==='browse'));
+    $('bankEditorTab').setAttribute('aria-selected',String(workspaceView==='edit'));
+    $('bankBrowseTab').tabIndex=workspaceView==='browse'?0:-1;
+    $('bankEditorTab').tabIndex=workspaceView==='edit'?0:-1;
+    $('toggleDocumentPane').setAttribute('aria-expanded',String(small?mobileDrawer==='document':!documentCollapsed&&!focusedPdf));
+    $('toggleCommentPane').setAttribute('aria-expanded',String(small?mobileDrawer==='comments'&&workspaceView==='browse':!commentCollapsed&&!focusedPdf&&workspaceView==='browse'));
+    $('toggleEditorPane').setAttribute('aria-expanded',String(small?mobileDrawer==='comments'&&workspaceView==='edit':!commentCollapsed&&!focusedPdf&&workspaceView==='edit'));
+    $('toggleDocumentPane').classList.toggle('is-selected',small?mobileDrawer==='document':!documentCollapsed&&!focusedPdf);
+    $('toggleCommentPane').classList.toggle('is-selected',small?mobileDrawer==='comments'&&workspaceView==='browse':!commentCollapsed&&!focusedPdf&&workspaceView==='browse');
+    $('toggleEditorPane').classList.toggle('is-selected',small?mobileDrawer==='comments'&&workspaceView==='edit':!commentCollapsed&&!focusedPdf&&workspaceView==='edit');
+    $('focusPdf').setAttribute('aria-pressed',String(focusedPdf));
+    $('focusPdf').classList.toggle('is-selected',focusedPdf);
+    $('focusPdf').title=focusedPdf?'Restore the workspace panels':'Expand the PDF and hide side panels';
+    $('focusPdf').querySelector('.focus-label').textContent=focusedPdf?'Exit focus':'Focus PDF';
+    const documentHidden=focusedPdf||(small?mobileDrawer!=='document':false);
+    const bankHidden=focusedPdf||(small?mobileDrawer!=='comments':commentCollapsed);
+    $('documentPane').inert=documentHidden;
+    $('bankPane').inert=bankHidden;
+    $('bankBrowseView').inert=bankHidden||workspaceView!=='browse';
+    $('selectionEditor').inert=bankHidden||workspaceView!=='edit';
+    $('findAnotherComment').inert=bankHidden||workspaceView!=='edit';
+    if(rerender&&isReady())requestAnimationFrame(()=>{if(isReady())void renderPage();});
+  }
+  function closeMobileDrawer({restoreFocus=false}={}){
+    if(!mobileDrawer)return;
+    const wasOpen=mobileDrawer;
+    mobileDrawer=null;
+    updateWorkspaceLayout({rerender:false});
+    if(restoreFocus)$(wasOpen==='document'?'toggleDocumentPane':workspaceView==='edit'?'toggleEditorPane':'toggleCommentPane').focus();
+  }
+  function setWorkspaceView(view,{openOnMobile=false,focusControl=false}={}){
+    if(!['browse','edit'].includes(view))return;
+    workspaceView=view;
+    commentCollapsed=false;focusedPdf=false;
+    if(openOnMobile&&mobileWorkspace())mobileDrawer='comments';
+    updateWorkspaceLayout();
+    if(focusControl){
+      requestAnimationFrame(()=>{
+        const control=view==='browse'?'commentSearch':'stampTextEdit';
+        const target=$(control)||$('draftTextEdit')||$('bankEditorTab');
+        if(!target.inert)target.focus({preventScroll:true});
+      });
+    }
+  }
+  function openDocumentPanel(){
+    focusedPdf=false;
+    if(mobileWorkspace()){mobileDrawer=mobileDrawer==='document'?null:'document';}
+    else{documentCollapsed=!documentCollapsed;layoutOverride=true;saveWorkspacePreferences();}
+    updateWorkspaceLayout();
+  }
+  function openCommentsPanel(view='browse'){
+    focusedPdf=false;workspaceView=view;commentCollapsed=false;
+    if(mobileWorkspace())mobileDrawer='comments';
+    else saveWorkspacePreferences();
+    updateWorkspaceLayout();
+  }
+  function toggleFocusPdf(){
+    focusedPdf=!focusedPdf;
+    if(focusedPdf)mobileDrawer=null;
+    updateWorkspaceLayout();
+  }
+  function hideContextPanel(){
+    if(mobileWorkspace()){closeMobileDrawer({restoreFocus:true});return;}
+    commentCollapsed=true;saveWorkspacePreferences();
+    updateWorkspaceLayout();
+    $('toggleCommentPane').focus();
+  }
   function updateModeUI(){
     document.body.classList.toggle('feedback-mode',isFeedback());
     for(const [id,selected] of [['markingMode',!isFeedback()],['feedbackMode',isFeedback()]]){
@@ -369,6 +469,7 @@ let pdfRendererLoad = null;
     bankShowAll=false;bankQuickFilter='all';libraryEditingId=null;
     $('commentSearch').value='';
     resetHistory();lastPlacedDraft=null;repeatPlacement=false;
+    workspaceView='browse';closeMobileDrawer();updateWorkspaceLayout({rerender:false});
     updateModeUI();renderTabs();renderTone();renderBank();renderEditor();renderStamps();
     renderQuickPicker();updateScores();setInstruction();scheduleSave();
   }
@@ -696,6 +797,7 @@ let pdfRendererLoad = null;
       fillColor:state.stampStyle.fillColor,borderColor:state.stampStyle.borderColor,
       color:item.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor};
     renderEditor();renderBank();renderStamps();setInstruction();
+    setWorkspaceView('edit',{openOnMobile:true,focusControl:true});
     if(!isReady()) toast('Comment selected. Upload a PDF to place the stamp.');
   }
   function prepareFromExistingStamp(stamp){
@@ -710,7 +812,8 @@ let pdfRendererLoad = null;
     };
     selectedStampId=null;movingStampId=null;
     renderEditor();renderBank();renderStamps();setInstruction();
-    if(isReady())$('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});
+    setWorkspaceView('edit',{openOnMobile:true});
+    if(isReady()&&!mobileWorkspace())$('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
   function appearanceEditor(item,prefix) {
     const size=normalSize(item.size),color=stampColor(item);
@@ -838,7 +941,7 @@ let pdfRendererLoad = null;
     bindPriority(draft,false);
     $('placeHint').addEventListener('click',()=>{
       if(!isReady()) $('pdfInput').click();
-      else {$('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});toast('Click beside the evidence on the PDF to place this stamp.');}
+      else {closeMobileDrawer();$('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});toast('Click beside the evidence on the PDF to place this stamp.');}
     });
   }
 
@@ -966,6 +1069,7 @@ let pdfRendererLoad = null;
         const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
         selectedStampId=stamp.id;draft=null;movingStampId=null;
         renderStamps();renderEditor();renderBank();setInstruction();
+        setWorkspaceView('edit',{openOnMobile:true});
       };
       let moved=false,startX=0,startY=0,originX=0,originY=0,dragBefore=null;
       btn.addEventListener('pointerdown',e=>{
@@ -1068,6 +1172,7 @@ let pdfRendererLoad = null;
       selectedStampId=stamp.id;draft=null;movingStampId=null;
       if(currentPage!==stamp.page)navigate(stamp.page);else renderStamps();
       renderEditor();renderBank();setInstruction();
+      setWorkspaceView('edit',{openOnMobile:true});
     }));
   }
   function positionOnPage(event) {
@@ -1112,6 +1217,7 @@ let pdfRendererLoad = null;
     }else{selectedStampId=stamp.id;draft=null;}
     recordHistory('place '+stamp.criterion+' comment',before);
     renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
+    workspaceView='edit';updateWorkspaceLayout({rerender:false});
     recordRecentComment(sourceId);
     toast(`${stamp.criterion} ${isFeedback()&&stamp.tone==='limitation'?'revision action':stamp.tone} stamp placed on page ${currentPage}.`
       +(repeatPlacement?' Repeat is on: click another clear area to stamp again.':''));
@@ -1156,6 +1262,8 @@ let pdfRendererLoad = null;
       $('pageTotal').textContent=String(loaded.numPages);$('pageNumber').max=String(loaded.numPages);
       $('footerDocInfo').textContent=`${loaded.numPages} pages  /  ${state.pdfName}`;
       updateModeUI();updateScores();renderEditor();renderStamps();setInstruction();
+      if(!layoutOverride)documentCollapsed=true;
+      closeMobileDrawer();updateWorkspaceLayout({rerender:false});
       try {await ensureUnicodeMetrics();}
       catch(fontError){
         console.warn('Unicode PDF fonts not available yet:',fontError);
@@ -1551,6 +1659,7 @@ let pdfRendererLoad = null;
     currentPage=1;zoom=1;viewScale=1;pageWidthPt=0;pageHeightPt=0;
     draft=null;selectedStampId=null;movingStampId=null;
     resetHistory();lastPlacedDraft=null;repeatPlacement=false;bankQuickFilter='all';
+    workspaceView='browse';focusedPdf=false;mobileDrawer=null;documentCollapsed=false;commentCollapsed=false;
     mode='marking';activeProjectId=null;projectRevision=0;persistedRevision=0;activeSavedAt=null;
     $('course').value='AA SL';$('candidate').value='';$('session').value='';
     $('emptyViewer').classList.remove('hidden');$('pageShell').classList.add('hidden');
@@ -1562,7 +1671,7 @@ let pdfRendererLoad = null;
     $('pdfInput').value='';$('projectOpen').value='';
     $('pdfLibraryStatus').classList.add('hidden');
     updateModeUI();updateScores();renderTabs();renderBank();
-    renderEditor();renderStamps();renderQuickPicker();setInstruction();
+    renderEditor();renderStamps();renderQuickPicker();setInstruction();updateWorkspaceLayout({rerender:false});
     updateLocalSaveStatus();
   }
   async function resetProject(){
@@ -2125,6 +2234,20 @@ let pdfRendererLoad = null;
     });
   }
   function initEvents() {
+    $('toggleDocumentPane').addEventListener('click',openDocumentPanel);
+    $('documentRailToggle').addEventListener('click',openDocumentPanel);
+    $('closeDocumentPane').addEventListener('click',()=>{
+      if(mobileWorkspace())closeMobileDrawer({restoreFocus:true});
+      else openDocumentPanel();
+    });
+    $('toggleCommentPane').addEventListener('click',()=>openCommentsPanel('browse'));
+    $('toggleEditorPane').addEventListener('click',()=>openCommentsPanel('edit'));
+    $('bankBrowseTab').addEventListener('click',()=>setWorkspaceView('browse',{openOnMobile:true,focusControl:true}));
+    $('bankEditorTab').addEventListener('click',()=>setWorkspaceView('edit',{openOnMobile:true}));
+    $('findAnotherComment').addEventListener('click',()=>setWorkspaceView('browse',{openOnMobile:true,focusControl:true}));
+    $('closeBankPane').addEventListener('click',hideContextPanel);
+    $('workspaceBackdrop').addEventListener('click',()=>closeMobileDrawer({restoreFocus:true}));
+    $('focusPdf').addEventListener('click',toggleFocusPdf);
     $('markingMode').addEventListener('click',()=>switchMode('marking'));
     $('feedbackMode').addEventListener('click',()=>switchMode('feedback'));
     $('openProjects').addEventListener('click',()=>{
@@ -2326,7 +2449,7 @@ let pdfRendererLoad = null;
     });
     $('closeReview').addEventListener('click',()=> $('reviewDialog').close());
     $('exportAnnotated').addEventListener('click',exportPdf);
-    window.addEventListener('resize',()=>{if(isReady())renderPage();});
+    window.addEventListener('resize',()=>{updateWorkspaceLayout({rerender:false});if(isReady())renderPage();});
     // Browser-local IndexedDB is not a substitute for a downloaded backup.
     // Attempt an immediate save on tab hiding; block accidental navigation
     // only while known changes have not been committed successfully.
@@ -2351,6 +2474,8 @@ let pdfRendererLoad = null;
         if(key==='y'){e.preventDefault();redoMarking();return;}
       }
       if(e.key==='Escape'&&!modalOpen){
+        if(mobileDrawer){closeMobileDrawer({restoreFocus:true});return;}
+        if(focusedPdf){focusedPdf=false;updateWorkspaceLayout();return;}
         draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();
       }
       if(inField||modifier||modalOpen)return;
@@ -2397,7 +2522,8 @@ let pdfRendererLoad = null;
     try {state.stampStyle=normalStyle(JSON.parse(localStorage.getItem('ia-marking-desk-stamp-style')||'{}'));}catch(e){state.stampStyle=normalStyle();}
     try{quickPicks=sanitizeQuickPicks(JSON.parse(localStorage.getItem(QUICK_PICKS_KEY)||'{}'));}catch(e){quickPicks=sanitizeQuickPicks({});}
     if(pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.mjs';
-    initScores();renderStampStyle();updateModeUI();renderTabs();renderTone();renderBank();renderEditor();renderStamps();renderQuickPicker();updateHistoryButtons();setInstruction();initEvents();updateLocalSaveStatus();void initDatabase();
+    readWorkspacePreferences();
+    initScores();renderStampStyle();updateModeUI();renderTabs();renderTone();renderBank();renderEditor();renderStamps();renderQuickPicker();updateHistoryButtons();setInstruction();updateWorkspaceLayout({rerender:false});initEvents();updateLocalSaveStatus();void initDatabase();
     if(!window.PDFLib)console.warn('PDF export library missing from this deployment; evidence reference tools remain available.');
   }
   init();
