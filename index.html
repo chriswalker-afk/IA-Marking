@@ -7,6 +7,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' blob:; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-src blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>IA Marking Desk | Mathematics</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="design-polish.css">
 </head>
 <body>
   <div id="app" class="app">
@@ -15,14 +16,14 @@
         <span class="brand-mark">A<span class="brand-dot"></span></span>
         <span><strong>IA Marking Desk</strong><small>Mathematics exploration</small></span>
       </div>
-      <div class="header-center"><span class="teacher-chip"><span class="status-dot"></span>Teacher assessment workspace</span><span class="privacy-note">PDF stays in this browser</span></div>
+      <div class="header-center"><span class="teacher-chip"><span class="status-dot"></span>Private teacher workspace</span><span class="privacy-note">PDF stays in this browser</span></div>
       <div class="header-actions">
         <span id="localSaveState" class="local-save-state" role="status" aria-live="polite">Local storage checking…</span>
         <button id="openProjects" type="button" class="btn subtle project-dashboard-trigger">My IAs <span id="projectCountBadge">0</span></button>
-        <button id="newProject" class="btn subtle" type="button" title="Start a new marking project">New</button>
-        <label for="projectOpen" class="btn subtle file-label" title="Open a previously saved .iamark.json project">Open project</label>
+        <button id="newProject" class="btn subtle" type="button" title="Start a new IA without deleting saved projects">New IA</button>
+        <label for="projectOpen" class="btn subtle file-label" title="Import a previously downloaded editable .iamark.json backup">Import backup</label>
         <input id="projectOpen" type="file" accept=".json,.iamark.json,application/json" class="sr-only">
-        <button id="projectSave" class="btn subtle" type="button" title="Download a portable backup containing the original PDF">Download backup</button>
+        <button id="projectSave" class="btn subtle" type="button" title="Download an editable backup containing the original PDF, stamps and feedback">Back up IA</button>
         <button id="openReview" class="btn primary" type="button">Review &amp; export <span aria-hidden="true">&#8594;</span></button>
       </div>
     </header>
@@ -55,14 +56,14 @@
     <div id="frameworkNotice" class="framework-notice" role="status">A-E assessment framework (final assessment November 2028). The new May 2029 criteria are not supported by this version.</div>
 
     <nav class="reference-bar" aria-label="Teacher reference tools">
-      <a id="referenceLibraryLink" class="btn subtle reference-link" href="library.html">Browse all 294 stamp comments <span aria-hidden="true">↗</span></a>
-      <button class="btn subtle" id="openCriteria" type="button">View IB criteria &amp; assign marks</button>
-      <span class="reference-help">Reference tools work without uploading an IA.</span>
+      <a id="referenceLibraryLink" class="btn subtle reference-link" href="library.html">Browse marking library <span aria-hidden="true">↗</span></a>
+      <button class="btn subtle" id="openCriteria" type="button">Criteria &amp; marks</button>
+      <span class="reference-help">Comments and criteria are available without a PDF.</span>
     </nav>
 
     <main class="workspace">
       <aside class="document-pane" aria-label="Document and annotations">
-        <div class="pane-heading"><div><span class="eyebrow">01 / SOURCE</span><h2>Document</h2></div><span class="pane-help" title="Use a final submitted PDF. Files never leave the browser.">?</span></div>
+        <div class="pane-heading"><div><span class="eyebrow">01 / DOCUMENT</span><h2>Document</h2></div><span id="documentHelp" class="pane-help" title="Choose a student IA PDF. The file stays in this browser.">?</span></div>
         <label for="pdfInput" class="upload-card" id="dropzone">
           <span class="upload-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V3m0 0L7 8m5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg></span>
           <strong id="uploadTitle">Upload student IA</strong>
@@ -75,9 +76,10 @@
         <div id="documentMeta" class="document-meta hidden"><div class="doc-symbol">PDF</div><div class="doc-info"><strong id="documentName"></strong><small id="documentDetails"></small></div><button class="tiny-icon" id="replacePdf" type="button" title="Choose a different PDF">&#8635;</button></div>
         <div class="pane-divider"></div>
         <div class="subhead"><span id="stampSectionLabel">Evidence stamps</span><span class="counter" id="allPinCount">0</span></div>
-        <div class="legend"><span><i class="legend-dot strength"></i>Strength</span><span><i class="legend-dot limitation"></i>Limitation</span></div>
-        <section class="stamp-style-panel" aria-label="Stamp appearance defaults">
-          <div class="stamp-style-header"><strong>Stamp appearance</strong><span class="stamp-preview" aria-hidden="true"><i id="previewStrength">A</i><i id="previewLimitation">D</i></span></div>
+        <div class="legend"><span><i class="legend-dot strength"></i>Strength</span><span><i class="legend-dot limitation"></i><span id="legendLimitationLabel">Limitation</span></span></div>
+        <details id="stampAppearanceDetails" class="stamp-style-panel">
+          <summary class="stamp-style-header"><span class="stamp-style-summary-text"><strong>Stamp appearance</strong><small>Size, colours and text boxes</small></span><span class="stamp-preview" aria-hidden="true"><i id="previewStrength">A</i><i id="previewLimitation">D</i></span></summary>
+          <div class="stamp-style-body">
           <label class="stamp-size-field" for="defaultStampSize">Size <output id="defaultStampSizeValue" for="defaultStampSize">20 pt</output></label>
           <input id="defaultStampSize" type="range" min="14" max="42" step="2" value="20" aria-label="Default stamp diameter in PDF points">
           <div class="stamp-colour-fields"><label>Strength circle <input id="strengthStampColour" type="color" value="#477b97" aria-label="Strength circle colour"></label><label>Limitation circle <input id="limitationStampColour" type="color" value="#b7803c" aria-label="Limitation circle colour"></label></div>
@@ -92,15 +94,16 @@
             <label class="note-dimension-field" for="defaultNoteWidth">New box width <output id="defaultNoteWidthValue">250 pt</output><input id="defaultNoteWidth" type="range" min="170" max="450" step="5" value="250"></label>
           </details>
           <button id="applyStampStyle" class="text-button" type="button">Apply circle, font and colour settings to all placed comments</button>
-          <p>Defaults apply to new comments. Box widths and heights remain individually adjustable; click a placed comment to edit it.</p>
-        </section>
+          <p>Defaults apply to new comments; individual stamps can be resized and edited separately.</p>
+          </div>
+        </details>
         <div class="stamps-list" id="stampsList"><p class="muted centered">Your evidence annotations will appear here.</p></div>
-        <div class="document-footer"><span class="lock-icon">&#9638;</span><span>Local-first. No PDF or comments are uploaded to a server.</span></div>
+        <div class="document-footer"><span class="lock-icon" aria-hidden="true">&#128274;</span><span>Local-first. No PDF or comments are uploaded to a server.</span></div>
       </aside>
 
       <section class="viewer-pane" aria-label="PDF page viewer">
         <div class="viewer-toolbar">
-          <div class="toolbar-left"><span class="eyebrow">02 / ANNOTATE</span><strong>Exploration</strong><button type="button" id="arrangeNotes" class="btn subtle arrange-notes" title="Move overlapping on-page annotations into clear space">Arrange notes</button></div>
+          <div class="toolbar-left"><span class="eyebrow">02 / PDF</span><strong>Exploration</strong><button type="button" id="arrangeNotes" class="btn subtle arrange-notes" title="Move overlapping on-page annotations into clear space">Arrange notes</button></div>
           <div class="toolbar-controls">
             <button type="button" id="prevPage" aria-label="Previous page" class="icon-button">&#8592;</button>
             <span class="page-counter"><input id="pageNumber" type="number" min="1" value="1" aria-label="Page number"> / <span id="pageTotal">--</span></span>
@@ -137,17 +140,17 @@
       </section>
 
       <aside class="bank-pane" aria-label="Criterion evidence comment bank">
-        <div class="pane-heading"><div><span class="eyebrow" id="bankEyebrow">03 / EVIDENCE</span><h2>Stamp library</h2></div><span class="bank-total" id="bankTotal">-- comments</span></div>
+        <div class="pane-heading"><div><span class="eyebrow" id="bankEyebrow">03 / COMMENTS</span><h2>Stamp library</h2></div><span class="bank-total" id="bankTotal">-- comments</span></div>
         <p id="bankIntro" class="bank-intro">Choose a teacher-facing assessment observation. Edit it to reflect the actual evidence before stamping.</p>
         <div class="criterion-tabs" id="criterionTabs" role="group" aria-label="Filter comments by criterion"></div>
-        <div class="bank-filters"><input id="commentSearch" type="search" placeholder="Search comments or topics..." aria-label="Search the comment bank"><div class="tone-toggle" role="group" aria-label="Filter strengths and limitations"><button class="tone-btn active" data-tone="all" type="button">All</button><button class="tone-btn" data-tone="strength" type="button">Strengths</button><button class="tone-btn" data-tone="limitation" type="button">Limitations</button></div></div>
+        <div class="bank-filters"><input id="commentSearch" type="search" placeholder="Search comments or topics..." aria-label="Search the comment bank"><div class="tone-toggle" role="group" aria-label="Filter strengths and improvement areas"><button class="tone-btn active" data-tone="all" type="button">All</button><button class="tone-btn" data-tone="strength" type="button">Strengths</button><button class="tone-btn" id="toneLimitationLabel" data-tone="limitation" type="button">Limitations</button></div></div>
         <div class="bank-quick-heading"><span>Quick access</span><div id="bankQuickTabs" role="group" aria-label="Show all, favourite or recently used comments">
             <button type="button" class="bank-quick-tab is-active" data-bank-quick="all" aria-pressed="true">All</button>
             <button type="button" class="bank-quick-tab" data-bank-quick="favorites" aria-pressed="false">★ Favourites</button>
             <button type="button" class="bank-quick-tab" data-bank-quick="recent" aria-pressed="false">Recent</button>
           </div></div>
         <div class="bank-list-heading"><strong id="bankFilteredCount">Comments</strong><button id="newCustom" class="link-button" type="button">+ Write my own</button></div>
-        <button id="openLibrary" class="library-open-button" type="button"><span>Browse the full comment library</span><span>View, edit &amp; copy all &#8599;</span></button><a class="library-independent-link" href="library.html">Open independent library page (works without PDF) ↗</a>
+        <button id="openLibrary" class="library-open-button" type="button"><span>Full comment library</span><span>Browse, edit and copy &#8599;</span></button><a id="independentLibraryLink" class="library-independent-link" href="library.html">Open library in a separate page ↗</a>
         <div class="comment-list" id="commentList"></div>
         <div class="selection-editor" id="selectionEditor"><div class="selection-empty"><span class="small-ring">A</span><span>Choose a comment to prepare a stamp.</span></div></div>
         <div id="bankCaption" class="bank-caption">Curated from the supplied 2021-2026 examiner-feedback synthesis. These are prompts, not IB descriptors or automatic marks.</div>
@@ -190,7 +193,7 @@
   </dialog>
   <dialog id="evidenceDialog" class="modal evidence-modal" aria-labelledby="evidenceTitle">
     <div class="evidence-modal-header">
-      <div><span class="eyebrow">TEACHER ASSESSMENT EVIDENCE</span><h2 id="evidenceTitle">Criterion evidence navigator</h2><p id="evidenceIntro">See all placed comments grouped by A–E. Select any observation to jump to its page and edit the stamp.</p></div>
+      <div><span class="eyebrow" id="evidenceEyebrow">TEACHER ASSESSMENT EVIDENCE</span><h2 id="evidenceTitle">Criterion evidence navigator</h2><p id="evidenceIntro">See all placed comments grouped by A–E. Select any observation to jump to its page and edit the stamp.</p></div>
       <button id="closeEvidence" class="icon-button" type="button" aria-label="Close evidence navigator">✕</button>
     </div>
     <div class="evidence-modal-summary" id="evidenceSummary" aria-live="polite"></div>
@@ -198,11 +201,11 @@
     <div class="evidence-modal-footer"><span id="evidenceFooterCount">0 annotations</span><button type="button" id="evidenceDone" class="btn primary">Done</button></div>
   </dialog>
   <dialog id="libraryDialog" class="modal library-modal" aria-labelledby="libraryTitle">
-    <div class="library-modal-heading"><div><span class="eyebrow">TEACHER REFERENCE</span><h2 id="libraryTitle">Full comment library</h2><p>Browse every criterion comment, copy it into another document, or save your own wording. Edits are private to this browser.</p></div><button id="closeLibrary" type="button" class="icon-button" aria-label="Close comment library">&#10005;</button></div>
-    <div class="library-modal-filters"><input id="librarySearch" type="search" placeholder="Search topics and comments..." aria-label="Search the full comment library"><select id="libraryCourse" aria-label="Library course"><option value="all">All courses</option><option value="AA SL">AA SL</option><option value="AI SL">AI SL</option><option value="AA HL">AA HL</option><option value="AI HL">AI HL</option></select><select id="libraryCriterion" aria-label="Library criterion"><option value="all">All criteria</option><option value="A">A - Presentation</option><option value="B">B - Communication</option><option value="C">C - Engagement</option><option value="D">D - Reflection</option><option value="E">E - Mathematics</option></select><select id="libraryTone" aria-label="Library evidence type"><option value="all">Strengths &amp; limitations</option><option value="strength">Strengths</option><option value="limitation">Limitations</option></select></div>
+    <div class="library-modal-heading"><div><span class="eyebrow" id="libraryEyebrow">TEACHER REFERENCE</span><h2 id="libraryTitle">Full comment library</h2><p id="libraryIntro">Browse every criterion comment, copy it into another document, or save your own wording. Edits are private to this browser.</p></div><button id="closeLibrary" type="button" class="icon-button" aria-label="Close comment library">&#10005;</button></div>
+    <div class="library-modal-filters"><input id="librarySearch" type="search" placeholder="Search topics and comments..." aria-label="Search the full comment library"><select id="libraryCourse" aria-label="Library course"><option value="all">All courses</option><option value="AA SL">AA SL</option><option value="AI SL">AI SL</option><option value="AA HL">AA HL</option><option value="AI HL">AI HL</option></select><select id="libraryCriterion" aria-label="Library criterion"><option value="all">All criteria</option><option value="A">A - Presentation</option><option value="B">B - Communication</option><option value="C">C - Engagement</option><option value="D">D - Reflection</option><option value="E">E - Mathematics</option></select><select id="libraryTone" aria-label="Library evidence type"><option value="all" id="libraryToneAll">All comment types</option><option value="strength">Strengths</option><option value="limitation" id="libraryToneLimitation">Limitations</option></select></div>
     <div class="library-summary"><span id="libraryCount" aria-live="polite">All comments</span><button id="copyLibraryVisible" type="button" class="btn subtle">Copy visible comments</button></div>
     <div id="libraryResults" class="library-results"></div>
-    <div class="library-modal-footer"><span>Edits to library entries affect future stamps, not evidence already stamped on an IA.</span><button id="libraryCloseBottom" type="button" class="btn subtle">Done</button></div>
+    <div class="library-modal-footer"><span>Library edits affect future stamps, not comments already placed on a PDF.</span><button id="libraryCloseBottom" type="button" class="btn subtle">Done</button></div>
   </dialog>
 
   <dialog id="criteriaDialog" class="modal criteria-modal" aria-labelledby="criteriaTitle">
@@ -252,7 +255,7 @@
   <dialog id="customDialog" class="modal custom-modal" aria-labelledby="customTitle">
     <form method="dialog" id="customForm">
       <div class="modal-heading"><div><span class="eyebrow">PERSONAL COMMENT</span><h2 id="customTitle">Add an evidence comment</h2></div><button class="icon-button" value="cancel" type="submit" aria-label="Close dialog">&#10005;</button></div>
-      <div class="form-grid"><label>Criterion<select id="customCriterion"><option value="A">A - Presentation</option><option value="B">B - Mathematical communication</option><option value="C">C - Personal engagement</option><option value="D">D - Reflection</option><option value="E">E - Use of mathematics</option></select></label><label>Evidence type<select id="customTone"><option value="strength">Strength</option><option value="limitation">Limitation</option></select></label></div>
+      <div class="form-grid"><label>Criterion<select id="customCriterion"><option value="A">A - Presentation</option><option value="B">B - Mathematical communication</option><option value="C">C - Personal engagement</option><option value="D">D - Reflection</option><option value="E">E - Use of mathematics</option></select></label><label>Comment type<select id="customTone"><option value="strength">Strength</option><option id="customToneLimitation" value="limitation">Limitation</option></select></label></div>
       <label>Category<input id="customTopic" type="text" placeholder="e.g. Mathematical modelling" maxlength="90"></label>
       <label>Your comment<textarea id="customText" rows="5" maxlength="1800" placeholder="Describe what the submitted work demonstrates..."></textarea></label>
       <p id="customFormHint" class="form-hint">Phrase this as evidence for a marking decision, rather than instructions to the student. Saved to this browser's personal bank.</p>
