@@ -415,6 +415,7 @@ with tempfile.TemporaryDirectory() as folder:
         # Dragging and resizing existing comments each create a single, fully
         # reversible history step on the real PDF canvas.
         marker=page.locator('.onpage-stamp').first
+        marker.scroll_into_view_if_needed()
         initial_bounds=marker.bounding_box()
         pdf_area=page.locator('#pdfCanvas').bounding_box()
         # Move inwards rather than insisting on dragging past the PDF edge.
@@ -424,30 +425,22 @@ with tempfile.TemporaryDirectory() as folder:
                  pdf_area['y']+pdf_area['height']/2 else 33)
         start_x=initial_bounds['x']+55
         start_y=initial_bounds['y']+12
-        # Temporary diagnostic: track pointer hit targets/capture if a browser
-        # blocks movement in this constrained test environment.
-        page.evaluate("""() => {
-          window.__dragEvents=[];
-          for (const kind of ['pointerdown','pointermove','pointerup','gotpointercapture','lostpointercapture']){
-            document.addEventListener(kind,e=>{
-              if(kind==='pointermove'&&!e.buttons)return;
-              window.__dragEvents.push([kind,e.target.className?.toString().slice(0,80),e.clientX,e.clientY,e.buttons,e.target.closest?.('.onpage-stamp')?.dataset.pinId||null]);
-            },true);
-          }
-        }""")
-        hit_element=page.evaluate("(point)=>document.elementFromPoint(point.x,point.y)?.outerHTML.slice(0,170)",{'x':start_x,'y':start_y})
+        assert page.evaluate(
+            "(point)=>Boolean(document.elementFromPoint(point.x,point.y)?.closest('.onpage-stamp'))",
+            {'x':start_x,'y':start_y}), 'Drag target must be visible inside the PDF viewport.'
         page.mouse.move(start_x,start_y)
         page.mouse.down()
         page.mouse.move(start_x+dx,start_y+dy,steps=6)
         page.mouse.up()
         moved_bounds=page.locator('.onpage-stamp').first.bounding_box()
         assert abs(moved_bounds['x']-initial_bounds['x'])>8 and abs(moved_bounds['y']-initial_bounds['y'])>8, (
-            f'Stamp did not move inside the PDF: before={initial_bounds}, after={moved_bounds}, drag=({dx},{dy}), hit={hit_element}, events={page.evaluate("window.__dragEvents")}')
+            f'Stamp did not move inside the PDF: before={initial_bounds}, after={moved_bounds}, drag=({dx},{dy})')
         page.locator('#undoMark').click()
         returned_bounds=page.locator('.onpage-stamp').first.bounding_box()
         assert abs(returned_bounds['x']-initial_bounds['x'])<3 and abs(returned_bounds['y']-initial_bounds['y'])<3
         page.locator('#redoMark').click()
         marker=page.locator('.onpage-stamp').first
+        marker.scroll_into_view_if_needed()
         resized_from=marker.bounding_box()
         grip=marker.locator('.note-resize-handle').bounding_box()
         page.mouse.move(grip['x']+grip['width']/2,grip['y']+grip['height']/2)
