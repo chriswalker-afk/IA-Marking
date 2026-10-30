@@ -654,6 +654,90 @@ with tempfile.TemporaryDirectory() as folder:
         broken_page.locator('#pdfLibraryStatus:not(.hidden)').wait_for(timeout=10000)
         assert 'missing' in broken_page.locator('#pdfLibraryStatus').inner_text().lower()
         broken.close()
+
+        # First draft feedback is independent of marking, and every placed
+        # improvement action reaches the student checklist AND PDF export.
+        feedback_context=browser.new_context(accept_downloads=True,viewport={'width':1450,'height':930})
+        feedback_page=feedback_context.new_page()
+        feedback_errors=[]
+        feedback_page.on('pageerror',lambda error: feedback_errors.append(str(error)))
+        feedback_page.goto(base_url+'/library.html?mode=feedback')
+        expect(feedback_page.locator('.ref-comment')).to_have_count(133)
+        assert 'Actionable feedback' in feedback_page.locator('h1').inner_text()
+        feedback_page.goto(base_url+'/index.html')
+        feedback_page.locator('#feedbackMode').click()
+        expect(feedback_page.locator('#feedbackMode')).to_have_attribute('aria-pressed','true')
+        assert feedback_page.locator('.score-strip').is_hidden()
+        assert 'draft feedback prompts' in feedback_page.locator('#referenceLibraryLink').inner_text()
+        feedback_page.locator('#pdfInput').set_input_files(str(sample))
+        expect(feedback_page.locator('#pageTotal')).to_have_text('2',timeout=30000)
+        feedback_page.locator('#commentList [data-comment-id="F002"]').click()
+        expect(feedback_page.locator('#feedbackStampPriority')).to_be_visible()
+        feedback_page.locator('#feedbackStampPriority').select_option('high')
+        feedback_page.locator('#draftTextEdit').fill('Review the relationship between your aim and your mathematical question.')
+        feedback_page.locator('#stampLayer').click(position={'x':125,'y':300})
+        expect(feedback_page.locator('#allPinCount')).to_have_text('1')
+        feedback_page.locator('#nextPage').click()
+        expect(feedback_page.locator('#pageNumber')).to_have_value('2')
+        feedback_page.locator('#commentList [data-comment-id="F021"]').click()
+        feedback_page.locator('#draftTextEdit').fill('Check your graph scales and label both quantities with their units.')
+        feedback_page.locator('#stampLayer').click(position={'x':120,'y':320})
+        feedback_page.locator('#commentList [data-comment-id="F001"]').click()
+        feedback_page.locator('#stampLayer').click(position={'x':350,'y':520})
+        expect(feedback_page.locator('#allPinCount')).to_have_text('3')
+
+        feedback_page.locator('#openReview').click()
+        expect(feedback_page.locator('#feedbackChecklist .feedback-task')).to_have_count(2)
+        expect(feedback_page.locator('#feedbackChecklist .feedback-strengths p')).to_have_count(1)
+        assert feedback_page.locator('#reviewScores').inner_text()==''
+        assert '2 revision actions' in feedback_page.locator('#reviewStatus').inner_text()
+        assert 'High priority' in feedback_page.locator('#feedbackChecklist').inner_text()
+        feedback_page.locator('#feedbackChecklist [data-feedback-done]').first.check()
+        expect(feedback_page.locator('#feedbackProgress')).to_have_text('1 of 2 actions checked')
+        with feedback_page.expect_download(timeout=30000) as checklist_download:
+            feedback_page.locator('#downloadFeedbackChecklist').click()
+        checklist_text=Path(checklist_download.value.path()).read_text(encoding='utf-8')
+        assert 'YOUR REVISION CHECKLIST' in checklist_text
+        assert '[x]' in checklist_text and '[ ]' in checklist_text
+        assert 'label both quantities' in checklist_text
+        feedback_page.locator('#buildReviewPreview').click()
+        feedback_page.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=50000)
+        preview_label=feedback_page.locator('#reviewPreviewPage').inner_text()
+        assert preview_label.startswith('Page 1 / '),preview_label
+        preview_total=int(preview_label.split('/')[-1].strip())
+        assert preview_total>=3,'Feedback export must append a checklist to source PDF'
+        for number in range(2,preview_total+1):
+            feedback_page.locator('#reviewPreviewNext').click()
+            expect(feedback_page.locator('#reviewPreviewPage')).to_have_text(
+                f'Page {number} / {preview_total}',timeout=20000)
+        feedback_page.locator('#reviewConfirmed').check()
+        with feedback_page.expect_download(timeout=35000) as draft_download:
+            feedback_page.locator('#exportAnnotated').click()
+        draft_pdf=fitz.open(stream=Path(draft_download.value.path()).read_bytes(),filetype='pdf')
+        assert len(draft_pdf)==preview_total
+        export_text=' '.join(draft_pdf[index].get_text() for index in range(len(draft_pdf)))
+        assert 'STUDENT FEEDBACK' in export_text
+        assert 'YOUR REVISION CHECKLIST' not in export_text or 'revision checklist' in export_text.lower()
+        assert 'Check your graph scales' in export_text
+        assert 'What is working well' in export_text
+        assert 'IA MARKING RECORD' not in export_text
+        assert 'Final total:' not in export_text
+        draft_pdf.close()
+        feedback_page.locator('#closeReview').click()
+        feedback_page.locator('#markingMode').click()
+        expect(feedback_page.locator('#allPinCount')).to_have_text('0')
+        feedback_page.locator('#feedbackMode').click()
+        expect(feedback_page.locator('#allPinCount')).to_have_text('3')
+        with feedback_page.expect_download(timeout=20000) as backup_download:
+            feedback_page.locator('#projectSave').click()
+        backup=json.loads(Path(backup_download.value.path()).read_text())
+        assert backup['activeMode']=='feedback'
+        assert len(backup['stamps'])==0
+        assert len(backup['feedbackStamps'])==3
+        assert sum(backup['feedbackCompleted'].values())==1
+        assert feedback_errors==[],f'First draft feedback browser errors: {feedback_errors}'
+        feedback_context.close()
+
         browser.close()
 server.shutdown()
 print('Real PDF marking/export, Pass 9 local cohort dashboard, portable ZIP, migration, privacy cleanup and recovery: PASS')
