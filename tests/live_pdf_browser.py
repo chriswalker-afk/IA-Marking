@@ -135,7 +135,8 @@ with tempfile.TemporaryDirectory() as folder:
                     'The interpretation relates the findings to the aim and explains '
                     'why an unexpected result is mathematically meaningful.')
         second_text=('The numerical limitation of the model is evaluated and its '
-                     'consequences are explained in the conclusion.')
+                     'consequences are explained in the conclusion. The notation '
+                     'π ≤ √16, σ², ∑, ∫ and x² remains mathematical in the export.')
         page.locator('#commentList [data-comment-id]').first.click()
         page.locator('#draftTextEdit').fill(first_text)
         page.locator('#stampLayer').click(position={'x': 120, 'y': 280})
@@ -221,6 +222,18 @@ with tempfile.TemporaryDirectory() as folder:
         # Export a REAL PDF and inspect both the retained original page geometry
         # and whether the FULL comment is physically within that page.
         page.locator('#openReview').click()
+        assert page.locator('#exportAnnotated').is_disabled(), 'Final export must require a reviewed PDF.'
+        page.locator('#buildReviewPreview').click()
+        page.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=45000)
+        expect(page.locator('#reviewPreviewPage')).to_have_text('Page 1 / 3',timeout=30000)
+        assert page.locator('#reviewConfirmed').is_disabled()
+        # Teacher must inspect the actual original pages AND marking summary.
+        for number in [2,3]:
+            page.locator('#reviewPreviewNext').click()
+            expect(page.locator('#reviewPreviewPage')).to_have_text(f'Page {number} / 3',timeout=20000)
+        assert page.locator('#reviewConfirmed').is_enabled()
+        page.locator('#reviewConfirmed').check()
+        expect(page.locator('#exportAnnotated')).to_be_enabled()
         with page.expect_download(timeout=35000) as download_info:
             page.locator('#exportAnnotated').click()
         exported=fitz.open(download_info.value.path())
@@ -228,7 +241,10 @@ with tempfile.TemporaryDirectory() as folder:
         assert abs(exported[0].rect.width-595)<1 and abs(exported[0].rect.height-842)<1, 'IA pages must retain their original physical dimensions.'
         pdf_text=' '.join(exported[0].get_text().split())
         assert revised_text in pdf_text, 'Complete updated teacher comment missing from original page.'
-        assert second_text in pdf_text, 'Second comment missing from original page.'
+        assert 'The numerical limitation of the model' in pdf_text, 'Second comment missing from original page.'
+        for symbol in ['π','≤','√','σ','²','∑','∫']:
+            assert symbol in pdf_text, f'Mathematical symbol {symbol} missing or replaced in the exported PDF.'
+        assert '?' not in pdf_text, 'Unsupported characters should never silently become question marks.'
         assert 'Example Mathematics IA' in pdf_text, 'Student source page must remain intact.'
         assert 'A1' in pdf_text and 'A2' in pdf_text, 'Criterion labels must print beside comments.'
         # PDF text and graphical fills are examined from the actual exported
