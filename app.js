@@ -510,7 +510,7 @@ let pdfRendererLoad = null;
       const isCustom=item.origin==='Teacher custom comment';
       const isChanged=Boolean(state.commentEdits[item.id]);
       const editing=item.id===libraryEditingId;
-      return `<article class="library-entry" data-library-id="${escapeHtml(item.id)}"><div class="library-entry-header"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><strong>${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</strong><small>${escapeHtml(item.id)}${isCustom?' · Personal':isChanged?' · Edited':''}</small></div>${editing?`<div class="library-edit"><label>Category<input id="libraryEditTopic" maxlength="90" value="${escapeHtml(item.topic)}"></label><label>Comment<textarea id="libraryEditText" maxlength="1800" rows="4">${escapeHtml(item.text)}</textarea></label><div class="library-entry-actions"><button type="button" data-save-library="${escapeHtml(item.id)}" class="btn primary">Save changes</button><button type="button" data-cancel-library>Cancel</button>${isChanged?`<button type="button" data-restore-library="${escapeHtml(item.id)}">Restore original</button>`:''}${isCustom?`<button type="button" data-delete-library="${escapeHtml(item.id)}" class="danger-link">Delete personal comment</button>`:''}</div></div>`:`<p>${escapeHtml(item.text)}</p><div class="library-entry-actions"><button type="button" data-copy-library="${escapeHtml(item.id)}">Copy comment</button><button type="button" data-edit-library="${escapeHtml(item.id)}">Edit wording</button><button type="button" data-use-library="${escapeHtml(item.id)}">Use as stamp</button></div>`}</article>`;
+      return `<article class="library-entry" data-library-id="${escapeHtml(item.id)}"><div class="library-entry-header"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><strong>${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</strong><small>${escapeHtml(item.id)}${isCustom?' · Personal':isChanged?' · Edited':''}</small></div>${editing?`<div class="library-edit"><label>Category<input id="libraryEditTopic" maxlength="90" value="${escapeHtml(item.topic)}"></label><label>Comment<textarea id="libraryEditText" maxlength="1800" rows="4">${escapeHtml(item.text)}</textarea></label><div class="library-entry-actions"><button type="button" data-save-library="${escapeHtml(item.id)}" class="btn primary">Save changes</button><button type="button" data-cancel-library>Cancel</button>${isChanged?`<button type="button" data-restore-library="${escapeHtml(item.id)}">Restore original</button>`:''}${isCustom?`<button type="button" data-delete-library="${escapeHtml(item.id)}" class="danger-link">Delete personal comment</button>`:''}</div></div>`:`<p>${escapeHtml(item.text)}</p><div class="library-entry-actions"><button type="button" data-copy-library="${escapeHtml(item.id)}">Copy comment</button><button type="button" data-edit-library="${escapeHtml(item.id)}">Edit wording</button><button type="button" data-use-library="${escapeHtml(item.id)}">Use as stamp</button><button type="button" data-favourite-library="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}">${quickPicks.favorites.includes(item.id)?'★ Remove favourite':'☆ Add favourite'}</button></div>`}</article>`;
     }).join(''):'<p class="bank-empty">No comments match these filters. Try removing the search terms.</p>';
   }
   function openLibrary(editId=null) {
@@ -545,11 +545,12 @@ let pdfRendererLoad = null;
     libraryEditingId=null;saveLibrarySettings();renderBank();renderFullLibrary();toast('Library comment saved for future use.');
   }
   function handleLibraryAction(event) {
-    const button=event.target.closest('button[data-copy-library],button[data-edit-library],button[data-use-library],button[data-save-library],button[data-cancel-library],button[data-restore-library],button[data-delete-library]');
+    const button=event.target.closest('button[data-copy-library],button[data-edit-library],button[data-use-library],button[data-save-library],button[data-cancel-library],button[data-restore-library],button[data-delete-library],button[data-favourite-library]');
     if(!button)return;
-    const id=button.dataset.copyLibrary||button.dataset.editLibrary||button.dataset.useLibrary||button.dataset.saveLibrary||button.dataset.restoreLibrary||button.dataset.deleteLibrary;
+    const id=button.dataset.copyLibrary||button.dataset.editLibrary||button.dataset.useLibrary||button.dataset.saveLibrary||button.dataset.restoreLibrary||button.dataset.deleteLibrary||button.dataset.favouriteLibrary;
     const item=getComments().find(c=>c.id===id);
     if(button.dataset.copyLibrary && item){copyCommentText(item.text);return;}
+    if(button.hasAttribute('data-favourite-library')){toggleFavourite(id);return;}
     if(button.hasAttribute('data-edit-library')){libraryEditingId=id;renderFullLibrary();$('libraryEditText')?.focus();return;}
     if(button.hasAttribute('data-cancel-library')){libraryEditingId=null;renderFullLibrary();return;}
     if(button.hasAttribute('data-save-library')){saveLibraryEdit(id);return;}
@@ -568,6 +569,7 @@ let pdfRendererLoad = null;
     });
   }
   function prepareComment(id) {
+    finishFieldHistory();
     const item = getComments().find(c=>c.id===id);
     if(!item) return;
     selectedStampId = null; movingStampId = null;
