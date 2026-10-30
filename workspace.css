@@ -224,16 +224,16 @@
   width:100%;
 }
 .find-another-comment:hover {background:#eaf4f8}
-.app.pdf-focus .workspace {
+body.pdf-focus .app .workspace {
   --document-track:0px;
   --comment-track:0px;
   grid-template-columns:minmax(0,1fr);
 }
-.app.pdf-focus .workspace > .document-pane,.app.pdf-focus .workspace > .bank-pane {display:none!important}
-.app.pdf-focus .review-mode-bar,.app.pdf-focus .assessment-bar,
-.app.pdf-focus .reference-bar,.app.pdf-focus #frameworkNotice {display:none}
-.app.pdf-focus .workspace .pdf-scroll {height:clamp(560px, calc(100dvh - 245px), 1400px)}
-.app.pdf-focus .viewer-toolbar {position:sticky;top:0;z-index:5;box-shadow:0 2px 8px #1b405912}
+body.pdf-focus .app .workspace > .document-pane,body.pdf-focus .app .workspace > .bank-pane {display:none!important}
+body.pdf-focus .app .review-mode-bar,body.pdf-focus .app .assessment-bar,
+body.pdf-focus .app .reference-bar,body.pdf-focus .app #frameworkNotice {display:none}
+body.pdf-focus .app .workspace .pdf-scroll {height:clamp(560px, calc(100dvh - 245px), 1400px)}
+body.pdf-focus .app .viewer-toolbar {position:sticky;top:0;z-index:5;box-shadow:0 2px 8px #1b405912}
 /* Maintain a minimum paper width; PDF.js scales the original page as needed. */
 @media(max-width:1390px) and (min-width:1001px){
   .workspace {--document-track:205px;--comment-track:325px}
@@ -322,7 +322,7 @@
   .workspace > .bank-pane .selection-editor {max-height:none}
   .viewer-toolbar {min-height:58px;padding:8px 13px}
   .workspace .pdf-scroll {height:clamp(520px, calc(100dvh - 310px), 1000px);max-height:none}
-  .app.pdf-focus .workspace .pdf-scroll {height:clamp(580px, calc(100dvh - 205px), 1400px)}
+  body.pdf-focus .app .workspace .pdf-scroll {height:clamp(580px, calc(100dvh - 205px), 1400px)}
 }
 @media(max-width:650px){
   .workspace-panel-actions {width:100%;order:0;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
