@@ -241,3 +241,23 @@ h2{margin:4px 0 0;font-weight:750;font-size:18px;letter-spacing:-.035em;color:va
 .page-shell[data-notes-layout="below"] .page-notes{padding-top:3px}
 .page-shell[data-notes-layout="below"] .page-note{position:relative;top:auto!important;margin-bottom:9px}
 .page-shell[data-notes-layout="below"] .page-note-circle{margin-top:10px}
+
+
+/* On-page annotation redesign: full-text boxes are drawn on the student PDF. */
+.pdf-scroll{justify-content:center}
+.page-shell{background:#fff;box-shadow:0 9px 34px #25384d28,0 0 1px #41597533}
+.page-shell canvas{background:#fff;box-shadow:none}
+.stamp-layer{overflow:hidden;touch-action:pan-y}
+.onpage-stamp{display:block;position:absolute;cursor:grab;z-index:2;box-sizing:border-box;background:rgba(251,253,255,.96);border:solid var(--onpage-accent,#477b97);box-shadow:0 1px 5px #112c4440;text-align:left;color:#20384e;line-height:normal;user-select:none;touch-action:none;overflow:hidden}
+.onpage-stamp:hover,.onpage-stamp.active{box-shadow:0 0 0 2px #8db3ca,0 3px 9px #112c4440;z-index:3}
+.onpage-stamp:active{cursor:grabbing}
+.onpage-stamp.note-conflict{box-shadow:0 0 0 2px #c96047,0 1px 9px #c9604755}
+.onpage-circle{display:grid;place-items:center;position:absolute;font-family:Georgia,serif;font-weight:900;border-radius:50%;border:1px solid #fff}
+.onpage-note-header{display:block;position:absolute;font-weight:800;white-space:nowrap;max-width:calc(100% - 43px);overflow:hidden;text-overflow:ellipsis;color:#3d5d78}
+.onpage-note-body{display:block;position:absolute;overflow:visible;color:#263d4f;white-space:nowrap;font-family:Helvetica,Arial,sans-serif;font-weight:400}
+.onpage-note-line{display:block;white-space:pre}
+.annotation-notice{margin:0;padding:8px 16px;background:#fff3e6;border-top:1px solid #efcfaf;color:#9a4d2b;line-height:1.5;font-size:11px}
+.arrange-notes{padding:6px 9px!important;font-size:10px!important;white-space:nowrap}
+.note-width-field{grid-column:1/-1;display:grid!important;grid-template-columns:1fr auto;align-items:center;gap:4px!important}
+.note-width-field input{grid-column:1/-1;accent-color:var(--navy);padding:0}
+@media(max-width:650px){.arrange-notes{font-size:9px!important;padding:5px!important}.toolbar-left{gap:6px}}
