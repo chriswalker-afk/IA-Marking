@@ -292,3 +292,195 @@ h2{margin:4px 0 0;font-weight:750;font-size:18px;letter-spacing:-.035em;color:va
  .individual-stamp-style .note-colours{grid-template-columns:repeat(3,minmax(0,1fr))}
  .note-resize-handle{width:24px;height:24px}
 }
+
+
+/* Complete IA mark-band rubric: full-height on phones, scrollable independent
+   content, sticky navigation/mark summary and source guide access. */
+.criteria-modal{
+  position:fixed;
+  box-sizing:border-box;
+  width:min(960px,calc(100vw - 32px));
+  height:min(940px,calc(100dvh - 32px));
+  max-width:none;max-height:none;
+  margin:auto; padding:0;
+  display:flex;flex-direction:column;overflow:hidden;
+  border-radius:16px;
+}
+.criteria-modal:not([open]){display:none}
+.criteria-modal-header{
+  flex:0 0 auto;
+  padding:15px 22px 12px;
+  border-bottom:1px solid #e1e9ef;
+  gap:14px;align-items:flex-start;
+}
+.criteria-modal-heading{min-width:0;flex:1}
+.criteria-modal-header .eyebrow{font-size:10px;letter-spacing:.1em;color:#7c90a2}
+.criteria-modal-header h2{font-size:21px;line-height:1.22;letter-spacing:-.025em;margin:6px 0;color:#1c3852}
+.criteria-modal-header p{font-size:12px;line-height:1.5;max-width:740px;margin:5px 0 0;color:#667d91}
+.criteria-course-pill{display:inline-flex;vertical-align:middle;padding:3px 7px;background:#ecf3f8;border-radius:6px;color:#37657d;letter-spacing:0;font-size:11px;font-weight:800;white-space:nowrap}
+.criteria-close{flex:0 0 36px;width:36px;height:36px;border-radius:10px;font-size:17px}
+.criteria-jump-bar{
+  flex:0 0 auto;display:grid;grid-template-columns:auto repeat(5,minmax(0,1fr)) auto;
+  align-items:center;gap:8px;padding:8px 22px;
+  background:#f8fafc;border-bottom:1px solid #e1e9ef;
+}
+.criteria-jump-label{font-size:11px;font-weight:700;color:#74899b}
+.criteria-jump-bar button{
+  min-width:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;
+  background:#fff;border:1px solid #d7e2eb;color:#365771;border-radius:8px;
+  padding:5px 8px;min-height:39px;
+}
+.criteria-jump-bar button:hover,.criteria-jump-bar button:focus-visible{background:#edf5fa;border-color:#a7c6d9}
+.criteria-jump-bar button strong{font-size:14px;font-family:Georgia,serif}
+.criteria-jump-bar button small{font-size:9px;color:#718a9d;white-space:nowrap}
+.criteria-jump-bar button.has-mark{border-color:#8fb8cc;background:#edf6fa}
+.criteria-jump-bar button.has-mark small{color:#245c75;font-weight:800}
+.criteria-jump-bar .criteria-guide-jump{font-size:11px;font-weight:750;padding:6px 10px;line-height:1.2;max-width:105px}
+.criteria-modal-body{
+  flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+  padding:15px 22px 22px;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;scrollbar-gutter:stable;
+}
+.criteria-intro{
+  font-size:12px;line-height:1.55;margin:0 0 16px;
+  color:#637a8c;max-width:870px;
+}
+.criteria-intro strong{color:#2c506b}
+.criteria-cards{display:flex;flex-direction:column;gap:15px}
+.criteria-card{scroll-margin-top:12px;padding:18px;border:1px solid #d8e3ec;background:#fff;border-radius:13px}
+.criteria-card-heading{
+  display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:11px;
+  align-items:center;margin-bottom:9px;
+}
+.criteria-card-heading .mini-circle{width:30px;height:30px;font-size:14px;background:#315c7b;color:#fff}
+.criteria-card-title{min-width:0}
+.criteria-card-title strong{display:block;font-size:15px;line-height:1.34;color:#1d3b56}
+.criteria-card-title small{display:block;margin-top:3px;font-size:11px;line-height:1.35;color:#698197}
+.criteria-mark-select{display:flex;flex-direction:column;gap:4px;font-weight:750;font-size:10px;color:#5d758a}
+.criteria-mark-select select{padding:7px 9px;min-width:100px;width:105px;font-size:13px;color:#1e455f;font-weight:800}
+.criteria-focus{font-size:12px;line-height:1.5;color:#556d80;margin:4px 0 11px}
+.criteria-levels{
+  border:1px solid #dee7ed;border-radius:9px;
+  overflow:hidden;
+}
+.criteria-levels-head{
+  display:grid;grid-template-columns:50px minmax(0,1fr) 24px;gap:8px;
+  font-size:10px;text-transform:uppercase;letter-spacing:.075em;
+  color:#71879a;font-weight:800;background:#f0f5f8;
+  padding:9px 11px;
+}
+.criteria-level{
+  display:grid;grid-template-columns:50px minmax(0,1fr) 24px;align-items:center;gap:8px;
+  width:100%;padding:10px 11px;
+  text-align:left;background:#fff;color:#344d62;
+  border:0;border-bottom:1px solid #e8eef2;border-radius:0;
+  font-size:12.5px;line-height:1.5;
+}
+.criteria-level:last-child{border-bottom:0}
+.criteria-level:hover,.criteria-level:focus-visible{background:#eff6fb}
+.criteria-level.is-awarded{background:#e8f3f9;box-shadow:inset 3px 0 #3b7697;color:#1b3d56}
+.criteria-level-mark{
+  width:35px;height:31px;border:1px solid #d0dee8;border-radius:7px;
+  display:grid;place-items:center;
+  font-size:15px;font-weight:800;color:#254c66;background:#f8fbfd;
+}
+.criteria-level.is-awarded .criteria-level-mark{background:#285b7b;color:#fff;border-color:#285b7b}
+.criteria-level-copy{min-width:0;overflow-wrap:anywhere}
+.criteria-level-check{font-size:16px;font-weight:850;color:#2f769b;opacity:0;text-align:center}
+.criteria-level.is-awarded .criteria-level-check{opacity:1}
+.criteria-considerations{margin:12px 0 13px;border:1px solid #e0e8ee;border-radius:8px;background:#fafcfd}
+.criteria-considerations summary{padding:10px 12px;cursor:pointer;color:#37607d;font-size:11px;font-weight:800}
+.criteria-considerations ul{padding:0 16px 10px 28px;margin:0;color:#536f82;font-size:12px;line-height:1.6}
+.criteria-considerations li{margin:5px 0}
+.criteria-rationale{
+  display:flex;flex-direction:column;gap:6px;
+  font-weight:750;font-size:11px;color:#49677f;
+}
+.criteria-rationale textarea{
+  width:100%;min-height:67px;resize:vertical;line-height:1.55;
+  font-size:13px;padding:10px 12px;border:1px solid #cad9e4;background:#fbfdff;
+}
+.criteria-official-details{scroll-margin-top:12px;margin-top:18px;background:#f6fafc;border:1px solid #cfdeea;border-radius:11px;overflow:hidden}
+.criteria-official-details>summary{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 15px;cursor:pointer;color:#255577;
+  font-size:12px;line-height:1.3;list-style:none;
+}
+.criteria-official-details>summary::after{content:"⌄";font-size:17px;font-weight:800}
+.criteria-official-details[open]>summary::after{content:"⌃"}
+.criteria-official-details>summary::-webkit-details-marker{display:none}
+.criteria-official-details>summary span{font-size:10px;font-weight:600;color:#7d94a6}
+.criteria-official-details .criteria-source{
+  padding:14px 15px;display:flex;flex-direction:column;align-items:stretch;gap:10px;
+  background:white;border:0;border-top:1px solid #dce7ee;border-radius:0;margin:0;
+}
+.criteria-official-details .criteria-source p{font-size:12px;line-height:1.6;margin:0}
+.criteria-official-details .criteria-source .btn{align-self:flex-start;max-width:100%}
+.criteria-upload-label{font-size:11px;line-height:1.5;padding-top:10px}
+.criteria-guide-preview{width:100%}
+.criteria-guide-preview iframe{width:100%;height:min(55dvh,640px)}
+.criteria-disclaimer{line-height:1.6;font-size:11px;margin:17px 0 0;color:#73889b}
+.criteria-error{color:#9e4844}
+.criteria-modal-footer{
+  flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;
+  gap:10px;padding:10px 22px;min-height:63px;
+  background:#fff;border-top:1px solid #dae5ed;
+}
+.criteria-footer-score{display:flex;flex-direction:column;gap:3px}
+.criteria-footer-score strong{font-size:16px;line-height:1.2;color:#234660;font-variant-numeric:tabular-nums}
+.criteria-footer-score small{font-size:10px;color:#758b9c}
+.criteria-modal-footer .btn{min-height:39px;min-width:100px;font-size:13px}
+@media(max-width:720px){
+  .criteria-modal{
+    position:fixed;inset:0!important;margin:0!important;
+    border-radius:0!important;width:100vw!important;max-width:none!important;
+    height:100dvh!important;max-height:100dvh!important;
+    padding:0!important;overflow:hidden;
+  }
+  .criteria-modal-header{
+    padding:calc(11px + env(safe-area-inset-top,0px)) 13px 10px;
+    gap:9px;align-items:flex-start;
+  }
+  .criteria-modal-header .eyebrow{font-size:9px;letter-spacing:.07em}
+  .criteria-modal-header h2{font-size:19px;margin:5px 0 0}
+  .criteria-modal-header p{font-size:11px;line-height:1.4;margin:5px 0 0}
+  .criteria-close{flex-basis:32px;width:32px;height:32px}
+  .criteria-jump-bar{
+    grid-template-columns:repeat(5,minmax(0,1fr)) minmax(60px,1.35fr);
+    gap:5px;padding:7px 9px;
+  }
+  .criteria-jump-label{display:none}
+  .criteria-jump-bar button{padding:4px 3px;min-height:42px;border-radius:7px}
+  .criteria-jump-bar button strong{font-size:15px}
+  .criteria-jump-bar button small{font-size:9px}
+  .criteria-jump-bar .criteria-guide-jump{font-size:10px;font-weight:750;padding:4px;max-width:none}
+  .criteria-modal-body{padding:12px 11px 18px;scrollbar-gutter:auto}
+  .criteria-intro{font-size:11.5px;line-height:1.48;margin-bottom:12px}
+  .criteria-cards{gap:11px}
+  .criteria-card{padding:11px;border-radius:10px}
+  .criteria-card-heading{grid-template-columns:29px minmax(0,1fr) auto;gap:7px;margin-bottom:9px}
+  .criteria-card-heading .mini-circle{width:27px;height:27px;font-size:13px}
+  .criteria-card-title strong{font-size:13.5px}
+  .criteria-card-title small{font-size:10px}
+  .criteria-mark-select{font-size:9px}
+  .criteria-mark-select select{min-width:89px;width:90px;font-size:12px;padding:7px 5px}
+  .criteria-focus{font-size:11.5px;margin:6px 0 9px}
+  .criteria-levels-head{grid-template-columns:31px minmax(0,1fr) 17px;gap:5px;padding:8px;font-size:9px}
+  .criteria-level{grid-template-columns:31px minmax(0,1fr) 17px;gap:6px;padding:10px 8px;font-size:12px;line-height:1.45}
+  .criteria-level-mark{width:29px;height:31px;font-size:13px}
+  .criteria-level-check{font-size:14px}
+  .criteria-rationale textarea{font-size:12px;min-height:60px}
+  .criteria-official-details>summary{flex-wrap:wrap;gap:3px;padding:12px}
+  .criteria-official-details>summary span{width:100%}
+  .criteria-guide-preview iframe{height:min(52dvh,520px)}
+  .criteria-modal-footer{
+    padding:9px 13px calc(10px + env(safe-area-inset-bottom,0px));
+    min-height:59px;
+  }
+  .criteria-footer-score strong{font-size:15px}
+  .criteria-modal-footer .btn{min-height:38px;min-width:95px}
+}
+@media(max-height:650px){
+  .criteria-modal-header p{display:none}
+  .criteria-modal-header{padding-top:9px;padding-bottom:8px}
+}

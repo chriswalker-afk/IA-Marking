@@ -139,24 +139,46 @@
 
   <dialog id="criteriaDialog" class="modal criteria-modal" aria-labelledby="criteriaTitle">
     <div class="criteria-modal-header">
-      <div><span class="eyebrow">OFFICIAL CRITERIA REFERENCE / TEACHER MARKING</span><h2 id="criteriaTitle">IB Mathematics IA criteria</h2><p>Choose a mark for each criterion. Open the full official descriptors in the relevant IB subject guide; the brief guidance shown here is not an official rubric.</p></div>
-      <button id="closeCriteria" class="icon-button" type="button" aria-label="Close criteria">✕</button>
-    </div>
-    <div class="criteria-modal-body">
-      <div class="criteria-source">
-        <div><strong>Full official assessment descriptors</strong><p>Use the IB guide for your selected course and assessment session. Criterion E differs between standard and higher level.</p></div>
-        <a id="criteriaGuideLink" class="btn primary" href="https://www.ibo.org/" rel="noopener noreferrer" target="_blank">Open official IB guide PDF ↗</a>
-        <label class="criteria-upload-label">Or view your authorised guide PDF here: <input id="criteriaGuideInput" type="file" accept=".pdf,application/pdf"></label>
-        <div id="criteriaGuidePreview" class="criteria-guide-preview hidden">
-          <a id="criteriaGuideLocalLink" rel="noopener noreferrer" target="_blank">Open uploaded guide in a separate tab</a>
-          <iframe id="criteriaGuideFrame" title="Teacher's locally uploaded official assessment guide" loading="lazy"></iframe>
-          <button id="removeCriteriaGuide" type="button" class="btn subtle">Close PDF preview</button>
-        </div>
+      <div class="criteria-modal-heading">
+        <span class="eyebrow">TEACHER MARKING REFERENCE · A–E / 20</span>
+        <h2 id="criteriaTitle">IB Mathematics IA criteria <span id="criteriaCoursePill" class="criteria-course-pill">AA SL</span></h2>
+        <p>Every achievement level is shown below. Tap a level to award its mark and record your reasoning.</p>
       </div>
-      <div id="criteriaCards" class="criteria-cards" aria-live="polite"></div>
-      <p class="criteria-disclaimer">Marks are teacher-assigned, not calculated from the number of annotations. The criteria references are for assessment through November 2028; consult the revised 2029 guide for later sessions.</p>
+      <button id="closeCriteria" class="icon-button criteria-close" type="button" aria-label="Close criteria">✕</button>
     </div>
-    <div class="criteria-modal-footer"><span id="criteriaTotal">Total: -- / 20</span><button type="button" id="criteriaDone" class="btn primary">Done</button></div>
+    <nav id="criteriaJumpBar" class="criteria-jump-bar" aria-label="Jump to an assessment criterion">
+      <span class="criteria-jump-label">Criterion</span>
+      <button type="button" data-criteria-jump="A" aria-label="Jump to criterion A"><strong>A</strong><small data-jump-mark="A">— / 4</small></button>
+      <button type="button" data-criteria-jump="B" aria-label="Jump to criterion B"><strong>B</strong><small data-jump-mark="B">— / 4</small></button>
+      <button type="button" data-criteria-jump="C" aria-label="Jump to criterion C"><strong>C</strong><small data-jump-mark="C">— / 3</small></button>
+      <button type="button" data-criteria-jump="D" aria-label="Jump to criterion D"><strong>D</strong><small data-jump-mark="D">— / 3</small></button>
+      <button type="button" data-criteria-jump="E" aria-label="Jump to criterion E"><strong>E</strong><small data-jump-mark="E">— / 6</small></button>
+      <button type="button" id="criteriaOpenGuide" class="criteria-guide-jump">Official guide</button>
+    </nav>
+    <div class="criteria-modal-body" id="criteriaScrollArea" tabindex="0">
+      <p class="criteria-intro" role="note"><strong>Complete mark-band reference for A–E.</strong> These are independently worded summaries of the 2021–2028 rubric, <em>not</em> the IB's exact licensed achievement descriptors. Use the official guide below for authoritative wording and best-fit decisions.</p>
+      <div id="criteriaCards" class="criteria-cards" aria-live="polite"></div>
+      <details id="criteriaOfficialGuideDetails" class="criteria-official-details">
+        <summary><strong>Original official IB achievement descriptors</strong><span>Read or view the subject guide PDF</span></summary>
+        <div class="criteria-source">
+          <p>The complete original descriptor wording is available in the subject guide for <strong id="criteriaSourceCourse">AA SL</strong>. Criterion E differs for SL and HL. The guide is not copied into this site.</p>
+          <a id="criteriaGuideLink" class="btn primary" href="https://www.ibo.org/" rel="noopener noreferrer" target="_blank">Open official IB guide PDF</a>
+          <label class="criteria-upload-label">To read your school's authorised guide <strong>inside this window</strong>, select its PDF:
+            <input id="criteriaGuideInput" type="file" accept=".pdf,application/pdf">
+          </label>
+          <div id="criteriaGuidePreview" class="criteria-guide-preview hidden">
+            <a id="criteriaGuideLocalLink" rel="noopener noreferrer" target="_blank">Open uploaded guide in a separate tab</a>
+            <iframe id="criteriaGuideFrame" title="Teacher's locally uploaded official assessment guide" loading="lazy"></iframe>
+            <button id="removeCriteriaGuide" type="button" class="btn subtle">Close PDF preview</button>
+          </div>
+        </div>
+      </details>
+      <p class="criteria-disclaimer">Teacher-assigned marks only: the number of stamps does not calculate a grade. This marking framework applies through November 2028, not the revised May 2029 assessment.</p>
+    </div>
+    <div class="criteria-modal-footer">
+      <div class="criteria-footer-score"><strong id="criteriaTotal">Total: -- / 20</strong><small id="criteriaProgress">0 of 5 criteria marked</small></div>
+      <button type="button" id="criteriaDone" class="btn primary">Done</button>
+    </div>
   </dialog>
 
   <dialog id="customDialog" class="modal custom-modal" aria-labelledby="customTitle">
@@ -179,6 +201,7 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
   <script src="comments.js"></script>
+  <script src="rubric.js"></script>
   <script src="vendor/pdf-lib.min.js" defer></script>
   <script type="module" src="app.js"></script>
 </body>

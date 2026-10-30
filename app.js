@@ -10,8 +10,13 @@ let pdfRendererLoad = null;
     D: { name: 'Reflection', max: 3 },
     E: { name: 'Use of mathematics', max: 6 },
   };
-  const GUIDE_LINKS={AA:'https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/mathematics-analysis-approaches-guide.pdf#page=90',AI:'https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-applications-and-interpretation-guide-en.pdf#page=91'};
-  const CRITERIA_GUIDANCE={A:'Coherence, organisation and concision of the exploration.',B:'Appropriate and consistent mathematical communication, notation and representations.',C:'Authentic mathematical choices and independent engagement with the investigation.',D:'The significance and critical depth of reflection on the mathematics.',E:'Relevant, accurate and understood mathematics appropriate for the course. SL and HL descriptors differ.'};
+  const GUIDE_LINKS={
+    AA:'https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf#page=90',
+    AI:'https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-applications-and-interpretation-guide-en.pdf#page=91',
+  };
+  // Detailed, originally worded criterion-by-criterion paraphrases; the IB
+  // source remains linked and can be viewed in this dialog from an authorised PDF.
+  const RUBRIC=window.IA_RUBRIC||{};
   const CRITERION_KEYS = Object.keys(CRITERIA);
   const BANK = window.IA_COMMENT_BANK || [];
   const STAMP_DEFAULTS = Object.freeze({
@@ -189,7 +194,7 @@ let pdfRendererLoad = null;
     state.marks[key] = score;
     updateScores(); scheduleSave();
     if ($('reviewDialog').open) renderReview();
-    if ($('criteriaDialog').open) renderCriteria();
+    if ($('criteriaDialog').open) updateRubricMarks();
   }
   function updateScores() {
     $('scoreStrip').querySelectorAll('[data-score]').forEach(select => {
@@ -197,24 +202,102 @@ let pdfRendererLoad = null;
     });
     const total = totalScore();
     $('totalMark').innerHTML = `${total === null ? '--' : total}<small>/20</small>`;
-    if($('criteriaDialog').open)$('criteriaTotal').textContent=`Total: ${total??'--'} / 20`;
+    if($('criteriaDialog').open)updateRubricMarks();
   }
   let guideObjectUrl=null;
+
+  function updateRubricMarks() {
+    if(!$('criteriaDialog').open)return;
+    for(const key of CRITERION_KEYS) {
+      const mark=state.marks[key],max=CRITERIA[key].max;
+      const select=$('criteriaCards').querySelector('[data-criteria-score="'+key+'"]');
+      if(select)select.value=mark===null?'':String(mark);
+      $('criteriaJumpBar').querySelectorAll('[data-jump-mark="'+key+'"]').forEach(element=>{
+        element.textContent=(mark===null?'—':mark)+' / '+max;
+      });
+      $('criteriaJumpBar').querySelectorAll('[data-criteria-jump="'+key+'"]').forEach(button=>{
+        button.classList.toggle('has-mark',mark!==null);
+      });
+      $('criteriaCards').querySelectorAll('[data-rubric-key="'+key+'"]').forEach(button=>{
+        const active=mark!==null && Number(button.dataset.rubricScore)===mark;
+        button.setAttribute('aria-pressed',String(active));
+        button.classList.toggle('is-awarded',active);
+      });
+    }
+    const total=totalScore(),complete=CRITERION_KEYS.filter(key=>state.marks[key]!==null).length;
+    $('criteriaTotal').textContent='Total: '+(total===null?'--':total)+' / 20';
+    $('criteriaProgress').textContent=complete+' of 5 criteria marked';
+  }
+
   function renderCriteria() {
     const family=state.course.startsWith('AI')?'AI':'AA';
+    const level=state.course.endsWith('HL')?'HL':'SL';
+    $('criteriaCoursePill').textContent=state.course;
+    $('criteriaSourceCourse').textContent=state.course;
     $('criteriaGuideLink').href=GUIDE_LINKS[family];
-    $('criteriaGuideLink').textContent='Open full official '+family+' descriptors in the IB guide PDF ↗';
+    $('criteriaGuideLink').textContent='Read complete official '+family+' guide (A–E, '+level+' mathematics) ↗';
+
     $('criteriaCards').innerHTML=CRITERION_KEYS.map(key=>{
-      const criterion=CRITERIA[key];
-      return `<section class="criteria-card"><div class="criteria-card-heading"><span class="mini-circle">${key}</span><div><strong>Criterion ${key}: ${escapeHtml(criterion.name)}</strong><small>Maximum ${criterion.max} marks</small></div><label>Teacher mark<select data-criteria-score="${key}" aria-label="Criterion ${key} mark"><option value="">Not marked</option>${Array.from({length:criterion.max+1},(_,n)=>`<option value="${n}" ${state.marks[key]===n?'selected':''}>${n} / ${criterion.max}</option>`).join('')}</select></label></div><p class="criteria-guidance">${escapeHtml(CRITERIA_GUIDANCE[key])} ${key==='E'?'Currently marking '+escapeHtml(state.course)+'. ':''}This is a summary, not an official level descriptor.</p><label class="criteria-rationale">Assessment rationale<textarea data-criteria-rationale="${key}" rows="2" maxlength="5000" placeholder="Evidence supporting the selected mark...">${escapeHtml(state.justifications[key])}</textarea></label></section>`;
+      const criterion=CRITERIA[key],rubric=RUBRIC[key];
+      if(!rubric) return '<p class="criteria-error">The criterion reference data did not load. Try refreshing the page.</p>';
+      const descriptions=(key==='E'?rubric[level]:rubric.levels)||[];
+      if(descriptions.length!==criterion.max+1)return '<p class="criteria-error">The criterion mark levels are incomplete. Open the official guide instead.</p>';
+      const mark=state.marks[key];
+      const levels=descriptions.map((description,n)=>{
+        const chosen=mark===n;
+        return `<button type="button" class="criteria-level ${chosen?'is-awarded':''}" data-rubric-key="${key}" data-rubric-score="${n}" aria-pressed="${chosen}" aria-label="Award ${n} out of ${criterion.max} for criterion ${key}: ${escapeHtml(description)}">
+          <span class="criteria-level-mark">${n}</span><span class="criteria-level-copy">${escapeHtml(description)}</span><span class="criteria-level-check" aria-hidden="true">✓</span>
+        </button>`;
+      }).join('');
+      const considerations=(rubric.considerations||[]).map(line=>'<li>'+escapeHtml(line)+'</li>').join('');
+      return `<section class="criteria-card" id="criteriaCard_${key}" data-criterion-card="${key}" aria-labelledby="criteriaHeading_${key}">
+        <div class="criteria-card-heading">
+          <span class="mini-circle" aria-hidden="true">${key}</span>
+          <div class="criteria-card-title"><strong id="criteriaHeading_${key}">Criterion ${key}: ${escapeHtml(criterion.name)}</strong>
+            <small>${key==='E'?escapeHtml(level)+' descriptor set · ':''}Maximum ${criterion.max} marks</small></div>
+          <label class="criteria-mark-select">Teacher mark
+            <select data-criteria-score="${key}" aria-label="Criterion ${key} awarded mark">
+              <option value="">-- / ${criterion.max}</option>
+              ${Array.from({length:criterion.max+1},(_,n)=>`<option value="${n}" ${mark===n?'selected':''}>${n} / ${criterion.max}</option>`).join('')}
+            </select>
+          </label>
+        </div>
+        <p class="criteria-focus">${escapeHtml(rubric.focus)}</p>
+        <div class="criteria-levels" role="group" aria-label="All achievement levels for criterion ${key}">
+          <div class="criteria-levels-head"><span>Mark</span><span>Achievement-level reference</span></div>
+          ${levels}
+        </div>
+        <details class="criteria-considerations"><summary>What evidence should I look for?</summary><ul>${considerations}</ul></details>
+        <label class="criteria-rationale">Teacher assessment rationale
+          <textarea data-criteria-rationale="${key}" rows="2" maxlength="5000" placeholder="Why is this mark justified by evidence in the submitted IA?">${escapeHtml(state.justifications[key]||'')}</textarea>
+        </label>
+      </section>`;
     }).join('');
-    $('criteriaCards').querySelectorAll('[data-criteria-score]').forEach(select=>select.addEventListener('change',()=>setScore(select.dataset.criteriaScore,select.value)));
-    $('criteriaCards').querySelectorAll('[data-criteria-rationale]').forEach(area=>area.addEventListener('input',e=>{state.justifications[e.target.dataset.criteriaRationale]=e.target.value;scheduleSave();}));
-    $('criteriaTotal').textContent='Total: '+(totalScore()??'--')+' / 20';
+    $('criteriaCards').querySelectorAll('[data-criteria-score]').forEach(select=>{
+      select.addEventListener('change',()=>setScore(select.dataset.criteriaScore,select.value));
+    });
+    $('criteriaCards').querySelectorAll('[data-rubric-key]').forEach(button=>{
+      button.addEventListener('click',()=>setScore(button.dataset.rubricKey,button.dataset.rubricScore));
+    });
+    $('criteriaCards').querySelectorAll('[data-criteria-rationale]').forEach(area=>{
+      area.addEventListener('input',e=>{
+        state.justifications[e.target.dataset.criteriaRationale]=e.target.value;
+        scheduleSave();
+      });
+    });
+    updateRubricMarks();
   }
-  function openCriteriaDialog(){renderCriteria();$('criteriaDialog').showModal();}
+  function openCriteriaDialog(){
+    renderCriteria();
+    $('criteriaDialog').showModal();
+    $('criteriaScrollArea').scrollTop=0;
+    updateRubricMarks();
+  }
   function closeCriteriaGuide(){
-    $('criteriaGuideFrame').removeAttribute('src');$('criteriaGuideLocalLink').removeAttribute('href');$('criteriaGuidePreview').classList.add('hidden');$('criteriaGuideInput').value='';
+    $('criteriaGuideFrame').removeAttribute('src');
+    $('criteriaGuideLocalLink').removeAttribute('href');
+    $('criteriaGuidePreview').classList.add('hidden');
+    $('criteriaGuideInput').value='';
     if(guideObjectUrl){URL.revokeObjectURL(guideObjectUrl);guideObjectUrl=null;}
   }
 
@@ -1100,11 +1183,26 @@ let pdfRendererLoad = null;
     $('reviewOpenCriteria').addEventListener('click',()=>{$('reviewDialog').close();openCriteriaDialog();});
     $('closeCriteria').addEventListener('click',()=>$('criteriaDialog').close());
     $('criteriaDone').addEventListener('click',()=>$('criteriaDialog').close());
-    $('criteriaDialog').addEventListener('close',closeCriteriaGuide);
+    $('criteriaJumpBar').querySelectorAll('[data-criteria-jump]').forEach(button=>{
+      button.addEventListener('click',()=>{
+        const card=$('criteriaCard_'+button.dataset.criteriaJump);
+        if(card)card.scrollIntoView({behavior:'smooth',block:'start'});
+      });
+    });
+    $('criteriaOpenGuide').addEventListener('click',()=>{
+      $('criteriaOfficialGuideDetails').open=true;
+      $('criteriaOfficialGuideDetails').scrollIntoView({behavior:'smooth',block:'start'});
+    });
+    $('removeCriteriaGuide').addEventListener('click',closeCriteriaGuide);
+    $('criteriaDialog').addEventListener('close',()=>{
+      closeCriteriaGuide();
+      $('criteriaOfficialGuideDetails').open=false;
+    });
     $('criteriaGuideInput').addEventListener('change',e=>{
       const file=e.target.files?.[0];if(!file)return;
       if(!file.name.toLowerCase().endsWith('.pdf')&&file.type!=='application/pdf'){toast('Choose the authorised official guide as a PDF.');e.target.value='';return;}
       closeCriteriaGuide();guideObjectUrl=URL.createObjectURL(file);
+      $('criteriaOfficialGuideDetails').open=true;
       $('criteriaGuideFrame').src=guideObjectUrl;$('criteriaGuideLocalLink').href=guideObjectUrl;$('criteriaGuidePreview').classList.remove('hidden');
     });
     $('closeReview').addEventListener('click',()=> $('reviewDialog').close());
