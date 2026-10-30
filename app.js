@@ -350,8 +350,11 @@ let pdfRendererLoad = null;
     if (!CRITERIA[key]) return;
     const score = raw === '' ? null : Number(raw);
     if (score !== null && (!Number.isInteger(score) || score < 0 || score > CRITERIA[key].max)) return;
+    finishFieldHistory();
+    const before=historySnapshot();
     state.marks[key] = score;
     updateScores(); scheduleSave();
+    recordHistory('criterion '+key+' mark',before);
     if ($('reviewDialog').open) renderReview();
     if ($('criteriaDialog').open) updateRubricMarks();
   }
@@ -439,6 +442,7 @@ let pdfRendererLoad = null;
       button.addEventListener('click',()=>setScore(button.dataset.rubricKey,button.dataset.rubricScore));
     });
     $('criteriaCards').querySelectorAll('[data-criteria-rationale]').forEach(area=>{
+      watchHistoryField(area,'criterion '+area.dataset.criteriaRationale+' rationale');
       area.addEventListener('input',e=>{
         state.justifications[e.target.dataset.criteriaRationale]=e.target.value;
         scheduleSave();
@@ -639,18 +643,37 @@ let pdfRendererLoad = null;
       item.noteHeight=normalNoteHeight(e.target.value);refresh();
     });
     $(`${prefix}HeightAuto`).addEventListener('click',()=>{
+      const before=existing?historySnapshot():null;
       item.noteHeight=null;refresh();
+      if(existing)recordHistory('fit '+item.criterion+' comment box',before);
     });
+    if(existing){
+      for(const field of ['Size','Color','Width','Font','TextColor','FillColor','BorderColor','Height']){
+        watchHistoryField($(`${prefix}${field}`),'format '+item.criterion+' comment',true);
+      }
+    }
   }
   function renderEditor() {
+    finishFieldHistory();
     const stamp = selectedStamp();
     if(stamp) {
-      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} evidence stamp</strong><small>Page ${stamp.page} / ${stamp.tone}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
+      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} evidence stamp</strong><small>Page ${stamp.page} / ${stamp.tone}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
       $('stampTextEdit').addEventListener('input', e => {stamp.text=e.target.value;renderStamps();scheduleSave();});
+      watchHistoryField($('stampTextEdit'),'edit '+stamp.criterion+' comment');
       bindAppearanceEditor(stamp,'selectedStamp',true);
       $('moveStamp').addEventListener('click',()=>{movingStampId=stamp.id;draft=null;selectedStampId=null;renderEditor();setInstruction(); if (currentPage!==stamp.page) navigate(stamp.page);});
       $('copyStamp').addEventListener('click',()=>copyCommentText(stamp.text));
-      $('deleteStamp').addEventListener('click',()=>{state.stamps=state.stamps.filter(s=>s.id!==stamp.id);selectedStampId=null;renderEditor();renderStamps();scheduleSave();toast('Evidence stamp deleted.');});
+      $('duplicateStamp').addEventListener('click',()=>{
+        finishFieldHistory();prepareFromExistingStamp(stamp);
+        toast('Duplicate comment ready. Click clear space on the PDF to place it.');
+      });
+      $('deleteStamp').addEventListener('click',()=>{
+        finishFieldHistory();const before=historySnapshot();
+        state.stamps=state.stamps.filter(s=>s.id!==stamp.id);selectedStampId=null;
+        renderEditor();renderStamps();renderBank();scheduleSave();
+        recordHistory('delete '+stamp.criterion+' comment',before);
+        toast('Evidence stamp deleted. Use Undo to restore it.');
+      });
       return;
     }
     if(!draft) {
@@ -1159,7 +1182,10 @@ let pdfRendererLoad = null;
       return `<section class="review-score"><div class="review-score-header"><span class="mini-circle">${key}</span><strong>${escapeHtml(meta.name)}</strong><span class="evidence-count">${count} ${count===1?'stamp':'stamps'}</span><select data-review-score="${key}" aria-label="Criterion ${key} final mark"><option value="">-- / ${meta.max}</option>${Array.from({length:meta.max+1},(_,n)=>`<option value="${n}" ${state.marks[key]===n?'selected':''}>${n} / ${meta.max}</option>`).join('')}</select></div><small>Briefly justify this mark, referring to the annotated evidence on the pages.</small><textarea data-review-justification="${key}" aria-label="Criterion ${key} assessment rationale" maxlength="5000" rows="2" placeholder="Assessment rationale for criterion ${key}...">${escapeHtml(state.justifications[key])}</textarea></section>`;
     }).join('');
     $('reviewScores').querySelectorAll('[data-review-score]').forEach(sel=>sel.addEventListener('change',()=>setScore(sel.dataset.reviewScore,sel.value)));
-    $('reviewScores').querySelectorAll('[data-review-justification]').forEach(ta=>ta.addEventListener('input',e=>{state.justifications[ta.dataset.reviewJustification]=e.target.value;scheduleSave();}));
+    $('reviewScores').querySelectorAll('[data-review-justification]').forEach(ta=>{
+      watchHistoryField(ta,'criterion '+ta.dataset.reviewJustification+' rationale');
+      ta.addEventListener('input',e=>{state.justifications[ta.dataset.reviewJustification]=e.target.value;scheduleSave();});
+    });
     if(noEvidence.length) $('reviewStatus').textContent += ` No page evidence is stamped yet for: ${noEvidence.join(', ')}.`;
     if(usesNewFramework()) {
       $('reviewStatus').classList.add('warning');
