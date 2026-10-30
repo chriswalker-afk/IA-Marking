@@ -1,4 +1,5 @@
 import {createUnicodeFonts,normaliseAnnotationText,pdfFontError} from './unicode-fonts.js';
+import {MarkingHistory,sanitizeQuickPicks} from './marking-history.js';
 import {inspectModerationPages} from './moderation-preflight.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
@@ -101,6 +102,162 @@ let pdfRendererLoad = null;
   let pageWidthPt = 0, pageHeightPt = 0;
   let libraryEditingId = null;
   const MAX_BANK_VISIBLE = 42;
+  const QUICK_PICKS_KEY='ia-marking-desk-quick-picks-v1';
+  let quickPicks=sanitizeQuickPicks({});
+  let bankQuickFilter='all';
+  let repeatPlacement=false;
+  let lastPlacedDraft=null;
+  const markingHistory=new MarkingHistory(60);
+  let activeHistoryField=null;
+  let applyingHistory=false;
+
+  function historySnapshot(){return markingHistory.snapshot(state);}
+  function updateHistoryButtons(){
+    $('undoMark').disabled=!markingHistory.canUndo;
+    $('redoMark').disabled=!markingHistory.canRedo;
+    $('undoMark').title=markingHistory.canUndo?'Undo '+markingHistory.undoLabel+' (Ctrl/Cmd + Z)':'Nothing to undo';
+    $('redoMark').title=markingHistory.canRedo?'Redo '+markingHistory.redoLabel+' (Ctrl/Cmd + Shift + Z)':'Nothing to redo';
+  }
+  function recordHistory(label,before){
+    if(!before||applyingHistory)return false;
+    const changed=markingHistory.push(label,before,historySnapshot());
+    if(changed){updateHistoryButtons();renderEvidenceIfOpen();}
+    return changed;
+  }
+  function beginFieldHistory(label){
+    if(applyingHistory)return;
+    if(!activeHistoryField)activeHistoryField={before:historySnapshot(),label};
+  }
+  function finishFieldHistory(){
+    if(!activeHistoryField)return;
+    const {before,label}=activeHistoryField;activeHistoryField=null;
+    recordHistory(label,before);
+  }
+  function watchHistoryField(element,label,commitOnChange=false){
+    if(!element)return;
+    const begin=()=>beginFieldHistory(label);
+    element.addEventListener('focus',begin);
+    if(commitOnChange){
+      element.addEventListener('pointerdown',begin);
+      element.addEventListener('keydown',event=>{
+        if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown','Home','End'].includes(event.key))begin();
+      });
+      element.addEventListener('change',finishFieldHistory);
+    }
+    element.addEventListener('blur',finishFieldHistory);
+  }
+  function applyMarkSnapshot(snapshot,label){
+    if(!snapshot)return;
+    activeHistoryField=null;
+    applyingHistory=true;
+    try{
+      state.stamps=snapshot.stamps;
+      state.marks=snapshot.marks;
+      state.justifications=snapshot.justifications;
+      if(!state.stamps.some(stamp=>stamp.id===selectedStampId))selectedStampId=null;
+      draft=null;movingStampId=null;
+      updateScores();renderStamps();renderEditor();renderBank();setInstruction();
+      if($('reviewDialog').open)renderReview();
+      if($('criteriaDialog').open)renderCriteria();
+      renderEvidenceIfOpen();
+      scheduleSave();
+      toast(label);
+    } finally {
+      applyingHistory=false;updateHistoryButtons();
+    }
+  }
+  function undoMarking(){
+    finishFieldHistory();
+    const result=markingHistory.undo();
+    if(result)applyMarkSnapshot(result.snapshot,'Undid '+result.label);
+  }
+  function redoMarking(){
+    finishFieldHistory();
+    const result=markingHistory.redo();
+    if(result)applyMarkSnapshot(result.snapshot,'Redid '+result.label);
+  }
+  function resetHistory(){
+    activeHistoryField=null;
+    markingHistory.clear();updateHistoryButtons();
+  }
+  function storeQuickPicks(){
+    try{localStorage.setItem(QUICK_PICKS_KEY,JSON.stringify(quickPicks));}
+    catch(error){console.warn('Could not save favourite and recent comments',error);}
+  }
+  function recordRecentComment(id){
+    if(!id || !getComments().some(item=>item.id===id))return;
+    quickPicks.recent=[id,...quickPicks.recent.filter(v=>v!==id)].slice(0,24);
+    storeQuickPicks();renderQuickPicker();renderBank();
+  }
+  function toggleFavourite(id){
+    if(!getComments().some(item=>item.id===id))return;
+    quickPicks.favorites=quickPicks.favorites.includes(id)
+      ?quickPicks.favorites.filter(v=>v!==id)
+      :[id,...quickPicks.favorites].slice(0,100);
+    storeQuickPicks();renderQuickPicker();renderBank();
+    if($('libraryDialog').open)renderFullLibrary();
+  }
+  function renderQuickPicker(){
+    const courseItems=getComments().filter(item=>(item.courses||[]).includes(state.course));
+    const lookup=new Map(courseItems.map(item=>[item.id,item]));
+    const group=(ids,label)=>{
+      const entries=ids.map(id=>lookup.get(id)).filter(Boolean).slice(0,10);
+      return entries.length?'<optgroup label="'+label+'">'+entries.map(item=>
+        '<option value="'+escapeHtml(item.id)+'">'+escapeHtml(item.criterion+' · '+item.topic+' — '+item.text.slice(0,54))+'</option>'
+      ).join('')+'</optgroup>':'';
+    };
+    $('quickStampPicker').innerHTML='<option value="">Choose saved comment…</option>'
+      +group(quickPicks.favorites,'★ Favourite comments')
+      +group(quickPicks.recent,'Recently stamped');
+    $('quickStampPicker').value='';
+    $('quickStampAgain').disabled=!lastPlacedDraft;
+    $('repeatStamp').classList.toggle('is-active',repeatPlacement);
+    $('repeatStamp').setAttribute('aria-pressed',String(repeatPlacement));
+    $('repeatStamp').textContent=repeatPlacement?'Repeat: On':'Repeat: Off';
+  }
+  function renderEvidenceIfOpen(){
+    $('evidenceCount').textContent=String(state.stamps.length);
+    if($('evidenceDialog').open)renderEvidenceNavigator();
+  }
+  function renderEvidenceNavigator(){
+    const all=state.stamps;
+    $('evidenceSummary').innerHTML=CRITERION_KEYS.map(key=>{
+      const count=all.filter(x=>x.criterion===key).length;
+      const mark=state.marks[key];
+      return '<button type="button" data-evidence-jump="'+key+'" class="evidence-summary-chip"><strong>'+key+'</strong><small>'
+        +(mark===null?'—':mark)+'/'+CRITERIA[key].max+'</small><span>'+count+' stamp'+(count===1?'':'s')+'</span></button>';
+    }).join('');
+    $('evidenceResults').innerHTML=CRITERION_KEYS.map(key=>{
+      const comments=all.filter(x=>x.criterion===key).sort((a,b)=>a.page-b.page||a.y-b.y);
+      const strengths=comments.filter(x=>x.tone==='strength').length;
+      const limitations=comments.length-strengths;
+      return '<section class="evidence-group" id="evidenceGroup_'+key+'"><div class="evidence-group-head"><span class="mini-circle">'+key+'</span>'
+        +'<div><h3>Criterion '+key+': '+escapeHtml(CRITERIA[key].name)+'</h3><small>'+strengths+' strengths · '+limitations+' limitations · '+comments.length+' total</small></div>'
+        +'<strong>'+ (state.marks[key]===null?'Not marked':state.marks[key]+' / '+CRITERIA[key].max)+'</strong></div>'
+        +(comments.length?comments.map(stamp=>
+          '<button type="button" class="evidence-result" data-evidence-pin="'+escapeHtml(stamp.id)+'">'
+          +'<span class="evidence-result-meta"><span class="polarity '+stamp.tone+'">'+(stamp.tone==='strength'?'Strength':'Limitation')+'</span>'
+          +'<strong>'+escapeHtml(stampLabel(stamp))+'</strong><span>Page '+stamp.page+'</span></span>'
+          +'<span class="evidence-result-text">'+escapeHtml(stamp.text)+'</span>'
+          +'<span class="evidence-result-visit">Go to page '+stamp.page+' →</span></button>'
+        ).join(''):'<p class="evidence-no-comments">No comments placed for this criterion yet.</p>')+'</section>';
+    }).join('');
+    $('evidenceFooterCount').textContent=all.length+' annotation'+(all.length===1?'':'s')+' across '+(pdfDoc?.numPages||0)+' pages';
+  }
+  async function jumpToEvidenceStamp(id){
+    const stamp=state.stamps.find(item=>item.id===id);
+    if(!stamp)return;
+    $('evidenceDialog').close();
+    finishFieldHistory();selectedStampId=stamp.id;draft=null;movingStampId=null;
+    if(currentPage!==stamp.page)await navigate(stamp.page);
+    else renderStamps();
+    renderEditor();renderBank();setInstruction();
+    $('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});
+    const marker=Array.from($('stampLayer').querySelectorAll('[data-pin-id]')).find(item=>item.dataset.pinId===stamp.id);
+    marker?.scrollIntoView({behavior:'smooth',block:'center'});
+    marker?.focus({preventScroll:true});
+  }
+
 
   function toast(message) {
     const el = $('toast');
