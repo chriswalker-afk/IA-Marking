@@ -27,6 +27,13 @@
       </div>
     </header>
 
+    <section class="review-mode-bar" aria-label="Choose an IA review workflow">
+      <div class="review-mode-tabs" role="group" aria-label="Marking or first-draft feedback">
+        <button type="button" id="markingMode" class="review-mode-tab is-selected" aria-pressed="true"><strong>Final assessment</strong><span>Evidence stamps and criterion marks</span></button>
+        <button type="button" id="feedbackMode" class="review-mode-tab" aria-pressed="false"><strong>First draft feedback</strong><span>Actionable comments and student checklist</span></button>
+      </div>
+      <p id="modeDescription" role="status">Final assessment: annotate evidence and record teacher marks against criteria A–E.</p>
+    </section>
     <section class="assessment-bar" aria-label="Assessment details and criterion marks">
       <div class="assessment-fields">
         <label>Course
@@ -48,7 +55,7 @@
     <div id="frameworkNotice" class="framework-notice" role="status">A-E assessment framework (final assessment November 2028). The new May 2029 criteria are not supported by this version.</div>
 
     <nav class="reference-bar" aria-label="Teacher reference tools">
-      <a class="btn subtle reference-link" href="library.html">Browse all 294 stamp comments <span aria-hidden="true">↗</span></a>
+      <a id="referenceLibraryLink" class="btn subtle reference-link" href="library.html">Browse all 294 stamp comments <span aria-hidden="true">↗</span></a>
       <button class="btn subtle" id="openCriteria" type="button">View IB criteria &amp; assign marks</button>
       <span class="reference-help">Reference tools work without uploading an IA.</span>
     </nav>
@@ -67,7 +74,7 @@
         <button id="resumeLast" class="btn subtle hidden" type="button">Resume most recent local IA</button>
         <div id="documentMeta" class="document-meta hidden"><div class="doc-symbol">PDF</div><div class="doc-info"><strong id="documentName"></strong><small id="documentDetails"></small></div><button class="tiny-icon" id="replacePdf" type="button" title="Choose a different PDF">&#8635;</button></div>
         <div class="pane-divider"></div>
-        <div class="subhead"><span>Evidence stamps</span><span class="counter" id="allPinCount">0</span></div>
+        <div class="subhead"><span id="stampSectionLabel">Evidence stamps</span><span class="counter" id="allPinCount">0</span></div>
         <div class="legend"><span><i class="legend-dot strength"></i>Strength</span><span><i class="legend-dot limitation"></i>Limitation</span></div>
         <section class="stamp-style-panel" aria-label="Stamp appearance defaults">
           <div class="stamp-style-header"><strong>Stamp appearance</strong><span class="stamp-preview" aria-hidden="true"><i id="previewStrength">A</i><i id="previewLimitation">D</i></span></div>
@@ -120,18 +127,18 @@
         <div class="pdf-scroll" id="pdfScroll">
           <div id="emptyViewer" class="empty-viewer">
             <div class="empty-art" aria-hidden="true"><div class="empty-page"><div class="empty-line long"></div><div class="empty-line"></div><div class="empty-line medium"></div><div class="empty-equation">f(x) = ax<sup>2</sup> + bx + c</div><div class="empty-line medium"></div><div class="empty-line long"></div><div class="illustrative-stamp">A</div></div></div>
-            <h2>Mark the evidence, not the page.</h2>
-            <p>Upload a final IA and place complete teacher comments directly onto clear areas of each PDF page. Drag or resize them before exporting.</p>
+            <h2 id="emptyViewerTitle">Mark the evidence, not the page.</h2>
+            <p id="emptyViewerDescription">Upload a final IA and place complete teacher comments directly onto clear areas of each PDF page. Drag or resize them before exporting.</p>
             <label for="pdfInput" class="btn primary file-label">Select an IA PDF <span aria-hidden="true">&#8594;</span></label>
           </div>
           <div id="pageShell" class="page-shell hidden"><canvas id="pdfCanvas" aria-label="Rendered PDF page"></canvas><div id="stampLayer" class="stamp-layer" role="group" aria-label="Visible full-text stamps printed on the IA page"></div></div>
         </div>
-        <p id="annotationNotice" class="annotation-notice hidden" role="alert"></p><div class="viewer-bottom"><span id="footerDocInfo">Awaiting a PDF</span><span>What you see printed on this page is what the moderator receives</span></div>
+        <p id="annotationNotice" class="annotation-notice hidden" role="alert"></p><div class="viewer-bottom"><span id="footerDocInfo">Awaiting a PDF</span><span id="viewerBottomHelp">What you see printed on this page is what the moderator receives</span></div>
       </section>
 
       <aside class="bank-pane" aria-label="Criterion evidence comment bank">
-        <div class="pane-heading"><div><span class="eyebrow">03 / EVIDENCE</span><h2>Stamp library</h2></div><span class="bank-total" id="bankTotal">-- comments</span></div>
-        <p class="bank-intro">Choose a teacher-facing assessment observation. Edit it to reflect the actual evidence before stamping.</p>
+        <div class="pane-heading"><div><span class="eyebrow" id="bankEyebrow">03 / EVIDENCE</span><h2>Stamp library</h2></div><span class="bank-total" id="bankTotal">-- comments</span></div>
+        <p id="bankIntro" class="bank-intro">Choose a teacher-facing assessment observation. Edit it to reflect the actual evidence before stamping.</p>
         <div class="criterion-tabs" id="criterionTabs" role="group" aria-label="Filter comments by criterion"></div>
         <div class="bank-filters"><input id="commentSearch" type="search" placeholder="Search comments or topics..." aria-label="Search the comment bank"><div class="tone-toggle" role="group" aria-label="Filter strengths and limitations"><button class="tone-btn active" data-tone="all" type="button">All</button><button class="tone-btn" data-tone="strength" type="button">Strengths</button><button class="tone-btn" data-tone="limitation" type="button">Limitations</button></div></div>
         <div class="bank-quick-heading"><span>Quick access</span><div id="bankQuickTabs" role="group" aria-label="Show all, favourite or recently used comments">
@@ -143,7 +150,7 @@
         <button id="openLibrary" class="library-open-button" type="button"><span>Browse the full comment library</span><span>View, edit &amp; copy all &#8599;</span></button><a class="library-independent-link" href="library.html">Open independent library page (works without PDF) ↗</a>
         <div class="comment-list" id="commentList"></div>
         <div class="selection-editor" id="selectionEditor"><div class="selection-empty"><span class="small-ring">A</span><span>Choose a comment to prepare a stamp.</span></div></div>
-        <div class="bank-caption">Curated from the supplied 2021-2026 examiner-feedback synthesis. These are prompts, not IB descriptors or automatic marks.</div>
+        <div id="bankCaption" class="bank-caption">Curated from the supplied 2021-2026 examiner-feedback synthesis. These are prompts, not IB descriptors or automatic marks.</div>
       </aside>
     </main>
   </div>
@@ -183,7 +190,7 @@
   </dialog>
   <dialog id="evidenceDialog" class="modal evidence-modal" aria-labelledby="evidenceTitle">
     <div class="evidence-modal-header">
-      <div><span class="eyebrow">TEACHER ASSESSMENT EVIDENCE</span><h2 id="evidenceTitle">Criterion evidence navigator</h2><p>See all placed comments grouped by A–E. Select any observation to jump to its page and edit the stamp.</p></div>
+      <div><span class="eyebrow">TEACHER ASSESSMENT EVIDENCE</span><h2 id="evidenceTitle">Criterion evidence navigator</h2><p id="evidenceIntro">See all placed comments grouped by A–E. Select any observation to jump to its page and edit the stamp.</p></div>
       <button id="closeEvidence" class="icon-button" type="button" aria-label="Close evidence navigator">✕</button>
     </div>
     <div class="evidence-modal-summary" id="evidenceSummary" aria-live="polite"></div>
@@ -248,19 +255,29 @@
       <div class="form-grid"><label>Criterion<select id="customCriterion"><option value="A">A - Presentation</option><option value="B">B - Mathematical communication</option><option value="C">C - Personal engagement</option><option value="D">D - Reflection</option><option value="E">E - Use of mathematics</option></select></label><label>Evidence type<select id="customTone"><option value="strength">Strength</option><option value="limitation">Limitation</option></select></label></div>
       <label>Category<input id="customTopic" type="text" placeholder="e.g. Mathematical modelling" maxlength="90"></label>
       <label>Your comment<textarea id="customText" rows="5" maxlength="1800" placeholder="Describe what the submitted work demonstrates..."></textarea></label>
-      <p class="form-hint">Phrase this as evidence for a marking decision, rather than instructions to the student. Saved to this browser's personal bank.</p>
+      <p id="customFormHint" class="form-hint">Phrase this as evidence for a marking decision, rather than instructions to the student. Saved to this browser's personal bank.</p>
       <div class="modal-actions"><button class="btn subtle" value="cancel" type="submit">Cancel</button><button id="saveCustom" class="btn primary" type="button">Save to comment bank</button></div>
     </form>
   </dialog>
 
   <dialog id="reviewDialog" class="modal review-modal" aria-labelledby="reviewTitle">
-    <div class="review-header"><div><span class="eyebrow">MARKING RECORD</span><h2 id="reviewTitle">Review &amp; export</h2><p>Capture criterion-specific reasons for the awarded marks. A stamp count never determines a score.</p></div><button id="closeReview" class="icon-button" type="button" aria-label="Close review">&#10005;</button></div>
+    <div class="review-header"><div><span id="reviewEyebrow" class="eyebrow">MARKING RECORD</span><h2 id="reviewTitle">Review &amp; export</h2><p id="reviewIntro">Capture criterion-specific reasons for the awarded marks. A stamp count never determines a score.</p></div><button id="closeReview" class="icon-button" type="button" aria-label="Close review">&#10005;</button></div>
     <div class="review-body">
       <div id="reviewStatus" class="review-status" role="status"></div>
       <div id="reviewScores" class="review-scores"></div>
-      <div class="review-note"><strong>Before IB submission</strong><p>Check the applicable official descriptors and your school's moderation arrangements. All teacher comments are printed on the original IA pages, so inspect each page for readability and unobscured mathematical work.</p><button id="reviewOpenCriteria" type="button" class="btn subtle">View full IB criteria and marks</button></div>
+      <section id="feedbackReviewContent" class="feedback-review hidden" aria-label="First draft student revision checklist">
+        <div class="feedback-review-heading"><div><span class="eyebrow">STUDENT REVISION PLAN</span><h3>Actions from your placed feedback stamps</h3><p>Every improvement stamp becomes one checklist item, linked to its PDF page. Strengths are shown separately. Review and edit the comments before sharing.</p></div><span id="feedbackProgress" class="feedback-progress" role="status">0 actions</span></div>
+        <div id="feedbackChecklist" class="feedback-checklist"></div>
+        <div class="feedback-review-actions">
+          <button type="button" id="copyFeedbackChecklist" class="btn subtle">Copy checklist</button>
+          <button type="button" id="downloadFeedbackChecklist" class="btn subtle">Download checklist (.txt)</button>
+          <button type="button" id="printFeedbackChecklist" class="btn subtle">Print checklist</button>
+        </div>
+        <p class="feedback-integrity-note"><strong>First draft guidance, not a rewritten solution.</strong> Prompts identify where students should reconsider their own mathematics. Teachers should not supply replacement mathematical arguments or corrected passages.</p>
+      </section>
+      <div class="review-note" id="reviewMarkingNote"><strong>Before IB submission</strong><p>Check the applicable official descriptors and your school's moderation arrangements. All teacher comments are printed on the original IA pages, so inspect each page for readability and unobscured mathematical work.</p><button id="reviewOpenCriteria" type="button" class="btn subtle">View full IB criteria and marks</button></div>
       <section class="moderation-preflight" aria-labelledby="moderationPreflightTitle">
-        <div class="moderation-preflight-heading"><div><span class="eyebrow">EXPORT RELIABILITY</span><h3 id="moderationPreflightTitle">Moderator-ready PDF check</h3><p>Automated checks identify likely problems. Inspect the exact annotated export before releasing it.</p></div><span id="preflightBadge" class="preflight-badge">Not checked</span></div>
+        <div class="moderation-preflight-heading"><div><span class="eyebrow">EXPORT RELIABILITY</span><h3 id="moderationPreflightTitle">Moderator-ready PDF check</h3><p id="preflightIntro">Automated checks identify likely problems. Inspect the exact annotated export before releasing it.</p></div><span id="preflightBadge" class="preflight-badge">Not checked</span></div>
         <ul id="preflightList" class="preflight-list" aria-live="polite"><li>Build a preview to check all pages.</li></ul>
         <button id="buildReviewPreview" type="button" class="btn subtle">Generate actual PDF preview</button>
         <div id="reviewPreviewBox" class="review-preview hidden">
@@ -269,9 +286,9 @@
             <div class="review-preview-controls"><button id="reviewPreviewPrevious" type="button" class="icon-button" aria-label="Previous exported page">&#8592;</button><span id="reviewPreviewPage">Page — / —</span><button id="reviewPreviewNext" type="button" class="icon-button" aria-label="Next exported page">&#8594;</button><div class="review-preview-zoom"><button id="reviewPreviewZoomOut" type="button" class="icon-button" aria-label="Zoom out exported PDF preview">−</button><span id="reviewPreviewZoomLabel">Fit</span><button id="reviewPreviewZoomIn" type="button" class="icon-button" aria-label="Zoom in exported PDF preview">+</button></div></div>
           </div>
           <div class="review-preview-scroll"><canvas id="reviewPreviewCanvas" aria-label="Rendered exported PDF page including teacher annotations"></canvas></div>
-          <p class="review-preview-hint">Page through the student work and marking summary. The PDF you see here is the same file used by Export.</p>
+          <p id="reviewPreviewHint" class="review-preview-hint">Page through the student work and marking summary. The PDF you see here is the same file used by Export.</p>
         </div>
-        <label class="review-acknowledge"><input id="reviewConfirmed" type="checkbox" disabled><span>I have inspected the exported preview, confirmed that the full comments are legible and that no important student mathematics is obscured.</span></label>
+        <label class="review-acknowledge"><input id="reviewConfirmed" type="checkbox" disabled><span id="reviewConfirmText">I have inspected the exported preview, confirmed that the full comments are legible and that no important student mathematics is obscured.</span></label>
         <p id="reviewExportNotice" class="review-export-notice" role="status">Generate the preview, then confirm it before exporting.</p>
       </section>
     </div>
@@ -281,6 +298,7 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
   <script src="comments.js"></script>
+  <script src="feedback-comments.js"></script>
   <script src="rubric.js"></script>
   <script src="vendor/pdf-lib.min.js" defer></script>
   <script src="vendor/fontkit.umd.min.js" defer></script>
