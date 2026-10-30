@@ -102,6 +102,18 @@
             <button type="button" id="zoomIn" aria-label="Zoom in" class="icon-button">+</button>
           </div>
         </div>
+        <div class="efficiency-toolbar" aria-label="Fast marking tools">
+          <div class="efficiency-undo">
+            <button id="undoMark" type="button" class="efficiency-action" disabled aria-label="Undo last marking change" title="Undo (Ctrl/Cmd + Z)">↶ <span>Undo</span></button>
+            <button id="redoMark" type="button" class="efficiency-action" disabled aria-label="Redo marking change" title="Redo (Ctrl/Cmd + Shift + Z)">↷ <span>Redo</span></button>
+          </div>
+          <div class="efficiency-quick">
+            <label class="quick-stamp-picker-label" for="quickStampPicker">Quick stamp <select id="quickStampPicker" aria-label="Choose a favourite or recently used comment"><option value="">Choose saved comment…</option></select></label>
+            <button id="quickStampAgain" class="efficiency-action" type="button" disabled title="Prepare the last stamped comment again">Stamp again</button>
+            <button id="repeatStamp" class="efficiency-action" type="button" aria-pressed="false" title="Keep a comment ready after placing it">Repeat: Off</button>
+          </div>
+          <button id="openEvidence" class="efficiency-action evidence-button" type="button">A–E evidence <span id="evidenceCount" class="counter">0</span></button>
+        </div>
         <div class="instruction-bar" id="instructionBar"><span class="instruction-icon">i</span><span id="instructionText">Select a comment, then click on clear space on the actual PDF page. Its full text is printed there for moderation.</span><button id="cancelPlacement" class="text-button hidden" type="button">Cancel</button></div>
         <div class="pdf-scroll" id="pdfScroll">
           <div id="emptyViewer" class="empty-viewer">
@@ -120,6 +132,11 @@
         <p class="bank-intro">Choose a teacher-facing assessment observation. Edit it to reflect the actual evidence before stamping.</p>
         <div class="criterion-tabs" id="criterionTabs" role="group" aria-label="Filter comments by criterion"></div>
         <div class="bank-filters"><input id="commentSearch" type="search" placeholder="Search comments or topics..." aria-label="Search the comment bank"><div class="tone-toggle" role="group" aria-label="Filter strengths and limitations"><button class="tone-btn active" data-tone="all" type="button">All</button><button class="tone-btn" data-tone="strength" type="button">Strengths</button><button class="tone-btn" data-tone="limitation" type="button">Limitations</button></div></div>
+        <div class="bank-quick-heading"><span>Quick access</span><div id="bankQuickTabs" role="group" aria-label="Show all, favourite or recently used comments">
+            <button type="button" class="bank-quick-tab is-active" data-bank-quick="all" aria-pressed="true">All</button>
+            <button type="button" class="bank-quick-tab" data-bank-quick="favorites" aria-pressed="false">★ Favourites</button>
+            <button type="button" class="bank-quick-tab" data-bank-quick="recent" aria-pressed="false">Recent</button>
+          </div></div>
         <div class="bank-list-heading"><strong id="bankFilteredCount">Comments</strong><button id="newCustom" class="link-button" type="button">+ Write my own</button></div>
         <button id="openLibrary" class="library-open-button" type="button"><span>Browse the full comment library</span><span>View, edit &amp; copy all &#8599;</span></button><a class="library-independent-link" href="library.html">Open independent library page (works without PDF) ↗</a>
         <div class="comment-list" id="commentList"></div>
@@ -129,6 +146,15 @@
     </main>
   </div>
 
+  <dialog id="evidenceDialog" class="modal evidence-modal" aria-labelledby="evidenceTitle">
+    <div class="evidence-modal-header">
+      <div><span class="eyebrow">TEACHER ASSESSMENT EVIDENCE</span><h2 id="evidenceTitle">Criterion evidence navigator</h2><p>See all placed comments grouped by A–E. Select any observation to jump to its page and edit the stamp.</p></div>
+      <button id="closeEvidence" class="icon-button" type="button" aria-label="Close evidence navigator">✕</button>
+    </div>
+    <div class="evidence-modal-summary" id="evidenceSummary" aria-live="polite"></div>
+    <div id="evidenceResults" class="evidence-modal-body"></div>
+    <div class="evidence-modal-footer"><span id="evidenceFooterCount">0 annotations</span><button type="button" id="evidenceDone" class="btn primary">Done</button></div>
+  </dialog>
   <dialog id="libraryDialog" class="modal library-modal" aria-labelledby="libraryTitle">
     <div class="library-modal-heading"><div><span class="eyebrow">TEACHER REFERENCE</span><h2 id="libraryTitle">Full comment library</h2><p>Browse every criterion comment, copy it into another document, or save your own wording. Edits are private to this browser.</p></div><button id="closeLibrary" type="button" class="icon-button" aria-label="Close comment library">&#10005;</button></div>
     <div class="library-modal-filters"><input id="librarySearch" type="search" placeholder="Search topics and comments..." aria-label="Search the full comment library"><select id="libraryCourse" aria-label="Library course"><option value="all">All courses</option><option value="AA SL">AA SL</option><option value="AI SL">AI SL</option><option value="AA HL">AA HL</option><option value="AI HL">AI HL</option></select><select id="libraryCriterion" aria-label="Library criterion"><option value="all">All criteria</option><option value="A">A - Presentation</option><option value="B">B - Communication</option><option value="C">C - Engagement</option><option value="D">D - Reflection</option><option value="E">E - Mathematics</option></select><select id="libraryTone" aria-label="Library evidence type"><option value="all">Strengths &amp; limitations</option><option value="strength">Strengths</option><option value="limitation">Limitations</option></select></div>
