@@ -527,3 +527,10 @@ h2{margin:4px 0 0;font-weight:750;font-size:18px;letter-spacing:-.035em;color:va
  .review-preview-scroll{padding:8px;max-height:58dvh}
  .review-preview-controls{gap:3px}
 }
+
+
+/* Match on-page preview fonts to the embedded PDF Unicode fonts. */
+@font-face{font-family:"IA Comment Sans";src:url("vendor/fonts/NotoSans-Regular.ttf") format("truetype");font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:"IA Comment Sans";src:url("vendor/fonts/NotoSans-Bold.ttf") format("truetype");font-style:normal;font-weight:700;font-display:swap}
+@font-face{font-family:"IA Comment Math";src:url("vendor/fonts/NotoSansMath-Regular.ttf") format("truetype");font-style:normal;font-weight:400;font-display:swap}
+.onpage-note-body,.onpage-note-header{font-family:"IA Comment Sans","IA Comment Math",sans-serif!important}
