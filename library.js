@@ -4,8 +4,18 @@
   const byId=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
   const COMMENTS_KEY='ia-marking-desk-comments', EDITS_KEY='ia-marking-desk-edits';
+  const PICKS_KEY='ia-marking-desk-quick-picks-v1';
   function read(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||'null');return value??fallback;}catch{return fallback;}}
   let customs=read(COMMENTS_KEY,[]),edits=read(EDITS_KEY,{});
+  const preference=read(PICKS_KEY,{});
+  let favorites=Array.isArray(preference.favorites)?[...new Set(preference.favorites.filter(x=>typeof x==='string'))].slice(0,100):[];
+  let favoritesOnly=false;
+  function saveFavorites(){
+    try{
+      const previous=read(PICKS_KEY,{});
+      localStorage.setItem(PICKS_KEY,JSON.stringify({...previous,favorites}));
+    }catch(error){console.warn('Cannot save favourites',error);toast('Browser storage unavailable for favourites.');}
+  }
   if(!Array.isArray(customs))customs=[];
   if(!edits||typeof edits!=='object'||Array.isArray(edits))edits={};
   let editingId=null,creating=false,toastTimer=null;
@@ -28,6 +38,7 @@
     const search=byId('refSearch').value.toLowerCase().trim();
     const course=byId('refCourse').value,criterion=byId('refCriterion').value,tone=byId('refTone').value;
     return getComments().filter(item=>
+      (!favoritesOnly||favorites.includes(item.id))&&
       (course==='all'||(item.courses||[]).includes(course))&&
       (criterion==='all'||item.criterion===criterion)&&
       (tone==='all'||item.tone===tone)&&
@@ -39,12 +50,14 @@
     byId('referenceTotal').textContent=BUILT_IN.length;
     byId('referenceCount').textContent='Showing '+visible.length+' of '+all.length+' comments';
     byId('referenceCopyVisible').disabled=!visible.length;
+    byId('referenceFavoritesOnly').setAttribute('aria-pressed',String(favoritesOnly));
+    byId('referenceFavoritesOnly').textContent=favoritesOnly?'★ Showing favourites':'☆ Show favourites';
     byId('referenceResults').innerHTML=visible.length?visible.map(item=>{
       const original=BUILT_IN.some(x=>x.id===item.id),changed=Boolean(edits[item.id]);
       return `<article class="ref-comment" data-ref-id="${esc(item.id)}">
        <div class="ref-comment-head"><span class="polarity ${item.tone==='limitation'?'limitation':'strength'}">${item.tone==='limitation'?'Limitation':'Strength'}</span><strong>${esc(item.criterion)} / ${esc(item.topic)}</strong><small>${esc(item.id)}${!original?' · Personal':changed?' · Edited':''}</small></div>
        <p>${esc(item.text)}</p>
-       <div class="ref-comment-actions"><button type="button" data-action="copy" data-id="${esc(item.id)}">Copy comment</button><button type="button" data-action="edit" data-id="${esc(item.id)}">Edit</button>${changed?'<button type="button" data-action="restore" data-id="'+esc(item.id)+'">Restore original</button>':''}${!original?'<button class="ref-delete" type="button" data-action="delete" data-id="'+esc(item.id)+'">Delete</button>':''}</div>
+       <div class="ref-comment-actions"><button type="button" class="${favorites.includes(item.id)?'ref-is-favourite':''}" data-action="favourite" data-id="${esc(item.id)}" aria-pressed="${favorites.includes(item.id)}">${favorites.includes(item.id)?'★ Saved favourite':'☆ Favourite'}</button><button type="button" data-action="copy" data-id="${esc(item.id)}">Copy comment</button><button type="button" data-action="edit" data-id="${esc(item.id)}">Edit</button>${changed?'<button type="button" data-action="restore" data-id="'+esc(item.id)+'">Restore original</button>':''}${!original?'<button class="ref-delete" type="button" data-action="delete" data-id="'+esc(item.id)+'">Delete</button>':''}</div>
        </article>`;
     }).join(''):'<p class="reference-empty">No comments match your search. Change the filters to see more.</p>';
   }
@@ -94,6 +107,10 @@
     const button=event.target.closest('button[data-action]');if(!button)return;
     const {action,id}=button.dataset;
     const item=getComments().find(x=>x.id===id);
+    if(action==='favourite'&&item){
+      favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[id,...favorites].slice(0,100);
+      saveFavorites();render();toast(favorites.includes(id)?'Added to quick-stamp favourites.':'Removed from favourites.');return;
+    }
     if(action==='copy'&&item){copy(item.text);return;}
     if(action==='edit'){openEdit(id);return;}
     if(action==='restore'){delete edits[id];save();render();toast('Original wording restored.');return;}
@@ -103,6 +120,9 @@
   });
   ['refSearch','refCourse','refCriterion','refTone'].forEach(id=>byId(id).addEventListener(id==='refSearch'?'input':'change',render));
   byId('referenceCreate').addEventListener('click',()=>openEdit());
+  byId('referenceFavoritesOnly').addEventListener('click',()=>{
+    favoritesOnly=!favoritesOnly;render();
+  });
   byId('referenceSaveEdit').addEventListener('click',saveEdit);
   byId('referenceCancelEdit').addEventListener('click',closeEdit);
   byId('referenceCloseEdit').addEventListener('click',closeEdit);
