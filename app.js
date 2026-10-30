@@ -153,6 +153,13 @@ let pdfRendererLoad = null;
     $('defaultStampSizeValue').textContent=`${size} pt`;
     $('strengthStampColour').value=state.stampStyle.strengthColor;
     $('limitationStampColour').value=state.stampStyle.limitationColor;
+    $('defaultNoteFont').value=String(state.stampStyle.fontSize);
+    $('defaultNoteFontValue').textContent=`${state.stampStyle.fontSize} pt`;
+    $('defaultNoteTextColour').value=state.stampStyle.textColor;
+    $('defaultNoteFillColour').value=state.stampStyle.fillColor;
+    $('defaultNoteBorderColour').value=state.stampStyle.borderColor;
+    $('defaultNoteWidth').value=String(state.stampStyle.noteWidth);
+    $('defaultNoteWidthValue').textContent=`${state.stampStyle.noteWidth} pt`;
     for(const [id,tone,letter] of [['previewStrength','strength','A'],['previewLimitation','limitation','D']]) {
       const el=$(id),stamp={tone};const color=stampColor(stamp);
       el.style.cssText=`width:${Math.min(size+4,42)}px;height:${Math.min(size+4,42)}px;background:${color};color:${stampTextColor(stamp)}`;
@@ -995,13 +1002,38 @@ let pdfRendererLoad = null;
   }
 
   function initStampStyleEvents() {
-    $('defaultStampSize').addEventListener('input',e=>{state.stampStyle.size=normalSize(e.target.value);renderStampStyle();saveLibrarySettings();});
-    $('strengthStampColour').addEventListener('input',e=>{state.stampStyle.strengthColor=normalColor(e.target.value,STAMP_DEFAULTS.strengthColor);renderStampStyle();saveLibrarySettings();});
-    $('limitationStampColour').addEventListener('input',e=>{state.stampStyle.limitationColor=normalColor(e.target.value,STAMP_DEFAULTS.limitationColor);renderStampStyle();saveLibrarySettings();});
+    $('defaultStampSize').addEventListener('input',e=>{
+      state.stampStyle.size=normalSize(e.target.value);renderStampStyle();saveLibrarySettings();
+    });
+    $('strengthStampColour').addEventListener('input',e=>{
+      state.stampStyle.strengthColor=normalColor(e.target.value,STAMP_DEFAULTS.strengthColor);renderStampStyle();saveLibrarySettings();
+    });
+    $('limitationStampColour').addEventListener('input',e=>{
+      state.stampStyle.limitationColor=normalColor(e.target.value,STAMP_DEFAULTS.limitationColor);renderStampStyle();saveLibrarySettings();
+    });
+    $('defaultNoteFont').addEventListener('input',e=>{
+      state.stampStyle.fontSize=normalFontSize(e.target.value);renderStampStyle();saveLibrarySettings();
+    });
+    for(const [id,key] of [
+      ['defaultNoteTextColour','textColor'],['defaultNoteFillColour','fillColor'],['defaultNoteBorderColour','borderColor'],
+    ]){
+      $(id).addEventListener('input',e=>{
+        state.stampStyle[key]=normalColor(e.target.value,STAMP_DEFAULTS[key]);renderStampStyle();saveLibrarySettings();
+      });
+    }
+    $('defaultNoteWidth').addEventListener('input',e=>{
+      state.stampStyle.noteWidth=normalNoteWidth(e.target.value);renderStampStyle();saveLibrarySettings();
+    });
     $('applyStampStyle').addEventListener('click',()=>{
-      if(!state.stamps.length){toast('No placed stamps yet. These settings will be used for new stamps.');return;}
-      for(const stamp of state.stamps){stamp.size=state.stampStyle.size;stamp.color=stamp.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor;}
-      renderStamps();renderEditor();scheduleSave();toast(`Updated the appearance of all ${state.stamps.length} existing stamps.`);
+      if(!state.stamps.length){toast('No placed comments yet. These styles will apply to new comments.');return;}
+      for(const stamp of state.stamps){
+        stamp.size=state.stampStyle.size;
+        stamp.color=stamp.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor;
+        stamp.fontSize=state.stampStyle.fontSize;stamp.textColor=state.stampStyle.textColor;
+        stamp.fillColor=state.stampStyle.fillColor;stamp.borderColor=state.stampStyle.borderColor;
+      }
+      renderStamps();renderEditor();scheduleSave();
+      toast(`Updated circle, font and colours for all ${state.stamps.length} placed comments. Individual box dimensions are preserved.`);
     });
   }
   function initEvents() {
