@@ -373,16 +373,32 @@ with tempfile.TemporaryDirectory() as folder:
         # On a narrower display the same complete notes remain inside the PDF
         # page instead of being moved beneath it or to an external margin.
         page.set_viewport_size({'width': 430, 'height': 850})
+        # Phone chrome is compact by default, yet all scoring and project
+        # controls remain available through reversible disclosures.
+        expect(page.locator('#mobileDetailsToggle')).to_be_visible()
+        expect(page.locator('#assessmentBar')).to_be_hidden()
+        expect(page.locator('#referenceBar')).to_be_hidden()
+        page.locator('#mobileDetailsToggle').click()
+        expect(page.locator('#assessmentBar')).to_be_visible()
+        expect(page.locator('#referenceBar')).to_be_visible()
+        page.locator('#mobileDetailsToggle').click()
+        expect(page.locator('#assessmentBar')).to_be_hidden()
+        page.locator('#mobileProjectToolsToggle').click()
+        expect(page.locator('#openProjects')).to_be_visible()
+        page.locator('#mobileProjectToolsToggle').click()
+        expect(page.locator('#openProjects')).to_be_hidden()
         # The PDF remains the primary surface on narrow screens: document
         # and library are drawers rather than a long stack underneath it.
         expect(page.locator('#workspace')).to_have_attribute('data-mobile-drawer','')
         assert page.locator('#pdfCanvas').is_visible()
         assert page.locator('#bankPane').is_hidden()
         assert page.locator('#documentPane').is_hidden()
+        page.screenshot(path=str(ROOT/'qa-pass2-mobile-pdf-first.png'))
         page.locator('#toggleCommentPane').click()
         expect(page.locator('#workspace')).to_have_attribute('data-mobile-drawer','comments')
         expect(page.locator('#bankPane')).to_be_visible()
         expect(page.locator('#workspaceBackdrop')).to_be_visible()
+        page.screenshot(path=str(ROOT/'qa-pass2-mobile-comment-drawer.png'))
         page.locator('#closeBankPane').click()
         expect(page.locator('#workspaceBackdrop')).to_be_hidden()
         expect(page.locator('#bankPane')).to_be_hidden()
