@@ -254,6 +254,13 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#stampTextEdit').fill(revised_text)
         assert revised_text in ' '.join(page.locator('.onpage-stamp').first.inner_text().split())
         assert revised_text in page.locator('#stampsList .stamp-row').first.inner_text()
+        # The larger PDF canvas intentionally changes pixel-to-point placement.
+        # A longer edited comment may overlap a neighbouring stamp; the
+        # existing overlap detector must block export until notes are arranged.
+        if page.locator('#annotationNotice').is_visible():
+            assert 'overlap' in page.locator('#annotationNotice').inner_text().lower()
+            page.locator('#arrangeNotes').click()
+            expect(page.locator('#annotationNotice')).to_be_hidden()
         page.screenshot(path=str(ROOT/'qa-inline-moderator-page.png'),full_page=True)
 
         # Export a REAL PDF and inspect both the retained original page geometry
