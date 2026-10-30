@@ -1034,7 +1034,7 @@ let pdfRendererLoad = null;
   }
   // The moderation preview is made from the exact bytes that Export downloads.
   // Any project edit invalidates approval and requires a new preview.
-  let reviewPreview={bytes:null,signature:null,pdf:null,page:1,issues:[],visited:new Set()};
+  let reviewPreview={bytes:null,signature:null,pdf:null,page:1,zoom:1,issues:[],visited:new Set()};
   let reviewPreviewTask=null;
   let reviewPreviewLoading=false;
   function previewSignature(){
@@ -1092,13 +1092,19 @@ let pdfRendererLoad = null;
     if(reviewPreview.pdf!==token)return;
     const viewport1=page.getViewport({scale:1});
     const maxWidth=$('reviewPreviewBox').clientWidth-42;
-    const scale=Math.max(.38,Math.min(1.5,maxWidth/viewport1.width));
-    const viewport=page.getViewport({scale});
+    const fitScale=Math.max(.38,Math.min(1.5,maxWidth/viewport1.width));
+    const viewport=page.getViewport({scale:fitScale*reviewPreview.zoom});
     const canvas=$('reviewPreviewCanvas');
-    canvas.width=Math.ceil(viewport.width);
-    canvas.height=Math.ceil(viewport.height);
+    const pixelRatio=Math.min(2,window.devicePixelRatio||1);
+    canvas.width=Math.ceil(viewport.width*pixelRatio);
+    canvas.height=Math.ceil(viewport.height*pixelRatio);
+    canvas.style.width=viewport.width+'px';
+    canvas.style.height=viewport.height+'px';
     const ctx=canvas.getContext('2d',{alpha:false});
-    reviewPreviewTask=page.render({canvasContext:ctx,viewport});
+    reviewPreviewTask=page.render({
+      canvasContext:ctx,viewport,
+      transform:[pixelRatio,0,0,pixelRatio,0,0],
+    });
     try{await reviewPreviewTask.promise;}
     catch(error){if(error?.name==='RenderingCancelledException')return;throw error;}
     finally{reviewPreviewTask=null;}
@@ -1107,6 +1113,9 @@ let pdfRendererLoad = null;
     $('reviewPreviewPage').textContent='Page '+reviewPreview.page+' / '+token.numPages;
     $('reviewPreviewPrevious').disabled=reviewPreview.page===1;
     $('reviewPreviewNext').disabled=reviewPreview.page===token.numPages;
+    $('reviewPreviewZoomLabel').textContent=reviewPreview.zoom===1?'Fit':Math.round(reviewPreview.zoom*100)+'%';
+    $('reviewPreviewZoomOut').disabled=reviewPreview.zoom<=.75;
+    $('reviewPreviewZoomIn').disabled=reviewPreview.zoom>=3;
     updateReviewGate();
   }
   async function buildAnnotatedPdf(){
@@ -1222,6 +1231,7 @@ let pdfRendererLoad = null;
       reviewPreview.signature=fingerprint;
       reviewPreview.pdf=await pdfjsLib.getDocument({data:new Uint8Array(bytes)}).promise;
       reviewPreview.page=1;
+      reviewPreview.zoom=1;
       reviewPreview.visited.clear();
       $('reviewPreviewBox').classList.remove('hidden');
       await renderModeratorPreviewPage();
@@ -1351,6 +1361,14 @@ let pdfRendererLoad = null;
     });
     $('reviewPreviewNext').addEventListener('click',()=>{
       if(reviewPreview.pdf && reviewPreview.page<reviewPreview.pdf.numPages){reviewPreview.page++;renderModeratorPreviewPage().catch(console.error);}
+    });
+    $('reviewPreviewZoomIn').addEventListener('click',()=>{
+      reviewPreview.zoom=Math.min(3,Math.round((reviewPreview.zoom+.5)*100)/100);
+      renderModeratorPreviewPage().catch(console.error);
+    });
+    $('reviewPreviewZoomOut').addEventListener('click',()=>{
+      reviewPreview.zoom=Math.max(.75,Math.round((reviewPreview.zoom-.5)*100)/100);
+      renderModeratorPreviewPage().catch(console.error);
     });
     $('reviewConfirmed').addEventListener('change',updateReviewGate);
     $('openCriteria').addEventListener('click',openCriteriaDialog);
