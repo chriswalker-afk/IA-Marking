@@ -81,7 +81,7 @@
 
       <section class="viewer-pane" aria-label="PDF page viewer">
         <div class="viewer-toolbar">
-          <div class="toolbar-left"><span class="eyebrow">02 / ANNOTATE</span><strong>Exploration</strong></div>
+          <div class="toolbar-left"><span class="eyebrow">02 / ANNOTATE</span><strong>Exploration</strong><button type="button" id="arrangeNotes" class="btn subtle arrange-notes" title="Move overlapping on-page annotations into clear space">Arrange notes</button></div>
           <div class="toolbar-controls">
             <button type="button" id="prevPage" aria-label="Previous page" class="icon-button">&#8592;</button>
             <span class="page-counter"><input id="pageNumber" type="number" min="1" value="1" aria-label="Page number"> / <span id="pageTotal">--</span></span>
@@ -92,17 +92,17 @@
             <button type="button" id="zoomIn" aria-label="Zoom in" class="icon-button">+</button>
           </div>
         </div>
-        <div class="instruction-bar" id="instructionBar"><span class="instruction-icon">i</span><span id="instructionText">Select a comment from the bank, then click the relevant place on the PDF to add its stamp.</span><button id="cancelPlacement" class="text-button hidden" type="button">Cancel</button></div>
+        <div class="instruction-bar" id="instructionBar"><span class="instruction-icon">i</span><span id="instructionText">Select a comment, then click on clear space on the actual PDF page. Its full text is printed there for moderation.</span><button id="cancelPlacement" class="text-button hidden" type="button">Cancel</button></div>
         <div class="pdf-scroll" id="pdfScroll">
           <div id="emptyViewer" class="empty-viewer">
             <div class="empty-art" aria-hidden="true"><div class="empty-page"><div class="empty-line long"></div><div class="empty-line"></div><div class="empty-line medium"></div><div class="empty-equation">f(x) = ax<sup>2</sup> + bx + c</div><div class="empty-line medium"></div><div class="empty-line long"></div><div class="illustrative-stamp">A</div></div></div>
             <h2>Mark the evidence, not the page.</h2>
-            <p>Upload a final IA, choose a criterion-specific assessment comment, and place a small evidence stamp directly beside the relevant mathematics.</p>
+            <p>Upload a final IA and place complete teacher comments directly onto clear areas of each PDF page. Drag or resize them before exporting.</p>
             <label for="pdfInput" class="btn primary file-label">Select an IA PDF <span aria-hidden="true">&#8594;</span></label>
           </div>
-          <div id="pageShell" class="page-shell hidden" data-notes-layout="beside"><canvas id="pdfCanvas" aria-label="Rendered PDF page"></canvas><div id="stampLayer" class="stamp-layer" role="group" aria-label="Evidence stamps on page"></div><aside id="pageNotes" class="page-notes" aria-label="Full comment text beside criterion stamps"></aside></div>
+          <div id="pageShell" class="page-shell hidden"><canvas id="pdfCanvas" aria-label="Rendered PDF page"></canvas><div id="stampLayer" class="stamp-layer" role="group" aria-label="Visible full-text stamps printed on the IA page"></div></div>
         </div>
-        <div class="viewer-bottom"><span id="footerDocInfo">Awaiting a PDF</span><span>Complete comments sit beside their A–E circles in the margin</span></div>
+        <p id="annotationNotice" class="annotation-notice hidden" role="alert"></p><div class="viewer-bottom"><span id="footerDocInfo">Awaiting a PDF</span><span>What you see printed on this page is what the moderator receives</span></div>
       </section>
 
       <aside class="bank-pane" aria-label="Criterion evidence comment bank">
