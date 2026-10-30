@@ -11,7 +11,7 @@ from functools import partial
 import tempfile
 
 import fitz
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[1] / 'dist'
 assert (ROOT / 'vendor/pdf.mjs').exists(), 'Run npm run build first.'
@@ -68,7 +68,7 @@ with tempfile.TemporaryDirectory() as folder:
 
         # Upload a REAL two-page PDF and wait for PDF.js worker to render it.
         page.locator('#pdfInput').set_input_files(str(sample))
-        page.wait_for_function("document.querySelector('#pageTotal').textContent === '2'", timeout=30000)
+        expect(page.locator('#pageTotal')).to_have_text('2', timeout=30000)
         page.locator('#pdfCanvas').wait_for(state='visible')
         assert page.locator('#documentName').inner_text() == 'example-ia.pdf'
         assert page.locator('#pdfLibraryStatus').is_hidden(), page.locator('#pdfLibraryStatus').inner_text()
