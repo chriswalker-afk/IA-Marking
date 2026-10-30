@@ -257,7 +257,7 @@ let pdfRendererLoad = null;
             <small>${key==='E'?escapeHtml(level)+' descriptor set · ':''}Maximum ${criterion.max} marks</small></div>
           <label class="criteria-mark-select">Teacher mark
             <select data-criteria-score="${key}" aria-label="Criterion ${key} awarded mark">
-              <option value="">Not marked</option>
+              <option value="">-- / ${criterion.max}</option>
               ${Array.from({length:criterion.max+1},(_,n)=>`<option value="${n}" ${mark===n?'selected':''}>${n} / ${criterion.max}</option>`).join('')}
             </select>
           </label>
