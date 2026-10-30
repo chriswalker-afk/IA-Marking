@@ -71,9 +71,19 @@
           <div class="stamp-style-header"><strong>Stamp appearance</strong><span class="stamp-preview" aria-hidden="true"><i id="previewStrength">A</i><i id="previewLimitation">D</i></span></div>
           <label class="stamp-size-field" for="defaultStampSize">Size <output id="defaultStampSizeValue" for="defaultStampSize">20 pt</output></label>
           <input id="defaultStampSize" type="range" min="14" max="42" step="2" value="20" aria-label="Default stamp diameter in PDF points">
-          <div class="stamp-colour-fields"><label>Strength colour <input id="strengthStampColour" type="color" value="#477b97" aria-label="Strength stamp colour"></label><label>Limitation colour <input id="limitationStampColour" type="color" value="#b7803c" aria-label="Limitation stamp colour"></label></div>
-          <button id="applyStampStyle" class="text-button" type="button">Apply these colours and size to all existing stamps</button>
-          <p>Defaults apply to new stamps. Selected stamps can be customised separately.</p>
+          <div class="stamp-colour-fields"><label>Strength circle <input id="strengthStampColour" type="color" value="#477b97" aria-label="Strength circle colour"></label><label>Limitation circle <input id="limitationStampColour" type="color" value="#b7803c" aria-label="Limitation circle colour"></label></div>
+          <details class="note-defaults">
+            <summary>Default comment text &amp; box style</summary>
+            <label class="note-dimension-field" for="defaultNoteFont">Font size <output id="defaultNoteFontValue">9.5 pt</output><input id="defaultNoteFont" type="range" min="7" max="18" step=".5" value="9.5"></label>
+            <div class="stamp-colour-fields note-default-colours">
+              <label>Text colour <input id="defaultNoteTextColour" type="color" value="#263d4f" aria-label="Default comment text colour"></label>
+              <label>Box background <input id="defaultNoteFillColour" type="color" value="#fbfdff" aria-label="Default comment box background"></label>
+              <label>Box outline <input id="defaultNoteBorderColour" type="color" value="#477b97" aria-label="Default comment box border colour"></label>
+            </div>
+            <label class="note-dimension-field" for="defaultNoteWidth">New box width <output id="defaultNoteWidthValue">250 pt</output><input id="defaultNoteWidth" type="range" min="170" max="450" step="5" value="250"></label>
+          </details>
+          <button id="applyStampStyle" class="text-button" type="button">Apply circle, font and colour settings to all placed comments</button>
+          <p>Defaults apply to new comments. Box widths and heights remain individually adjustable; click a placed comment to edit it.</p>
         </section>
         <div class="stamps-list" id="stampsList"><p class="muted centered">Your evidence annotations will appear here.</p></div>
         <div class="document-footer"><span class="lock-icon">&#9638;</span><span>Local-first. No PDF or comments are uploaded to a server.</span></div>
