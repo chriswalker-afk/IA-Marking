@@ -239,18 +239,18 @@ let pdfRendererLoad = null;
       const count=all.filter(x=>x.criterion===key).length;
       const mark=state.marks[key];
       return '<button type="button" data-evidence-jump="'+key+'" class="evidence-summary-chip"><strong>'+key+'</strong><small>'
-        +(mark===null?'—':mark)+'/'+CRITERIA[key].max+'</small><span>'+count+' stamp'+(count===1?'':'s')+'</span></button>';
+        +(isFeedback()?'Draft':(mark===null?'—':mark)+'/'+CRITERIA[key].max)+'</small><span>'+count+' stamp'+(count===1?'':'s')+'</span></button>';
     }).join('');
     $('evidenceResults').innerHTML=CRITERION_KEYS.map(key=>{
       const comments=all.filter(x=>x.criterion===key).sort((a,b)=>a.page-b.page||a.y-b.y);
       const strengths=comments.filter(x=>x.tone==='strength').length;
       const limitations=comments.length-strengths;
       return '<section class="evidence-group" id="evidenceGroup_'+key+'"><div class="evidence-group-head"><span class="mini-circle">'+key+'</span>'
-        +'<div><h3>Criterion '+key+': '+escapeHtml(CRITERIA[key].name)+'</h3><small>'+strengths+' strengths · '+limitations+' limitations · '+comments.length+' total</small></div>'
-        +'<strong>'+ (state.marks[key]===null?'Not marked':state.marks[key]+' / '+CRITERIA[key].max)+'</strong></div>'
+        +'<div><h3>Criterion '+key+': '+escapeHtml(CRITERIA[key].name)+'</h3><small>'+strengths+' strengths · '+limitations+(isFeedback()?' actions':' limitations')+' · '+comments.length+' total</small></div>'
+        +'<strong>'+ (isFeedback()?'Draft guidance':state.marks[key]===null?'Not marked':state.marks[key]+' / '+CRITERIA[key].max)+'</strong></div>'
         +(comments.length?comments.map(stamp=>
           '<button type="button" class="evidence-result" data-evidence-pin="'+escapeHtml(stamp.id)+'">'
-          +'<span class="evidence-result-meta"><span class="polarity '+stamp.tone+'">'+(stamp.tone==='strength'?'Strength':'Limitation')+'</span>'
+          +'<span class="evidence-result-meta"><span class="polarity '+stamp.tone+'">'+(stamp.tone==='strength'?'Strength':isFeedback()?'Action':'Limitation')+'</span>'
           +'<strong>'+escapeHtml(stampLabel(stamp))+'</strong><span>Page '+stamp.page+'</span></span>'
           +'<span class="evidence-result-text">'+escapeHtml(stamp.text)+'</span>'
           +'<span class="evidence-result-visit">Go to page '+stamp.page+' →</span></button>'
@@ -571,7 +571,7 @@ let pdfRendererLoad = null;
     $('bankTotal').textContent = `${all.length} comments`;
     $('bankFilteredCount').textContent = `${items.length} matching ${items.length===1?'comment':'comments'}`;
     const visible = bankShowAll ? items : items.slice(0,MAX_BANK_VISIBLE);
-    $('commentList').innerHTML = visible.map(item => `<div class="comment-card ${draft?.id===item.id?'is-active':''}"><button type="button" class="comment-select" data-comment-id="${escapeHtml(item.id)}" aria-label="Use ${escapeHtml(item.criterion)} ${escapeHtml(item.tone)} comment as stamp"><span class="comment-card-head"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><span class="topic">${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</span>${item.origin==='Teacher custom comment' ? '<span class="custom-tag">CUSTOM</span>' : ''}</span><p>${escapeHtml(item.text)}</p></button><div class="comment-card-actions"><button type="button" class="favourite-button ${quickPicks.favorites.includes(item.id)?'is-favourite':''}" data-favourite-comment="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}" aria-label="${quickPicks.favorites.includes(item.id)?'Remove from':'Add to'} favourite comments">${quickPicks.favorites.includes(item.id)?'★':'☆'} <span>Favourite</span></button><button type="button" data-copy-comment="${escapeHtml(item.id)}">Copy</button><button type="button" data-edit-comment="${escapeHtml(item.id)}">Edit</button></div></div>`).join('');
+    $('commentList').innerHTML = visible.map(item => `<div class="comment-card ${draft?.id===item.id?'is-active':''}"><button type="button" class="comment-select" data-comment-id="${escapeHtml(item.id)}" aria-label="Use ${escapeHtml(item.criterion)} ${escapeHtml(item.tone)} comment as stamp"><span class="comment-card-head"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':isFeedback()?'Action':'Limitation'}</span><span class="topic">${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</span>${item.origin==='Teacher custom comment' ? '<span class="custom-tag">CUSTOM</span>' : ''}</span><p>${escapeHtml(item.text)}</p></button><div class="comment-card-actions"><button type="button" class="favourite-button ${quickPicks.favorites.includes(item.id)?'is-favourite':''}" data-favourite-comment="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}" aria-label="${quickPicks.favorites.includes(item.id)?'Remove from':'Add to'} favourite comments">${quickPicks.favorites.includes(item.id)?'★':'☆'} <span>Favourite</span></button><button type="button" data-copy-comment="${escapeHtml(item.id)}">Copy</button><button type="button" data-edit-comment="${escapeHtml(item.id)}">Edit</button></div></div>`).join('');
     if(!visible.length) $('commentList').innerHTML = '<p class="bank-empty">'+(bankQuickFilter==='favorites'?'No favourites yet. Star a comment in All to save it for quick stamping.':bankQuickFilter==='recent'?'No recent stamps yet. Placed comments will appear here.':'No matching comments. Try another search or write your own.')+'</p>';
     if(!bankShowAll && items.length>MAX_BANK_VISIBLE) $('commentList').insertAdjacentHTML('beforeend',`<button type="button" id="showMoreComments" class="btn subtle" style="width:100%">Show all ${items.length} comments</button>`);
     $('commentList').querySelectorAll('[data-comment-id]').forEach(button => button.addEventListener('click', () => prepareComment(button.dataset.commentId)));
@@ -600,7 +600,7 @@ let pdfRendererLoad = null;
     $('copyLibraryVisible').disabled=!items.length;
     $('libraryResults').innerHTML=items.length ? items.map(item=>{
       const isCustom=item.origin==='Teacher custom comment';
-      const isChanged=Boolean(state.commentEdits[item.id]);
+      const isChanged=Boolean(activeCommentEdits()[item.id]);
       const editing=item.id===libraryEditingId;
       return `<article class="library-entry" data-library-id="${escapeHtml(item.id)}"><div class="library-entry-header"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><strong>${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</strong><small>${escapeHtml(item.id)}${isCustom?' · Personal':isChanged?' · Edited':''}</small></div>${editing?`<div class="library-edit"><label>Category<input id="libraryEditTopic" maxlength="90" value="${escapeHtml(item.topic)}"></label><label>Comment<textarea id="libraryEditText" maxlength="1800" rows="4">${escapeHtml(item.text)}</textarea></label><div class="library-entry-actions"><button type="button" data-save-library="${escapeHtml(item.id)}" class="btn primary">Save changes</button><button type="button" data-cancel-library>Cancel</button>${isChanged?`<button type="button" data-restore-library="${escapeHtml(item.id)}">Restore original</button>`:''}${isCustom?`<button type="button" data-delete-library="${escapeHtml(item.id)}" class="danger-link">Delete personal comment</button>`:''}</div></div>`:`<p>${escapeHtml(item.text)}</p><div class="library-entry-actions"><button type="button" data-copy-library="${escapeHtml(item.id)}">Copy comment</button><button type="button" data-edit-library="${escapeHtml(item.id)}">Edit wording</button><button type="button" data-use-library="${escapeHtml(item.id)}">Use as stamp</button><button type="button" data-favourite-library="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}">${quickPicks.favorites.includes(item.id)?'★ Remove favourite':'☆ Add favourite'}</button></div>`}</article>`;
     }).join(''):'<p class="bank-empty">No comments match these filters. Try removing the search terms.</p>';
@@ -627,12 +627,17 @@ let pdfRendererLoad = null;
     const topic=$('libraryEditTopic')?.value.trim();
     if(!text){toast('A library comment cannot be empty.');$('libraryEditText')?.focus();return;}
     if(!topic){toast('Enter a category for this comment.');$('libraryEditTopic')?.focus();return;}
-    const custom=state.customComments.find(c=>c.id===id);
+    const custom=activeCustomComments().find(c=>c.id===id);
     if(custom){custom.text=text.slice(0,1800);custom.topic=topic.slice(0,90);}
     else {
-      const original=BANK.find(c=>c.id===id);if(!original)return;
-      if(text===original.text && topic===original.topic)delete state.commentEdits[id];
-      else state.commentEdits[id]={text:text.slice(0,1800),topic:topic.slice(0,90)};
+      const original=activeBank().find(c=>c.id===id);if(!original)return;
+      if(isFeedback()){
+        if(text===original.text && topic===original.topic)delete state.feedbackEdits[id];
+        else state.feedbackEdits[id]={text:text.slice(0,1800),topic:topic.slice(0,90)};
+      }else{
+        if(text===original.text && topic===original.topic)delete state.commentEdits[id];
+        else state.commentEdits[id]={text:text.slice(0,1800),topic:topic.slice(0,90)};
+      }
     }
     libraryEditingId=null;saveLibrarySettings();renderBank();renderFullLibrary();toast('Library comment saved for future use.');
   }
@@ -647,10 +652,12 @@ let pdfRendererLoad = null;
     if(button.hasAttribute('data-cancel-library')){libraryEditingId=null;renderFullLibrary();return;}
     if(button.hasAttribute('data-save-library')){saveLibraryEdit(id);return;}
     if(button.hasAttribute('data-use-library')){$('libraryDialog').close();libraryEditingId=null;prepareComment(id);return;}
-    if(button.hasAttribute('data-restore-library')){delete state.commentEdits[id];libraryEditingId=null;saveLibrarySettings();renderBank();renderFullLibrary();toast('Original library wording restored.');return;}
+    if(button.hasAttribute('data-restore-library')){delete activeCommentEdits()[id];libraryEditingId=null;saveLibrarySettings();renderBank();renderFullLibrary();toast('Original library wording restored.');return;}
     if(button.hasAttribute('data-delete-library')){
       if(!confirm('Delete this personal library comment? Previously placed stamps will not change.'))return;
-      state.customComments=state.customComments.filter(c=>c.id!==id);libraryEditingId=null;
+      if(isFeedback())state.feedbackComments=state.feedbackComments.filter(c=>c.id!==id);
+      else state.customComments=state.customComments.filter(c=>c.id!==id);
+      libraryEditingId=null;
       saveLibrarySettings();renderBank();renderFullLibrary();toast('Personal comment removed from the library.');
     }
   }
@@ -665,7 +672,7 @@ let pdfRendererLoad = null;
     const item = getComments().find(c=>c.id===id);
     if(!item) return;
     selectedStampId = null; movingStampId = null;
-    draft = {...item,
+    draft = {...item,priority:'normal',
       size:state.stampStyle.size,noteWidth:state.stampStyle.noteWidth,noteHeight:null,
       fontSize:state.stampStyle.fontSize,textColor:state.stampStyle.textColor,
       fillColor:state.stampStyle.fillColor,borderColor:state.stampStyle.borderColor,
@@ -678,7 +685,7 @@ let pdfRendererLoad = null;
     draft={
       id:stamp.libraryId||'repeat-'+stamp.id,
       libraryId:stamp.libraryId||'',
-      criterion:stamp.criterion,tone:stamp.tone,topic:stamp.topic,text:stamp.text,
+      criterion:stamp.criterion,tone:stamp.tone,topic:stamp.topic,text:stamp.text,priority:feedbackPriority(stamp.priority),
       size:stamp.size,color:stamp.color,noteWidth:stamp.noteWidth,noteHeight:stamp.noteHeight,
       fontSize:stamp.fontSize,textColor:stamp.textColor,
       fillColor:stamp.fillColor,borderColor:stamp.borderColor,
@@ -758,11 +765,25 @@ let pdfRendererLoad = null;
   function renderEditor() {
     finishFieldHistory();
     const stamp = selectedStamp();
+    const priorityField=item=>isFeedback()&&item.tone==='limitation'
+      ?'<label class="feedback-priority-field">Revision priority<select id="feedbackStampPriority" aria-label="Priority for this improvement action">'
+        +['high','normal','low'].map(v=>'<option value="'+v+'" '+(feedbackPriority(item.priority)===v?'selected':'')+'>'
+          +({high:'High - address first',normal:'Standard',low:'Lower - polish'}[v])+'</option>').join('')+'</select></label>'
+      :'';
+    const bindPriority=(item,placed)=>{
+      const control=$('feedbackStampPriority');if(!control)return;
+      control.addEventListener('change',event=>{
+        const before=placed?historySnapshot():null;
+        item.priority=feedbackPriority(event.target.value);
+        if(placed){recordHistory('change revision priority',before);renderStamps();scheduleSave();}
+      });
+    };
     if(stamp) {
-      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} evidence stamp</strong><small>Page ${stamp.page} / ${stamp.tone}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
+      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} ${isFeedback()?'feedback':'evidence'} stamp</strong><small>Page ${stamp.page} / ${stamp.tone}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${priorityField(stamp)}${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
       $('stampTextEdit').addEventListener('input', e => {stamp.text=e.target.value;renderStamps();scheduleSave();});
       watchHistoryField($('stampTextEdit'),'edit '+stamp.criterion+' comment');
       bindAppearanceEditor(stamp,'selectedStamp',true);
+      bindPriority(stamp,true);
       $('moveStamp').addEventListener('click',()=>{movingStampId=stamp.id;draft=null;selectedStampId=null;renderEditor();setInstruction(); if (currentPage!==stamp.page) navigate(stamp.page);});
       $('copyStamp').addEventListener('click',()=>copyCommentText(stamp.text));
       $('duplicateStamp').addEventListener('click',()=>{
@@ -774,7 +795,8 @@ let pdfRendererLoad = null;
         state.stamps=state.stamps.filter(s=>s.id!==stamp.id);selectedStampId=null;
         renderEditor();renderStamps();renderBank();scheduleSave();
         recordHistory('delete '+stamp.criterion+' comment',before);
-        toast('Evidence stamp deleted. Use Undo to restore it.');
+        if(isFeedback())delete state.feedbackCompleted[stamp.id];
+        toast((isFeedback()?'Feedback':'Evidence')+' stamp deleted. Use Undo to restore it.');
       });
       return;
     }
@@ -782,9 +804,10 @@ let pdfRendererLoad = null;
       $('selectionEditor').innerHTML = '<div class="selection-empty"><span class="small-ring">A</span><span>Choose a comment to prepare a stamp.</span></div>';
       return;
     }
-    $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Ready: criterion ${escapeHtml(draft.criterion)}</strong><span class="polarity ${draft.tone}">${draft.tone==='strength'?'Strength':'Limitation'}</span></div><textarea id="draftTextEdit" maxlength="1800" aria-label="Personalise only this stamp comment">${escapeHtml(draft.text)}</textarea>${appearanceEditor(draft,'draftStamp')}<div class="selection-actions"><small>Personalise this stamp before placing it on the PDF.</small><button type="button" class="btn primary" id="placeHint">${isReady()?'Click PDF to place':'Add PDF first'} &#8594;</button></div></div>`;
+    $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Ready: criterion ${escapeHtml(draft.criterion)}</strong><span class="polarity ${draft.tone}">${draft.tone==='strength'?'Strength':isFeedback()?'Action':'Limitation'}</span></div><textarea id="draftTextEdit" maxlength="1800" aria-label="Personalise only this stamp comment">${escapeHtml(draft.text)}</textarea>${priorityField(draft)}${appearanceEditor(draft,'draftStamp')}<div class="selection-actions"><small>Personalise this stamp before placing it on the PDF.</small><button type="button" class="btn primary" id="placeHint">${isReady()?'Click PDF to place':'Add PDF first'} &#8594;</button></div></div>`;
     $('draftTextEdit').addEventListener('input',e=>{draft.text=e.target.value;});
     bindAppearanceEditor(draft,'draftStamp',false);
+    bindPriority(draft,false);
     $('placeHint').addEventListener('click',()=>{
       if(!isReady()) $('pdfInput').click();
       else {$('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});toast('Click beside the evidence on the PDF to place this stamp.');}
@@ -1049,7 +1072,7 @@ let pdfRendererLoad = null;
       topic:draft.topic,text:draft.text.trim(),size:normalSize(draft.size),color:stampColor(draft),
       noteWidth:normalNoteWidth(draft.noteWidth),noteHeight:normalNoteHeight(draft.noteHeight),
       fontSize:noteFontSize(draft),textColor:noteTextColor(draft),fillColor:noteFillColor(draft),
-      borderColor:noteBorderColor(draft),libraryId:draft.id,createdAt:now(),
+      borderColor:noteBorderColor(draft),libraryId:draft.id,createdAt:now(),priority:feedbackPriority(draft.priority),
     };
     if(pageWidthPt&&pageHeightPt)placeNoteInFreeSpace(stamp,pageStamps(currentPage),pageWidthPt,pageHeightPt);
     state.stamps.push(stamp);
@@ -1062,7 +1085,7 @@ let pdfRendererLoad = null;
     recordHistory('place '+stamp.criterion+' comment',before);
     renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
     recordRecentComment(sourceId);
-    toast(`${stamp.criterion} ${stamp.tone} stamp placed on page ${currentPage}.`
+    toast(`${stamp.criterion} ${isFeedback()&&stamp.tone==='limitation'?'revision action':stamp.tone} stamp placed on page ${currentPage}.`
       +(repeatPlacement?' Repeat is on: click another clear area to stamp again.':''));
   }
   async function ensurePdfRenderer() {
@@ -2070,8 +2093,8 @@ let pdfRendererLoad = null;
     });
     $('saveCustom').addEventListener('click',()=>{
       const txt=$('customText').value.trim();if(!txt){toast('Write an evidence comment first.');return;}
-      const item={id:'custom-'+makeId(),criterion:$('customCriterion').value,tone:$('customTone').value,topic:$('customTopic').value.trim()||'Personal evidence',text:txt,tags:[],courses:['AA SL','AA HL','AI SL','AI HL'],origin:'Teacher custom comment'};
-      state.customComments.unshift(item);
+      const item={id:'custom-'+makeId(),criterion:$('customCriterion').value,tone:$('customTone').value,topic:$('customTopic').value.trim()||'Personal evidence',text:txt,tags:[],courses:allCourses,origin:'Teacher custom comment'};
+      activeCustomComments().unshift(item);
       saveLibrarySettings();
       $('customDialog').close();tab=item.criterion;tone=item.tone;search='';$('commentSearch').value='';renderTabs();renderTone();renderBank();prepareComment(item.id);
       toast('Personal comment saved to this browser and selected.');
