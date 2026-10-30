@@ -1,9 +1,13 @@
 (() => {
   'use strict';
-  const BUILT_IN=Array.isArray(window.IA_COMMENT_BANK)?window.IA_COMMENT_BANK:[];
+  const FEEDBACK_MODE=new URLSearchParams(window.location.search).get('mode')==='feedback';
+  const BUILT_IN=FEEDBACK_MODE
+    ?(Array.isArray(window.IA_FEEDBACK_BANK)?window.IA_FEEDBACK_BANK:[])
+    :(Array.isArray(window.IA_COMMENT_BANK)?window.IA_COMMENT_BANK:[]);
   const byId=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
-  const COMMENTS_KEY='ia-marking-desk-comments', EDITS_KEY='ia-marking-desk-edits';
+  const COMMENTS_KEY=FEEDBACK_MODE?'ia-marking-desk-feedback-comments':'ia-marking-desk-comments';
+  const EDITS_KEY=FEEDBACK_MODE?'ia-marking-desk-feedback-edits':'ia-marking-desk-edits';
   const PICKS_KEY='ia-marking-desk-quick-picks-v1';
   function read(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||'null');return value??fallback;}catch{return fallback;}}
   let customs=read(COMMENTS_KEY,[]),edits=read(EDITS_KEY,{});
@@ -19,6 +23,20 @@
   if(!Array.isArray(customs))customs=[];
   if(!edits||typeof edits!=='object'||Array.isArray(edits))edits={};
   let editingId=null,creating=false,toastTimer=null;
+  byId(FEEDBACK_MODE?'referenceFeedbackMode':'referenceMarkingMode').setAttribute('aria-current','page');
+  if(FEEDBACK_MODE){
+    document.title='First draft feedback prompts | IA Marking Desk';
+    document.querySelector('.reference-intro .eyebrow').textContent='STUDENT FIRST-DRAFT GUIDANCE';
+    document.querySelector('.reference-intro h1').textContent='Actionable feedback stamp library';
+    document.querySelector('.reference-intro p').textContent='Browse and adapt student-facing comments that identify a mathematical issue or a next step, without providing replacement solutions. These prompts are distinct from final-marking evidence.';
+    document.querySelector('.reference-note').textContent='The feedback comments and their source-page links are adapted from the supplied 2021-2026 examiner-feedback synthesis, not official achievement descriptors. Changes you save here will be used in the feedback mode. Previously placed comments are not rewritten.';
+    document.querySelector('.reference-brand small').textContent='Draft feedback library · A-E through November 2028';
+    document.querySelector('.reference-stat span').textContent='draft feedback prompts';
+    document.querySelector('.reference-header>a').textContent='← Back to IA review desk';
+    byId('refSearch').placeholder='Search student actions, maths or reflection...';
+    document.querySelector('.ref-search-label').firstChild.textContent='Search student feedback prompts';
+    byId('refTone').querySelector('option[value="limitation"]').textContent='Improvement actions';
+  }
   function toast(message){
     const el=byId('referenceToast');el.textContent=message;el.classList.remove('hidden');
     clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.add('hidden'),3500);
@@ -55,7 +73,7 @@
     byId('referenceResults').innerHTML=visible.length?visible.map(item=>{
       const original=BUILT_IN.some(x=>x.id===item.id),changed=Boolean(edits[item.id]);
       return `<article class="ref-comment" data-ref-id="${esc(item.id)}">
-       <div class="ref-comment-head"><span class="polarity ${item.tone==='limitation'?'limitation':'strength'}">${item.tone==='limitation'?'Limitation':'Strength'}</span><strong>${esc(item.criterion)} / ${esc(item.topic)}</strong><small>${esc(item.id)}${!original?' · Personal':changed?' · Edited':''}</small></div>
+       <div class="ref-comment-head"><span class="polarity ${item.tone==='limitation'?'limitation':'strength'}">${item.tone==='limitation'?(FEEDBACK_MODE?'Action':'Limitation'):'Strength'}</span><strong>${esc(item.criterion)} / ${esc(item.topic)}</strong><small>${esc(item.id)}${!original?' · Personal':changed?' · Edited':''}</small></div>
        <p>${esc(item.text)}</p>
        <div class="ref-comment-actions"><button type="button" class="${favorites.includes(item.id)?'ref-is-favourite':''}" data-action="favourite" data-id="${esc(item.id)}" aria-pressed="${favorites.includes(item.id)}">${favorites.includes(item.id)?'★ Saved favourite':'☆ Favourite'}</button><button type="button" data-action="copy" data-id="${esc(item.id)}">Copy comment</button><button type="button" data-action="edit" data-id="${esc(item.id)}">Edit</button>${changed?'<button type="button" data-action="restore" data-id="'+esc(item.id)+'">Restore original</button>':''}${!original?'<button class="ref-delete" type="button" data-action="delete" data-id="'+esc(item.id)+'">Delete</button>':''}</div>
        </article>`;
@@ -73,14 +91,16 @@
     const item=id?getComments().find(x=>x.id===id):null;
     if(id&&!item)return;
     const builtIn=item&&BUILT_IN.some(x=>x.id===item.id);
-    byId('referenceEditTitle').textContent=creating?'Add personal comment':'Edit evidence comment';
+    byId('referenceEditTitle').textContent=creating?'Add personal '+(FEEDBACK_MODE?'feedback':'comment'):'Edit '+(FEEDBACK_MODE?'feedback prompt':'evidence comment');
     byId('referenceEditCriterion').value=item?.criterion||'A';
     byId('referenceEditTone').value=item?.tone||'strength';
     byId('referenceEditCriterion').disabled=Boolean(builtIn);
     byId('referenceEditTone').disabled=Boolean(builtIn);
     byId('referenceEditTopic').value=item?.topic||'';
     byId('referenceEditText').value=item?.text||'';
-    byId('referenceEditNote').textContent=builtIn?'The built-in criterion and evidence type remain unchanged. Wording edits apply to future stamps only.':'This personal comment will be available across all four Mathematics courses in this browser.';
+    byId('referenceEditNote').textContent=builtIn
+      ?'The criterion and feedback type stay fixed. Edits apply only to future stamps.'
+      :'This personal '+(FEEDBACK_MODE?'student-facing feedback':'teacher evidence')+' comment will be available across all four Mathematics courses on this device.';
     byId('referenceEditDialog').showModal();
     byId('referenceEditText').focus();
   }
