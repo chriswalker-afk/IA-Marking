@@ -75,10 +75,43 @@ with tempfile.TemporaryDirectory() as folder:
         assert page.locator('[data-score="E"]').input_value() == '5'
         assert page.locator('#pdfLibraryStatus').is_hidden(), page.locator('#pdfLibraryStatus').inner_text()
 
-        # Place a stamp, then export using real pdf-lib and parse the exported PDF.
+        # Full comments appear *next to a duplicate A-E circle*, without
+        # covering the student's PDF. Two nearby stamps must not overlap.
+        first_text = ('The analysis uses residuals to check the accuracy of the fitted model. '
+                      'The interpretation relates the findings to the original aim and explains '
+                      'why an unexpected result is meaningful.')
+        second_text = ('The mathematical limitation is identified using numerical evidence. '
+                       'The conclusion makes the consequences of the approximation explicit.')
         page.locator('#commentList [data-comment-id]').first.click()
+        page.locator('#draftTextEdit').fill(first_text)
         page.locator('#stampLayer').click(position={'x': 120, 'y': 160})
         assert page.locator('#allPinCount').inner_text() == '1'
+        expect(page.locator('#pageNotes .page-note')).to_have_count(1)
+        assert first_text in page.locator('#pageNotes .page-note-fulltext').inner_text()
+        first_note = page.locator('#pageNotes .page-note').first
+        bubble = first_note.locator('.page-note-circle').bounding_box()
+        full_comment = first_note.locator('.page-note-fulltext').bounding_box()
+        assert bubble and full_comment and bubble['x'] + bubble['width'] < full_comment['x']
+
+        page.locator('#commentList [data-comment-id]').nth(1).click()
+        page.locator('#draftTextEdit').fill(second_text)
+        page.locator('#stampLayer').click(position={'x': 160, 'y': 200})
+        expect(page.locator('#pageNotes .page-note')).to_have_count(2)
+        page_notes = page.locator('#pageNotes .page-note')
+        first_box = page_notes.nth(0).bounding_box()
+        second_box = page_notes.nth(1).bounding_box()
+        assert first_box and second_box and second_box['y'] >= first_box['y'] + first_box['height'], 'Full note cards overlap.'
+        assert first_text in page_notes.nth(0).inner_text()
+        assert second_text in page_notes.nth(1).inner_text()
+
+        # A stamp text edit updates both the on-page card and the final export.
+        page_notes.first.click()
+        revised_text = first_text + ' This updated sentence is also visible in the page margin.'
+        page.locator('#stampTextEdit').fill(revised_text)
+        assert revised_text in page.locator('#pageNotes .page-note-fulltext').first.inner_text()
+        assert revised_text in page.locator('#stampsList .stamp-row').first.inner_text()
+        page.screenshot(path=str(ROOT / 'qa-full-comments-desktop.png'), full_page=True)
+
         page.locator('#openReview').click()
         with page.expect_download(timeout=35000) as download_info:
             page.locator('#exportAnnotated').click()
@@ -86,9 +119,22 @@ with tempfile.TemporaryDirectory() as folder:
         exported = fitz.open(saved)
         assert len(exported) >= 3, f'Expected two source pages plus marking summary, got {len(exported)}.'
         assert 'ASSESSMENT EVIDENCE' in exported[0].get_text().upper()
+        pdf_text = ' '.join(exported[0].get_text().split())
+        assert revised_text in pdf_text, 'Edited full comment was clipped or missing from annotated page.'
+        assert second_text in pdf_text, 'Second full comment was omitted from annotated page.'
+        assert 'A1' in pdf_text and 'A2' in pdf_text
         assert 'MARKING' in exported[-1].get_text().upper() or 'ASSESSMENT' in exported[-1].get_text().upper()
         exported.close()
         page.locator('#closeReview').click()
+
+        # At phone widths the entire text moves below the PDF, rather than
+        # covering the mathematical work or clipping at the page edge.
+        page.set_viewport_size({'width': 430, 'height': 850})
+        expect(page.locator('#pageShell')).to_have_attribute('data-notes-layout', 'below', timeout=10000)
+        assert page.locator('#pageNotes .page-note').count() == 2
+        assert revised_text in page.locator('#pageNotes').inner_text()
+        page.locator('#pageNotes').scroll_into_view_if_needed()
+        page.screenshot(path=str(ROOT / 'qa-full-comments-mobile.png'), full_page=True)
 
         assert errors == [], f'Browser JS errors: {errors}'
         context.close()
