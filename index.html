@@ -20,6 +20,7 @@
       <div class="header-center"><span class="teacher-chip"><span class="status-dot"></span>Private teacher workspace</span><span class="privacy-note">PDF stays in this browser</span></div>
       <div class="header-actions">
         <span id="localSaveState" class="local-save-state" role="status" aria-live="polite">Local storage checking…</span>
+        <button id="mobileProjectToolsToggle" class="mobile-project-tools-toggle" type="button" aria-expanded="false" aria-controls="openProjects newProject projectSave">Projects &amp; backups <span aria-hidden="true">⌄</span></button>
         <button id="openProjects" type="button" class="btn subtle project-dashboard-trigger">My IAs <span id="projectCountBadge">0</span></button>
         <button id="newProject" class="btn subtle" type="button" title="Start a new IA without deleting saved projects">New IA</button>
         <label for="projectOpen" class="btn subtle file-label" title="Import a previously downloaded editable .iamark.json backup">Import backup</label>
@@ -36,7 +37,8 @@
       </div>
       <p id="modeDescription" role="status">Final assessment: annotate evidence and record teacher marks against criteria A–E.</p>
     </section>
-    <section class="assessment-bar" aria-label="Assessment details and criterion marks">
+    <button id="mobileDetailsToggle" class="mobile-details-toggle" type="button" aria-expanded="false" aria-controls="assessmentBar referenceBar"><span>IA details, criteria &amp; marks</span><small id="mobileDetailsSummary">AA SL · Final assessment</small><span class="mobile-details-chevron" aria-hidden="true">⌄</span></button>
+    <section id="assessmentBar" class="assessment-bar" aria-label="Assessment details and criterion marks">
       <div class="assessment-fields">
         <label>Course
           <select id="course" aria-label="IB mathematics course">
@@ -56,7 +58,7 @@
 
     <div id="frameworkNotice" class="framework-notice" role="status">A-E assessment framework (final assessment November 2028). The new May 2029 criteria are not supported by this version.</div>
 
-    <nav class="reference-bar" aria-label="Teacher reference tools">
+    <nav id="referenceBar" class="reference-bar" aria-label="Teacher reference tools">
       <a id="referenceLibraryLink" class="btn subtle reference-link" href="library.html">Browse marking library <span aria-hidden="true">↗</span></a>
       <button class="btn subtle" id="openCriteria" type="button">Criteria &amp; marks</button>
       <span class="reference-help">Comments and criteria are available without a PDF.</span>
