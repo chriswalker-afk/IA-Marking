@@ -62,6 +62,8 @@
       <span class="reference-help">Comments and criteria are available without a PDF.</span>
     </nav>
 
+    <!-- Keep the shared file chooser outside collapsed/overlay panes: both upload labels remain usable on phones. -->
+    <input id="pdfInput" class="sr-only" type="file" accept=".pdf,application/pdf">
     <main id="workspace" class="workspace" data-bank-view="browse" data-mobile-drawer="">
       <button type="button" id="workspaceBackdrop" class="workspace-backdrop" aria-label="Close workspace panel" hidden></button>
       <aside id="documentPane" class="document-pane" aria-label="Document and annotations" aria-labelledby="documentPaneTitle">
@@ -73,7 +75,6 @@
           <span id="uploadSubtext">Drop a PDF here or browse files</span>
           <span class="upload-action">Choose PDF</span>
         </label>
-        <input id="pdfInput" class="sr-only" type="file" accept=".pdf,application/pdf">
         <p id="pdfLibraryStatus" class="pdf-error hidden" role="alert"></p>
         <button id="resumeLast" class="btn subtle hidden" type="button">Resume most recent local IA</button>
         <div id="documentMeta" class="document-meta hidden"><div class="doc-symbol">PDF</div><div class="doc-info"><strong id="documentName"></strong><small id="documentDetails"></small></div><button class="tiny-icon" id="replacePdf" type="button" title="Choose a different PDF">&#8635;</button></div>
