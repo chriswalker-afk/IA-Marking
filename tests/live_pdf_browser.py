@@ -99,7 +99,7 @@ with tempfile.TemporaryDirectory() as folder:
 
         page.locator('#commentList [data-comment-id]').nth(1).click()
         page.locator('#draftTextEdit').fill(second_text)
-        page.locator('#stampLayer').click(position={'x': 130, 'y': 300})
+        page.locator('#stampLayer').click(position={'x': 350, 'y': 500})
         expect(page.locator('.onpage-stamp')).to_have_count(2)
         box1=page.locator('.onpage-stamp').nth(0).bounding_box()
         box2=page.locator('.onpage-stamp').nth(1).bounding_box()
