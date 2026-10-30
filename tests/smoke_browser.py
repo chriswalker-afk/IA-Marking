@@ -76,7 +76,7 @@ with sync_playwright() as playwright:
     # The library is available without an uploaded PDF and every available comment is visible.
     page.locator('#openLibrary').click()
     page.locator('#libraryDialog[open]').wait_for()
-    assert page.locator('.library-entry').count()==288
+    assert page.locator('.library-entry').count()==294
     first=page.locator('.library-entry').first
     first.locator('[data-copy-library]').click()
     assert len(page.evaluate('window.__copiedText'))>30
