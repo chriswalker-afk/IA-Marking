@@ -534,3 +534,19 @@ h2{margin:4px 0 0;font-weight:750;font-size:18px;letter-spacing:-.035em;color:va
 @font-face{font-family:"IA Comment Sans";src:url("vendor/fonts/NotoSans-Bold.ttf") format("truetype");font-style:normal;font-weight:700;font-display:swap}
 @font-face{font-family:"IA Comment Math";src:url("vendor/fonts/NotoSansMath-Regular.ttf") format("truetype");font-style:normal;font-weight:400;font-display:swap}
 .onpage-note-body,.onpage-note-header{font-family:"IA Comment Sans","IA Comment Math",sans-serif!important}
+
+
+/* Exact-PDF preview magnification for checking small mathematical details. */
+.review-preview-zoom{display:inline-flex;gap:5px;align-items:center;padding-left:7px;border-left:1px solid #dbe4eb}
+.review-preview-zoom span{min-width:33px;text-align:center;font-size:10px;font-weight:800;color:#48677d}
+.review-preview-bar{flex-wrap:wrap}
+.review-preview-controls{flex-wrap:wrap}
+.review-preview-scroll{display:block;overflow:auto}
+.review-preview-scroll canvas{display:block;flex:none;max-width:none;margin-left:auto;margin-right:auto}
+@media(max-width:700px){
+ .review-preview-bar{gap:7px}
+ .review-preview-bar strong{font-size:11px}
+ .review-preview-controls{width:100%;justify-content:space-between}
+ .review-preview-controls .icon-button{width:29px;height:29px;min-width:29px}
+ .review-preview-zoom{gap:4px}
+}
