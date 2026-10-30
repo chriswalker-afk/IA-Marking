@@ -331,6 +331,46 @@ let pdfRendererLoad = null;
 
   function pageStamps(page) { return state.stamps.filter(s=>s.page===page); }
   function stampLabel(stamp) { return `${stamp.criterion}${1+state.stamps.filter(s=>s.criterion===stamp.criterion).findIndex(s=>s.id===stamp.id)}`; }
+  function renderPageNotes(stampsOnPage) {
+    const rail=$('pageNotes');
+    if(!rail)return;
+    const notes=[...stampsOnPage].sort((a,b)=>a.y-b.y);
+    const pageHeight=Number.parseFloat($('pdfCanvas').style.height)||0;
+    const beside=$('pageShell').dataset.notesLayout!=='below';
+    rail.innerHTML=notes.length?notes.map(stamp=>{
+      const color=stampColor(stamp),label=stampLabel(stamp);
+      return `<button type="button" class="page-note ${stamp.id===selectedStampId?'is-selected':''}" data-note-pin="${escapeHtml(stamp.id)}" style="--note-color:${color}" aria-label="Select ${escapeHtml(label)} evidence stamp">
+        <span class="page-note-circle" style="background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
+        <span class="page-note-content"><span class="page-note-kicker">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':'Limitation'}</span>
+        <span class="page-note-fulltext">${escapeHtml(stamp.text)}</span></span>
+      </button>`;
+    }).join(''):'<p class="page-notes-empty">Full assessment comments will appear beside their A–E criterion circles when you place stamps.</p>';
+    if(pageHeight>0) {
+      if(beside) {
+        let occupied=0;
+        const nodes=[...rail.querySelectorAll('[data-note-pin]')];
+        nodes.forEach((node,index)=>{
+          const target=Math.max(0,Math.round(notes[index].y*pageHeight-35));
+          const top=Math.max(target,occupied ? occupied+9 : 0);
+          node.style.top=`${top}px`;
+          occupied=top+node.offsetHeight;
+        });
+        const height=Math.max(pageHeight,occupied+10);
+        rail.style.height=`${height}px`;
+        $('pageShell').style.height=`${height}px`;
+      } else {
+        rail.style.height='auto';
+        $('pageShell').style.height=`${pageHeight+14+rail.scrollHeight+4}px`;
+      }
+    }
+    rail.querySelectorAll('[data-note-pin]').forEach(button=>button.addEventListener('click',()=>{
+      const stamp=state.stamps.find(item=>item.id===button.dataset.notePin);
+      if(!stamp)return;
+      selectedStampId=stamp.id;draft=null;movingStampId=null;
+      renderEditor();renderBank();setInstruction();renderStamps();
+    }));
+  }
+
   function renderStamps() {
     const stampsOnPage = pageStamps(currentPage);
     $('allPinCount').textContent = state.stamps.length;
@@ -358,6 +398,7 @@ let pdfRendererLoad = null;
       });
       btn.addEventListener('click',e=>e.stopPropagation());
     });
+    renderPageNotes(stampsOnPage);
     const container = $('stampsList');
     const sorted = [...state.stamps].sort((a,b)=>a.page-b.page || a.y-b.y);
     container.innerHTML = sorted.length ? sorted.map(stamp=>`<button type="button" class="stamp-row ${selectedStampId===stamp.id?'is-selected':''}" data-sidebar-pin="${escapeHtml(stamp.id)}"><span class="mini-circle ${stamp.tone}" style="background:${stampColor(stamp)};color:${stampTextColor(stamp)}">${stamp.criterion}</span><span class="stamp-info"><strong>Page ${stamp.page} &middot; ${stamp.tone==='strength'?'Strength':'Limitation'}</strong><span>${escapeHtml(stamp.text)}</span></span></button>`).join('') : '<p class="muted centered">Your evidence annotations will appear here.</p>';
@@ -445,7 +486,10 @@ let pdfRendererLoad = null;
       const page = await pdfDoc.getPage(currentPage);
       if(token!==rendering)return;
       const original = page.getViewport({scale:1});
-      const baseWidth = Math.max(250,$('pdfScroll').clientWidth-58);
+      const scrollWidth=$('pdfScroll').clientWidth;
+      const beside=scrollWidth>=555;
+      const railWidth=beside?Math.min(238,Math.max(195,Math.round(scrollWidth*.37))):0;
+      const baseWidth=beside?Math.max(285,scrollWidth-railWidth-66):Math.max(280,scrollWidth-44);
       const scale = Math.min(1.5,baseWidth/original.width) * zoom;
       const viewport = page.getViewport({scale});
       viewScale=viewport.width/original.width;
@@ -455,10 +499,15 @@ let pdfRendererLoad = null;
       canvas.height = Math.floor(viewport.height*displayRatio);
       canvas.style.width = `${viewport.width}px`;
       canvas.style.height = `${viewport.height}px`;
-      $('pageShell').style.width=`${viewport.width}px`;
-      $('pageShell').style.height=`${viewport.height}px`;
+      const pageShell=$('pageShell'),rail=$('pageNotes');
+      pageShell.dataset.notesLayout=beside?'beside':'below';
+      pageShell.style.width=`${viewport.width+(beside?railWidth+12:0)}px`;
+      pageShell.style.height=`${viewport.height}px`;
       $('stampLayer').style.width=`${viewport.width}px`;
       $('stampLayer').style.height=`${viewport.height}px`;
+      rail.style.left=`${beside?viewport.width+12:0}px`;
+      rail.style.top=`${beside?0:viewport.height+14}px`;
+      rail.style.width=`${beside?railWidth:viewport.width}px`;
       const context=canvas.getContext('2d',{alpha:false});
       activeRenderTask = page.render({canvasContext:context,viewport,transform:displayRatio!==1?[displayRatio,0,0,displayRatio,0,0]:null});
       await activeRenderTask.promise;
