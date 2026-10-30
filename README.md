@@ -14,7 +14,10 @@
 - **Pass 7 moderator preflight**: press **Generate actual PDF preview** in Review & export. Automated checks flag small-font comments, weak text/background contrast, overlapping annotations, missing criterion marks, scanned/rotated pages and possible overlap with selectable student text. Inspect **every page of the actual exported file, including the mark summary**, confirm legibility and unobscured student mathematics, then export the **same PDF bytes** shown in the preview. Changing a comment, mark or rationale invalidates the previous approval.
 - **Mathematics-preserving Unicode export**: Noto Sans and Noto Sans Math are embedded directly in the exported file (via PDF fontkit), preserving ordinary mathematical characters such as π, ∫, √, ≤, Σ, σ² and subscripts. Unsupported characters cause an explicit error instead of silently becoming question marks or ASCII approximations. These are Unicode comments rather than TeX formula typesetting.
 - Export a new annotated PDF with the original student pages and dimensions retained. **Every full comment and its A–E circle are burned into the original IA page at the teacher-chosen position.** Annotations that cannot fit, whose text overflows a manually shortened box, or which overlap are flagged and export is blocked until corrected. The visible preview and PDF share the chosen font size, text colour, background and border colours. A separate marking summary follows.
-- Save a portable `.iamark.json` project (includes the uploaded PDF, stamp appearance, custom comments and edited library wording), or resume your own locally autosaved draft through IndexedDB. Existing version-1 projects continue to open, with defaults applied to older stamps.
+- **Pass 9 cohort project manager:** select **My IAs** to see saved IAs by anonymous assessment ID, course, session, source PDF, pages, criterion marks recorded (0–5), evidence-stamp count, last-saved timestamp and status. Filter by course or search ID/filename. **Open IA** safely writes the current project before switching, so different students' marks and comments never mix. An explicit **Saved on this device** indicator confirms completed local IndexedDB writes; if storage fails, teachers are told to download the portable backup instead.
+- **Private browser backups:** **Download backup** produces a full editable `.iamark.json` for the current or selected IA (including its original student PDF). **Download all backups (.zip)** packages the entire local cohort into separate project files, entirely in the browser. Both formats are **unencrypted and confidential**; do not store the ZIP in a publicly accessible location. Existing portable v1 backups remain compatible, and importing one creates an **independent** locally saved IA rather than overwriting another.
+- **Local data controls:** Delete a particular IA in the dashboard or choose **Clear stored IA data…**, which requires typing `DELETE ALL`. This clears every saved IA and the legacy draft from this browser's IndexedDB, including the currently open project. A separate checkbox optionally clears only this site's personal comment library, stamp defaults, edits, favourites and recent comment choices. Previously downloaded backups, external device backups, other browser tabs and physical disk remnants are **not** erased. This does not claim forensic secure deletion.
+- **Old drafts preserved:** the existing version-1 single-browser-draft store is migrated automatically into the local multi-IA list. A New project starts a blank assessment without deleting previously saved projects; switching resets the short-lived undo history.
 
 ### Assessment framework warning
 
@@ -43,13 +46,13 @@ npm run build
 python -m http.server 8000 --directory dist
 ```
 
-Open `http://localhost:8000` to use the built app. PDF.js 6.4.299, pdf-lib 1.17.1, @pdf-lib/fontkit 1.1.1 and open-licensed Noto Sans / Noto Sans Math fonts are copied from npm dependencies to `dist/vendor/`. The deployed webpage requests only **self-hosted** scripts. There is no backend, account, external upload or telemetry.
+Open `http://localhost:8000` to use the built app. PDF.js 6.4.299, pdf-lib 1.17.1, @pdf-lib/fontkit 1.1.1 and open-licensed Noto Sans / Noto Sans Math fonts are copied from npm dependencies to `dist/vendor/`. The deployed webpage requests only **self-hosted** scripts, including JSZip 3.10.1 for cohort backups. There is no backend, account, external upload or telemetry.
 
 **Important:** GitHub Pages must publish the compiled Actions build, **not** the raw `main` branch. The raw source does not contain `vendor/pdf.mjs` or its worker, so PDF upload fails (and the older version prevented the library from loading). In GitHub **Settings > Pages > Build and deployment**, set **Source = GitHub Actions**. If you still see the old site, use a hard refresh after the deployment completes. PDF loading now fails with a visible notice rather than breaking all reference tools.\n\nFor automatic deployment, go to **Settings > Pages > Build and deployment > Source: GitHub Actions**. On every push to `main`, `.github/workflows/pages.yml` runs the data checks, builds the self-hosted static files, then deploys to GitHub Pages. The expected URL after Pages is enabled is `https://chriswalker-afk.github.io/IA-Marking/`. If Pages has not yet been enabled, the deploy step may fail even though source and tests are fine.
 
 ## Privacy and boundaries
 
-- Only use a trusted teacher-controlled device/browser. PDF bytes, draft annotations and personal comments are stored **unencrypted locally**. There is no central access control or automatic cleanup.
+- Only use a trusted teacher-controlled device/browser. Project PDFs, annotated evidence and personal comments are stored **unencrypted in IndexedDB/localStorage**. A browser can evict these records; save confidential portable backups regularly. There is no login, central access control or guaranteed forensic deletion.
 - A saved `.iamark.json` embeds the **entire student PDF**; it is confidential. Do not commit projects, annotated student PDFs, actual names or student data to GitHub. `.gitignore` excludes local project and PDF files.
 - This tool does not independently evaluate mathematical work, assign marks, detect originality, perform anonymisation, apply official descriptors or replace faculty standardisation. The teacher remains responsible for assessment.
 - PDF exports retain the original student page dimensions and print full text beside the coloured criterion circle. Preflight can identify potential collisions with **selectable source text**, but it cannot reliably detect mathematics drawn as vectors, diagrams, photos or scans. Treat warnings as prompts for human inspection, not proof of safety. The exact-PDF preview requires visiting every page and an explicit teacher acknowledgement before export. Check legibility, anonymity and any upload size/layout restrictions before moderation submission.
@@ -66,18 +69,19 @@ Open `http://localhost:8000` to use the built app. PDF.js 6.4.299, pdf-lib 1.17.
 - `unicode-fonts.js` - Unicode/Greek/operator-preserving font layout and PDF drawing; rejects unsupported characters
 - `moderation-preflight.js` - source-text collision, contrast, text-size, scan/rotation and completeness warnings
 - `marking-history.js` - bounded undo/redo snapshots and safely normalised quick-pick IDs
+- `project-vault.js` - multi-IA local IndexedDB storage, atomic project/index writes, progress metadata and v1 draft migration
 - `comments.js` - browser comment library
 - `comments.json` - structured authoring library (includes source page and course tags)
 - `build_bank.py` - source script for generating comment bank
-- `tests/bank.test.mjs`, `tests/marking-history.test.mjs` - library, UI and reversible-marking checks
+- `tests/bank.test.mjs`, `tests/marking-history.test.mjs`, `tests/project-vault.test.mjs` - library, UI, reversible marking and local-project progress checks
 - `tests/smoke_browser.py` - mocked PDF UI smoke test
-- `tests/live_pdf_browser.py` - real Chromium PDF upload, page render, **complete on-page/moderator-visible comment text**, original page dimensions and PDF export test, run by CI
+- `tests/live_pdf_browser.py` - real Chromium PDF upload, page render, **complete on-page/moderator-visible comment text**, original page dimensions, PDF export, multi-IA storage/switching, ZIP backups, confirmed deletion and v1 draft migration
 - `scripts/build.mjs` - copies version-pinned libraries and source into a deployable static `dist/`
 - `.github/workflows/pages.yml` - verify and publish from a compiled `dist/` site\n- `.github/workflows/verify.yml` - test PRs and run the real PDF end-to-end browser check
 
 ## Next improvements
 
-1. Follow with **Pass 9 — project management**: multiple student IA projects, progress and last-saved status, exportable local backups, and explicit confidential-data clearing.
+1. Follow with **Pass 10 — faculty moderation / second marking**: isolated first/second marker marks and rationales, a criterion-level comparison and a final agreed assessment record. All original IA evidence and stored projects must stay private on the teacher's device.
 2. Stress-test 20+ stamps on a page, large or rotated/scanned PDFs and reopen projects across browsers; scan and diagram obstruction still needs explicit teacher review.
 3. Add optional graphical highlight evidence, reusable teacher presets and sharing non-confidential bank customisations.
 4. Add moderated mark comparisons and a distinct **first-assessment-2029** framework with its own evidence bank.

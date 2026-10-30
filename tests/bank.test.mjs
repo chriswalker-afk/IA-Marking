@@ -35,7 +35,7 @@ test('browser comment bundle matches authoring JSON', () => {
 });
 
 test('application script syntax and dependencies are pinned', () => {
-  for (const filename of ['app.js', 'unicode-fonts.js', 'moderation-preflight.js', 'comments.js', 'rubric.js', 'library.js']) {
+  for (const filename of ['app.js', 'project-vault.js', 'unicode-fonts.js', 'moderation-preflight.js', 'comments.js', 'rubric.js', 'library.js']) {
     execFileSync(process.execPath,['--check',filename]);
   }
   const html=readFileSync('index.html','utf8');
@@ -217,4 +217,29 @@ test('Pass 8 quick tools, criterion navigator and undo history are deployed toge
   assert.ok(build.includes("'marking-history.js'"));
   assert.ok(library.includes("ia-marking-desk-quick-picks-v1"));
   assert.ok(library.includes('data-action="favourite"'));
+});
+
+test('Pass 9 local cohort dashboard supports safe, portable and private project management',()=>{
+  const html=readFileSync('index.html','utf8');
+  const app=readFileSync('app.js','utf8');
+  const source=readFileSync('project-vault.js','utf8');
+  const build=readFileSync('scripts/build.mjs','utf8');
+  for(const id of [
+    'openProjects','localSaveState','projectCountBadge','projectsDialog','projectsStats',
+    'projectsSearch','projectsCourse','projectsRows','downloadAllProjects',
+    'openClearProjects','clearProjectsDialog','clearProjectsPhrase','clearTeacherPreferences','confirmClearProjects',
+  ])assert.ok(html.includes('id="'+id+'"'),'Missing Pass 9 control: '+id);
+  assert.ok(html.includes('Type DELETE ALL')||html.includes('type <strong>DELETE ALL</strong>'));
+  assert.ok(html.includes('unencrypted'),'Must accurately disclose the privacy of browser storage');
+  for(const keyword of [
+    'preserveActiveProject','projectRevision>persistedRevision','openLocalProject',
+    'openLocalIAProjectVault','downloadLocalBackup','downloadAllLocalBackups',
+    'clearAllLocalProjects','function emptyMarkingWorkspace','renderProjectDashboard',
+    'makeBackupFilename','window.JSZip',
+  ])assert.ok(app.includes(keyword),'Missing Pass 9 logic: '+keyword);
+  assert.ok(source.includes("indexedDB")||source.includes("globalThis.indexedDB"));
+  assert.ok(source.includes("'projectIndex'"));
+  assert.ok(source.includes("draft.delete('latest')"));
+  for(const asset of ['project-vault.js','jszip.min.js'])assert.ok(build.includes(asset));
+  assert.ok(html.includes('vendor/jszip.min.js'));
 });
