@@ -412,6 +412,35 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#undoMark').click()
         expect(page.locator('#allPinCount')).to_have_text('4')
 
+        # Dragging and resizing existing comments each create a single, fully
+        # reversible history step on the real PDF canvas.
+        marker=page.locator('.onpage-stamp').first
+        initial_bounds=marker.bounding_box()
+        start_x=initial_bounds['x']+55
+        start_y=initial_bounds['y']+12
+        page.mouse.move(start_x,start_y)
+        page.mouse.down()
+        page.mouse.move(start_x+24,start_y+29,steps=6)
+        page.mouse.up()
+        moved_bounds=page.locator('.onpage-stamp').first.bounding_box()
+        assert moved_bounds['x']>initial_bounds['x']+8 and moved_bounds['y']>initial_bounds['y']+8
+        page.locator('#undoMark').click()
+        returned_bounds=page.locator('.onpage-stamp').first.bounding_box()
+        assert abs(returned_bounds['x']-initial_bounds['x'])<3 and abs(returned_bounds['y']-initial_bounds['y'])<3
+        page.locator('#redoMark').click()
+        marker=page.locator('.onpage-stamp').first
+        resized_from=marker.bounding_box()
+        grip=marker.locator('.note-resize-handle').bounding_box()
+        page.mouse.move(grip['x']+grip['width']/2,grip['y']+grip['height']/2)
+        page.mouse.down()
+        page.mouse.move(grip['x']+grip['width']/2+26,grip['y']+grip['height']/2+33,steps=5)
+        page.mouse.up()
+        resized_to=page.locator('.onpage-stamp').first.bounding_box()
+        assert resized_to['width']>resized_from['width']+8
+        page.locator('#undoMark').click()
+        undone_resize=page.locator('.onpage-stamp').first.bounding_box()
+        assert abs(undone_resize['width']-resized_from['width'])<3
+
         # No previously approved export is reused after these modifications.
         page.locator('#openReview').click()
         expect(page.locator('#exportAnnotated')).to_be_disabled()
