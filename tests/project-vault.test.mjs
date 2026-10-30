@@ -20,8 +20,9 @@ test('local IA project summaries expose marks/progress but not PDF or comment te
   assert.equal('stamps' in first,false);
   assert.equal('justifications' in first,false);
   assert.deepEqual(Object.keys(first).sort(),[
-    'annotations','candidate','course','fileSize','id','markedCount','pageCount',
-    'pdfName','rationaleCount','savedAt','session','status','total',
+    'activeMode','annotations','candidate','course','feedbackActions','feedbackAnnotations',
+    'feedbackDone','fileSize','id','markedCount','pageCount','pdfName',
+    'rationaleCount','savedAt','session','status','total',
   ].sort());
 });
 
@@ -53,4 +54,25 @@ test('local IDs are unique and database migration keeps the original storage nam
   assert.notEqual(first,second);
   assert.equal(LOCAL_IA_DB,'ia-marking-desk-local-v1');
   assert.equal(LOCAL_IA_DB_VERSION,2);
+});
+
+test('first-draft progress is saved independently of final criterion marks',()=>{
+  const draft={...project,activeMode:'feedback',
+    stamps:[{criterion:'A',tone:'strength',text:'Final evidence'}],
+    feedbackStamps:[
+      {id:'fa',criterion:'A',tone:'strength',text:'Clear aim'},
+      {id:'fb',criterion:'B',tone:'limitation',text:'Check graph axes'},
+      {id:'fc',criterion:'D',tone:'limitation',text:'Evaluate an assumption'},
+    ],
+    feedbackCompleted:{fb:true},
+  };
+  const summary=summariseLocalProject('feedback-one',draft,new Uint8Array(100),3);
+  assert.equal(summary.activeMode,'feedback');
+  assert.equal(summary.markedCount,0);
+  assert.equal(summary.total,null);
+  assert.equal(summary.annotations,1);
+  assert.equal(summary.feedbackAnnotations,3);
+  assert.equal(summary.feedbackActions,2);
+  assert.equal(summary.feedbackDone,1);
+  assert.equal(summary.status,'Feedback in progress');
 });
