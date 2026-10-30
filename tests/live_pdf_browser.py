@@ -227,6 +227,11 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=45000)
         expect(page.locator('#reviewPreviewPage')).to_have_text('Page 1 / 3',timeout=30000)
         assert page.locator('#reviewConfirmed').is_disabled()
+        assert page.locator('#reviewPreviewCanvas').get_attribute('width') != '0'
+        page.screenshot(path=str(ROOT/'qa-exact-pdf-preview.png'),full_page=True)
+        page.set_viewport_size({'width':390,'height':844})
+        page.screenshot(path=str(ROOT/'qa-moderation-mobile.png'))
+        page.set_viewport_size({'width':1450,'height':930})
         # Teacher must inspect the actual original pages AND marking summary.
         for number in [2,3]:
             page.locator('#reviewPreviewNext').click()
@@ -234,9 +239,24 @@ with tempfile.TemporaryDirectory() as folder:
         assert page.locator('#reviewConfirmed').is_enabled()
         page.locator('#reviewConfirmed').check()
         expect(page.locator('#exportAnnotated')).to_be_enabled()
+        # Changing a criterion rationale invalidates the previous exact-PDF
+        # approval and requires reinspection of the newly generated export.
+        page.locator('[data-review-justification="A"]').fill('Reviewed: coherent and organised mathematical exploration.')
+        expect(page.locator('#exportAnnotated')).to_be_disabled()
+        expect(page.locator('#reviewConfirmed')).not_to_be_checked()
+        page.locator('#buildReviewPreview').click()
+        page.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=45000)
+        expect(page.locator('#reviewPreviewPage')).to_have_text('Page 1 / 3',timeout=30000)
+        for number in [2,3]:
+            page.locator('#reviewPreviewNext').click()
+            expect(page.locator('#reviewPreviewPage')).to_have_text(f'Page {number} / 3',timeout=20000)
+        page.locator('#reviewConfirmed').check()
+        expect(page.locator('#exportAnnotated')).to_be_enabled()
         with page.expect_download(timeout=35000) as download_info:
             page.locator('#exportAnnotated').click()
-        exported=fitz.open(download_info.value.path())
+        saved_reviewed_pdf=Path(download_info.value.path()).read_bytes()
+        (ROOT/'qa-reviewed-moderator-export.pdf').write_bytes(saved_reviewed_pdf)
+        exported=fitz.open(stream=saved_reviewed_pdf,filetype='pdf')
         assert len(exported)==3, 'Only the original two pages plus marking-summary page are expected.'
         assert abs(exported[0].rect.width-595)<1 and abs(exported[0].rect.height-842)<1, 'IA pages must retain their original physical dimensions.'
         pdf_text=' '.join(exported[0].get_text().split())
