@@ -98,6 +98,56 @@ with tempfile.TemporaryDirectory() as folder:
         assert first_box['x'] >= pdf_box['x'] and first_box['x'] + first_box['width'] <= pdf_box['x'] + pdf_box['width'] + 2
         assert circle['x']+circle['width'] <= note_text['x'], 'Full comment text must sit beside its coloured A-E circle'
 
+        # Individual comment formatting is separate from the A-E circle style.
+        # A true range input can be operated by keyboard without bypassing CSP.
+        font_slider=page.locator('#selectedStampFont')
+        font_slider.focus()
+        font_slider.press('Home')
+        for _ in range(12):
+            font_slider.press('ArrowRight')
+        expect(font_slider).to_have_value('13')
+        for control, colour in [
+            ('selectedStampTextColor','#b72a29'),
+            ('selectedStampFillColor','#f5e49a'),
+            ('selectedStampBorderColor','#2d9b5b'),
+        ]:
+            # Playwright evaluates a direct element callback without injecting
+            # an eval-based poll blocked by this site's strict CSP.
+            page.locator('#'+control).evaluate(
+                "(el,colour) => { el.value=colour; el.dispatchEvent(new Event('input',{bubbles:true})); }",
+                colour)
+            expect(page.locator('#'+control)).to_have_value(colour)
+
+        ink=page.locator('.onpage-note-body').first
+        expect(ink).to_have_css('color','rgb(183, 42, 41)')
+        expect(page.locator('.onpage-stamp').first).to_have_css('background-color','rgb(245, 228, 154)')
+        expect(page.locator('.onpage-stamp').first).to_have_css('border-color','rgb(45, 155, 91)')
+        assert page.locator('.onpage-note-header').first.evaluate(
+            '(el)=>getComputedStyle(el).color') == 'rgb(183, 42, 41)', 'The header must use the chosen text colour too.'
+
+        # Resize the whole box with the lower-right handle, not by scaling the
+        # font or cropping the comment. Both physical dimensions must change.
+        original_box=page.locator('.onpage-stamp').first.bounding_box()
+        handle=page.locator('.note-resize-handle').first.bounding_box()
+        hx=handle['x']+handle['width']/2
+        hy=handle['y']+handle['height']/2
+        page.mouse.move(hx,hy)
+        page.mouse.down()
+        page.mouse.move(hx+42,hy+48,steps=6)
+        page.mouse.up()
+        resized_box=page.locator('.onpage-stamp').first.bounding_box()
+        assert resized_box['width'] > original_box['width']+8, 'Corner drag did not resize the box width.'
+        assert resized_box['height'] > original_box['height']+8, 'Corner drag did not resize the box height.'
+        assert 'Auto' not in page.locator('#selectedStampHeightValue').inner_text()
+
+        # A teacher cannot export a short box which clips the selected font.
+        page.locator('#selectedStampHeight').evaluate(
+            "(el) => { el.value='55'; el.dispatchEvent(new Event('input',{bubbles:true})); }")
+        expect(page.locator('#annotationNotice')).to_be_visible()
+        page.locator('#selectedStampHeightAuto').click()
+        assert 'Auto' in page.locator('#selectedStampHeightValue').inner_text()
+        expect(page.locator('#annotationNotice')).to_be_hidden()
+
         page.locator('#commentList [data-comment-id]').nth(1).click()
         page.locator('#draftTextEdit').fill(second_text)
         page.locator('#stampLayer').click(position={'x': 350, 'y': 500})
@@ -128,6 +178,15 @@ with tempfile.TemporaryDirectory() as folder:
         assert second_text in pdf_text, 'Second comment missing from original page.'
         assert 'Example Mathematics IA' in pdf_text, 'Student source page must remain intact.'
         assert 'A1' in pdf_text and 'A2' in pdf_text, 'Criterion labels must print beside comments.'
+        # PDF text and graphical fills are examined from the actual exported
+        # file, not merely from browser CSS. This is what IB moderators receive.
+        spans=[span for block in exported[0].get_text('dict')['blocks']
+               for line in block.get('lines',[]) for span in line.get('spans',[])]
+        assert any('analysis' in span['text'].lower() and abs(span['size']-13)<0.2
+                   and span['color']==int('b72a29',16) for span in spans), 'The saved PDF ignored the full-comment font or text colour.'
+        fills=[drawing['fill'] for drawing in exported[0].get_drawings() if drawing.get('fill')]
+        target_fill=(245/255,228/255,154/255)
+        assert any(all(abs(actual-wanted)<0.02 for actual,wanted in zip(fill,target_fill)) for fill in fills), 'Comment background colour missing in PDF.'
         for keyword in ['residuals','mathematically','limitation','consequences']:
             words=[x for x in exported[0].get_text('words') if keyword.lower() in x[4].lower()]
             assert words and all(0<=x[0] and 0<=x[1] and x[2]<=595 and x[3]<=842 for x in words), f'Comment {keyword} is clipped or outside the actual page.'
@@ -144,11 +203,23 @@ with tempfile.TemporaryDirectory() as folder:
         assert len(portable['stamps'])==2
         assert revised_text in [stamp['text'] for stamp in portable['stamps']]
         assert all('x' in stamp and 'y' in stamp and 'noteWidth' in stamp for stamp in portable['stamps'])
+        styled=portable['stamps'][0]
+        assert styled['fontSize']==13
+        assert styled['textColor']=='#b72a29'
+        assert styled['fillColor']=='#f5e49a'
+        assert styled['borderColor']=='#2d9b5b'
+        assert styled['noteWidth']>250
+        assert styled['noteHeight'] is None, 'Fit-to-text preference was lost.'
         page.once('dialog',lambda dialog:dialog.accept())
         page.locator('#newProject').click()
         page.locator('#projectOpen').set_input_files({'name':'saved.iamark.json','mimeType':'application/json','buffer':json.dumps(portable).encode()})
         expect(page.locator('.onpage-stamp')).to_have_count(2,timeout=15000)
         assert revised_text in ' '.join(page.locator('.onpage-stamp').first.inner_text().split())
+        page.locator('.onpage-stamp').first.click()
+        expect(page.locator('#selectedStampFont')).to_have_value('13')
+        expect(page.locator('#selectedStampTextColor')).to_have_value('#b72a29')
+        expect(page.locator('#selectedStampFillColor')).to_have_value('#f5e49a')
+        expect(page.locator('#selectedStampBorderColor')).to_have_value('#2d9b5b')
 
         # On a narrower display the same complete notes remain inside the PDF
         # page instead of being moved beneath it or to an external margin.
