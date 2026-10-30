@@ -891,10 +891,10 @@ let pdfRendererLoad = null;
     if(line)rows.push(line);
     return rows.length?rows:[''];
   }
-  function pdfColor(stamp) {
-    const hex=stampColor(stamp);
+  function pdfHexColor(hex) {
     return window.PDFLib.rgb(...[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255));
   }
+  function pdfColor(stamp) {return pdfHexColor(stampColor(stamp));}
   function pdfTextColor(stamp){return brightColor(stampColor(stamp))?window.PDFLib.rgb(.09,.16,.25):window.PDFLib.rgb(1,1,1);}
   function pdfNoteColor(stamp){return brightColor(stampColor(stamp))?window.PDFLib.rgb(.17,.25,.33):pdfColor(stamp);}
 
@@ -935,15 +935,16 @@ let pdfRendererLoad = null;
           const color=pdfColor(stamp),label=stampLabel(stamp);
           const bottom=height-layout.y-layout.height;
           page.drawRectangle({x:layout.x,y:bottom,width:layout.width,height:layout.height,
-            color:rgb(.985,.992,1),borderColor:color,borderWidth:1.25});
-          page.drawRectangle({x:layout.x,y:bottom,width:3,height:layout.height,color});
+            color:pdfHexColor(layout.fillColor),borderColor:pdfHexColor(layout.borderColor),borderWidth:1.25});
+          page.drawRectangle({x:layout.x,y:bottom,width:3,height:layout.height,color:pdfHexColor(layout.borderColor)});
           const radius=layout.circle/2;
           const cx=layout.x+8+radius,cy=height-layout.y-11-radius;
           page.drawCircle({x:cx,y:cy,size:radius,color,borderWidth:1.1,borderColor:rgb(1,1,1)});
           const letterSize=Math.min(layout.circle*.55,18);
           pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
-          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,8.5,bold,pdfNoteColor(stamp));
-          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.textX,height-layout.y-33-index*NOTE_LINE,NOTE_FONT,font,ink));
+          const fullTextColor=pdfHexColor(layout.textColor);
+          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,8.5,bold,fullTextColor);
+          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.textX,height-layout.y-33-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
         }
       }
       // A clear criterion summary is included as teacher assessment evidence.
