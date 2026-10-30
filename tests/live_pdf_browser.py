@@ -261,7 +261,15 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#openReview').click()
         assert page.locator('#exportAnnotated').is_disabled(), 'Final export must require a reviewed PDF.'
         page.locator('#buildReviewPreview').click()
-        page.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=45000)
+        try:
+            page.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=45000)
+        except Exception as error:
+            raise AssertionError(
+                'Preview blocked. Export notice: '+page.locator('#reviewExportNotice').inner_text()
+                +' | Preflight: '+page.locator('#preflightList').inner_text()
+                +' | Annotation notice: '+page.locator('#annotationNotice').inner_text()
+                +' | Page errors: '+repr(errors)
+            ) from error
         expect(page.locator('#reviewPreviewPage')).to_have_text('Page 1 / 3',timeout=30000)
         assert page.locator('#reviewConfirmed').is_disabled()
         assert page.locator('#reviewPreviewCanvas').get_attribute('width') != '0'
