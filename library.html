@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>Full stamp comment library | IA Marking Desk</title>
-<link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="library.css">
+<link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="library.css"><link rel="stylesheet" href="design-polish.css">
 </head>
 <body>
 <header class="reference-header">
   <div class="reference-brand"><span class="reference-mark">A–E</span><div><strong>IA Marking Desk</strong><small>Teacher reference library · 2021–2028 framework</small></div></div>
-  <a class="btn subtle" href="index.html">← Back to IA marking</a>
+  <a class="btn subtle" href="index.html">← Back to IA workspace</a>
 </header>
 <main class="reference-main">
   <section class="reference-intro">
@@ -25,7 +25,7 @@
     <label class="ref-search-label">Search evidence comments<input id="refSearch" type="search" placeholder="Search wording, categories or topics..." autocomplete="off"></label>
     <label>Course<select id="refCourse"><option value="all">All courses</option><option>AA SL</option><option>AI SL</option><option>AA HL</option><option>AI HL</option></select></label>
     <label>Criterion<select id="refCriterion"><option value="all">A–E (all)</option><option value="A">A · Presentation</option><option value="B">B · Communication</option><option value="C">C · Engagement</option><option value="D">D · Reflection</option><option value="E">E · Mathematics</option></select></label>
-    <label>Type<select id="refTone"><option value="all">All evidence</option><option value="strength">Strengths</option><option value="limitation">Limitations</option></select></label>
+    <label>Type<select id="refTone"><option value="all">All comment types</option><option value="strength">Strengths</option><option value="limitation">Limitations</option></select></label>
   </div>
   <div class="reference-summary"><span id="referenceCount" role="status" aria-live="polite">Loading comment library…</span><div><button id="referenceFavoritesOnly" type="button" class="btn subtle" aria-pressed="false">☆ Show favourites</button><button id="referenceCopyVisible" type="button" class="btn subtle">Copy visible comments</button><button id="referenceCreate" type="button" class="btn primary">+ Personal comment</button></div></div>
   <div id="referenceResults" class="reference-results"></div>
@@ -35,9 +35,9 @@
   <form id="referenceEditForm" method="dialog">
     <div class="reference-dialog-head"><div><span class="eyebrow">TEACHER LIBRARY</span><h2 id="referenceEditTitle">Edit comment</h2></div><button id="referenceCloseEdit" type="button" class="icon-button" aria-label="Close">✕</button></div>
     <label>Criterion<select id="referenceEditCriterion"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option></select></label>
-    <label>Evidence type<select id="referenceEditTone"><option value="strength">Strength</option><option value="limitation">Limitation</option></select></label>
+    <label>Comment type<select id="referenceEditTone"><option value="strength">Strength</option><option value="limitation">Limitation</option></select></label>
     <label>Category<input id="referenceEditTopic" maxlength="90" required></label>
-    <label>Teacher comment<textarea id="referenceEditText" maxlength="1800" rows="5" required></textarea></label>
+    <label>Comment<textarea id="referenceEditText" maxlength="1800" rows="5" required></textarea></label>
     <p id="referenceEditNote">Edits to built-in comments change wording and category only. They do not alter existing stamps.</p>
     <div class="reference-dialog-actions"><button id="referenceCancelEdit" type="button" class="btn subtle">Cancel</button><button id="referenceSaveEdit" type="button" class="btn primary">Save comment</button></div>
   </form>

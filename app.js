@@ -250,7 +250,7 @@ let pdfRendererLoad = null;
         +'<strong>'+ (isFeedback()?'Draft guidance':state.marks[key]===null?'Not marked':state.marks[key]+' / '+CRITERIA[key].max)+'</strong></div>'
         +(comments.length?comments.map(stamp=>
           '<button type="button" class="evidence-result" data-evidence-pin="'+escapeHtml(stamp.id)+'">'
-          +'<span class="evidence-result-meta"><span class="polarity '+stamp.tone+'">'+(stamp.tone==='strength'?'Strength':isFeedback()?'Action':'Limitation')+'</span>'
+          +'<span class="evidence-result-meta"><span class="polarity '+stamp.tone+'">'+(stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation')+'</span>'
           +'<strong>'+escapeHtml(stampLabel(stamp))+'</strong><span>Page '+stamp.page+'</span></span>'
           +'<span class="evidence-result-text">'+escapeHtml(stamp.text)+'</span>'
           +'<span class="evidence-result-visit">Go to page '+stamp.page+' →</span></button>'
@@ -297,8 +297,12 @@ let pdfRendererLoad = null;
       ?'First draft: select actionable feedback, place it beside relevant work, then share a checklist of requested revisions. No marks are awarded.'
       :'Final assessment: annotate evidence and record teacher marks against criteria A-E.';
     $('openReview').textContent=isFeedback()?'Review feedback & checklist →':'Review & export →';
-    $('stampSectionLabel').textContent=isFeedback()?'Feedback stamps':'Evidence stamps';
-    $('bankEyebrow').textContent=isFeedback()?'03 / DRAFT FEEDBACK':'03 / EVIDENCE';
+    $('stampSectionLabel').textContent=isFeedback()?'Placed feedback':'Placed stamps';
+    $('legendLimitationLabel').textContent=isFeedback()?'Improvement':'Limitation';
+    $('toneLimitationLabel').textContent=isFeedback()?'Improvements':'Limitations';
+    $('libraryToneLimitation').textContent=isFeedback()?'Improvements':'Limitations';
+    $('customToneLimitation').textContent=isFeedback()?'Improvement':'Limitation';
+    $('bankEyebrow').textContent=isFeedback()?'03 / FEEDBACK':'03 / COMMENTS';
     $('bankIntro').textContent=isFeedback()
       ?'Choose a student-facing strength or improvement action. Personalise it for the draft before placing the stamp. Each improvement becomes a checklist item.'
       :'Choose a teacher-facing assessment observation. Edit it to reflect the actual evidence before stamping.';
@@ -319,9 +323,23 @@ let pdfRendererLoad = null;
       ?'Write a student-facing prompt that identifies what to reconsider, without supplying the solution. Improvement stamps become student checklist items.'
       :'Phrase this as evidence for a marking decision, rather than instructions to the student. Saved to this browser\'s personal bank.';
     $('referenceLibraryLink').innerHTML=isFeedback()
-      ?'Browse draft feedback prompts <span aria-hidden="true">↗</span>'
-      :'Browse all 294 stamp comments <span aria-hidden="true">↗</span>';
+      ?'Browse feedback library <span aria-hidden="true">↗</span>'
+      :'Browse marking library <span aria-hidden="true">↗</span>';
     $('referenceLibraryLink').href=isFeedback()?'library.html?mode=feedback':'library.html';
+    $('independentLibraryLink').setAttribute('href',isFeedback()?'library.html?mode=feedback':'library.html');
+    $('independentLibraryLink').textContent=isFeedback()?'Open feedback library in a separate page ↗':'Open marking library in a separate page ↗';
+    $('documentHelp').title=isFeedback()?'Choose a first-draft IA PDF. Nothing is uploaded to a server.':'Choose a final IA PDF. Nothing is uploaded to a server.';
+    if(isReady())$('uploadSubtext').textContent=isFeedback()?'Choose a different draft PDF':'Choose a different final IA';
+    $('evidenceTitle').textContent=isFeedback()?'Placed draft feedback':'Criterion evidence navigator';
+    $('evidenceEyebrow').textContent=isFeedback()?'FIRST-DRAFT FEEDBACK':'FINAL ASSESSMENT EVIDENCE';
+    $('libraryTitle').textContent=isFeedback()?'First draft feedback library':'Final assessment comment library';
+    $('libraryEyebrow').textContent=isFeedback()?'STUDENT-FACING PROMPTS':'TEACHER ASSESSMENT EVIDENCE';
+    $('libraryIntro').textContent=isFeedback()
+      ?'Find actionable comments, copy them into a document or adjust the wording for future drafts. Changes are saved only in this browser.'
+      :'Find assessment observations, copy them into a document or adjust the wording for future marking. Changes are saved only in this browser.';
+    $('customTitle').textContent=isFeedback()?'Write a feedback prompt':'Write an assessment comment';
+    $('customText').placeholder=isFeedback()?'Identify an area to revisit and the next action the student should take.':'Describe what the submitted mathematics demonstrates.';
+    $('openLibrary').firstElementChild.textContent=isFeedback()?'Full feedback library':'Full marking library';
     $('openEvidence').childNodes[0].textContent=isFeedback()?'Draft feedback ':'A-E evidence ';
     $('reviewEyebrow').textContent=isFeedback()?'FIRST DRAFT / STUDENT FEEDBACK':'MARKING RECORD';
     $('reviewTitle').textContent=isFeedback()?'Review feedback & checklist':'Review & export';
@@ -571,7 +589,7 @@ let pdfRendererLoad = null;
     $('bankTotal').textContent = `${all.length} comments`;
     $('bankFilteredCount').textContent = `${items.length} matching ${items.length===1?'comment':'comments'}`;
     const visible = bankShowAll ? items : items.slice(0,MAX_BANK_VISIBLE);
-    $('commentList').innerHTML = visible.map(item => `<div class="comment-card ${draft?.id===item.id?'is-active':''}"><button type="button" class="comment-select" data-comment-id="${escapeHtml(item.id)}" aria-label="Use ${escapeHtml(item.criterion)} ${escapeHtml(item.tone)} comment as stamp"><span class="comment-card-head"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':isFeedback()?'Action':'Limitation'}</span><span class="topic">${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</span>${item.origin==='Teacher custom comment' ? '<span class="custom-tag">CUSTOM</span>' : ''}</span><p>${escapeHtml(item.text)}</p></button><div class="comment-card-actions"><button type="button" class="favourite-button ${quickPicks.favorites.includes(item.id)?'is-favourite':''}" data-favourite-comment="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}" aria-label="${quickPicks.favorites.includes(item.id)?'Remove from':'Add to'} favourite comments">${quickPicks.favorites.includes(item.id)?'★':'☆'} <span>Favourite</span></button><button type="button" data-copy-comment="${escapeHtml(item.id)}">Copy</button><button type="button" data-edit-comment="${escapeHtml(item.id)}">Edit</button></div></div>`).join('');
+    $('commentList').innerHTML = visible.map(item => `<div class="comment-card ${draft?.id===item.id?'is-active':''}"><button type="button" class="comment-select" data-comment-id="${escapeHtml(item.id)}" aria-label="Use ${escapeHtml(item.criterion)} ${escapeHtml(item.tone)} comment as stamp"><span class="comment-card-head"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span><span class="topic">${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</span>${item.origin==='Teacher custom comment' ? '<span class="custom-tag">CUSTOM</span>' : ''}</span><p>${escapeHtml(item.text)}</p></button><div class="comment-card-actions"><button type="button" class="favourite-button ${quickPicks.favorites.includes(item.id)?'is-favourite':''}" data-favourite-comment="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}" aria-label="${quickPicks.favorites.includes(item.id)?'Remove from':'Add to'} favourite comments">${quickPicks.favorites.includes(item.id)?'★':'☆'} <span>Favourite</span></button><button type="button" data-copy-comment="${escapeHtml(item.id)}">Copy</button><button type="button" data-edit-comment="${escapeHtml(item.id)}">Edit</button></div></div>`).join('');
     if(!visible.length) $('commentList').innerHTML = '<p class="bank-empty">'+(bankQuickFilter==='favorites'?'No favourites yet. Star a comment in All to save it for quick stamping.':bankQuickFilter==='recent'?'No recent stamps yet. Placed comments will appear here.':'No matching comments. Try another search or write your own.')+'</p>';
     if(!bankShowAll && items.length>MAX_BANK_VISIBLE) $('commentList').insertAdjacentHTML('beforeend',`<button type="button" id="showMoreComments" class="btn subtle" style="width:100%">Show all ${items.length} comments</button>`);
     $('commentList').querySelectorAll('[data-comment-id]').forEach(button => button.addEventListener('click', () => prepareComment(button.dataset.commentId)));
@@ -602,7 +620,7 @@ let pdfRendererLoad = null;
       const isCustom=item.origin==='Teacher custom comment';
       const isChanged=Boolean(activeCommentEdits()[item.id]);
       const editing=item.id===libraryEditingId;
-      return `<article class="library-entry" data-library-id="${escapeHtml(item.id)}"><div class="library-entry-header"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><strong>${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</strong><small>${escapeHtml(item.id)}${isCustom?' · Personal':isChanged?' · Edited':''}</small></div>${editing?`<div class="library-edit"><label>Category<input id="libraryEditTopic" maxlength="90" value="${escapeHtml(item.topic)}"></label><label>Comment<textarea id="libraryEditText" maxlength="1800" rows="4">${escapeHtml(item.text)}</textarea></label><div class="library-entry-actions"><button type="button" data-save-library="${escapeHtml(item.id)}" class="btn primary">Save changes</button><button type="button" data-cancel-library>Cancel</button>${isChanged?`<button type="button" data-restore-library="${escapeHtml(item.id)}">Restore original</button>`:''}${isCustom?`<button type="button" data-delete-library="${escapeHtml(item.id)}" class="danger-link">Delete personal comment</button>`:''}</div></div>`:`<p>${escapeHtml(item.text)}</p><div class="library-entry-actions"><button type="button" data-copy-library="${escapeHtml(item.id)}">Copy comment</button><button type="button" data-edit-library="${escapeHtml(item.id)}">Edit wording</button><button type="button" data-use-library="${escapeHtml(item.id)}">Use as stamp</button><button type="button" data-favourite-library="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}">${quickPicks.favorites.includes(item.id)?'★ Remove favourite':'☆ Add favourite'}</button></div>`}</article>`;
+      return `<article class="library-entry" data-library-id="${escapeHtml(item.id)}"><div class="library-entry-header"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span><strong>${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</strong><small>${escapeHtml(item.id)}${isCustom?' · Personal':isChanged?' · Edited':''}</small></div>${editing?`<div class="library-edit"><label>Category<input id="libraryEditTopic" maxlength="90" value="${escapeHtml(item.topic)}"></label><label>Comment<textarea id="libraryEditText" maxlength="1800" rows="4">${escapeHtml(item.text)}</textarea></label><div class="library-entry-actions"><button type="button" data-save-library="${escapeHtml(item.id)}" class="btn primary">Save changes</button><button type="button" data-cancel-library>Cancel</button>${isChanged?`<button type="button" data-restore-library="${escapeHtml(item.id)}">Restore original</button>`:''}${isCustom?`<button type="button" data-delete-library="${escapeHtml(item.id)}" class="danger-link">Delete personal comment</button>`:''}</div></div>`:`<p>${escapeHtml(item.text)}</p><div class="library-entry-actions"><button type="button" data-copy-library="${escapeHtml(item.id)}">Copy comment</button><button type="button" data-edit-library="${escapeHtml(item.id)}">Edit wording</button><button type="button" data-use-library="${escapeHtml(item.id)}">Use as stamp</button><button type="button" data-favourite-library="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}">${quickPicks.favorites.includes(item.id)?'★ Remove favourite':'☆ Add favourite'}</button></div>`}</article>`;
     }).join(''):'<p class="bank-empty">No comments match these filters. Try removing the search terms.</p>';
   }
   function openLibrary(editId=null) {
@@ -701,7 +719,7 @@ let pdfRendererLoad = null;
     const natural=noteLayout({...item,noteWidth:width,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
     const manualHeight=normalNoteHeight(item.noteHeight);
     const heightValue=manualHeight??Math.min(750,natural);
-    return `<div class="individual-stamp-style">
+    return `<details class="individual-appearance" id="${prefix}Appearance" data-editor-key="${escapeHtml(prefix+item.id)}"><summary class="individual-appearance-summary"><span>Stamp appearance &amp; box size</span><small>Optional · customise</small></summary><div class="individual-stamp-style">
       <span class="comment-style-heading">Criterion circle</span>
       <label for="${prefix}Size">Circle size <output id="${prefix}SizeValue">${size} pt</output><input id="${prefix}Size" type="range" min="14" max="42" step="2" value="${size}"></label>
       <label for="${prefix}Color">Circle colour <input id="${prefix}Color" type="color" value="${color}"></label>
@@ -717,7 +735,7 @@ let pdfRendererLoad = null;
       <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="55" max="750" step="5" value="${heightValue}"></label>
       <button id="${prefix}HeightAuto" type="button" class="text-button note-fit-button">Fit box height to full comment</button>
       <small class="note-format-help">Drag the bottom-right handle on a placed comment to resize both dimensions. Export will stop if text is clipped.</small>
-    </div>`;
+    </div></details>`;
   }
   function bindAppearanceEditor(item,prefix,existing) {
     const refresh=()=>{
@@ -763,6 +781,14 @@ let pdfRendererLoad = null;
     }
   }
   function renderEditor() {
+    // Keep advanced settings open through subsequent edits to this same stamp
+    // without expanding them by default for newly chosen comments.
+    const previousAppearance=$('selectionEditor').querySelector('.individual-appearance');
+    const expandedEditorKey=previousAppearance?.open?previousAppearance.dataset.editorKey:null;
+    const restoreAppearance=()=>{
+      const active=$('selectionEditor').querySelector('.individual-appearance');
+      if(active&&active.dataset.editorKey===expandedEditorKey)active.open=true;
+    };
     finishFieldHistory();
     const stamp = selectedStamp();
     const priorityField=item=>isFeedback()&&item.tone==='limitation'
@@ -779,9 +805,10 @@ let pdfRendererLoad = null;
       });
     };
     if(stamp) {
-      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} ${isFeedback()?'feedback':'evidence'} stamp</strong><small>Page ${stamp.page} / ${stamp.tone}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${priorityField(stamp)}${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
+      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} ${isFeedback()?'feedback':'evidence'} stamp</strong><small>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${priorityField(stamp)}${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
       $('stampTextEdit').addEventListener('input', e => {stamp.text=e.target.value;renderStamps();scheduleSave();});
       watchHistoryField($('stampTextEdit'),'edit '+stamp.criterion+' comment');
+      restoreAppearance();
       bindAppearanceEditor(stamp,'selectedStamp',true);
       bindPriority(stamp,true);
       $('moveStamp').addEventListener('click',()=>{movingStampId=stamp.id;draft=null;selectedStampId=null;renderEditor();setInstruction(); if (currentPage!==stamp.page) navigate(stamp.page);});
@@ -804,8 +831,9 @@ let pdfRendererLoad = null;
       $('selectionEditor').innerHTML = '<div class="selection-empty"><span class="small-ring">A</span><span>Choose a comment to prepare a stamp.</span></div>';
       return;
     }
-    $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Ready: criterion ${escapeHtml(draft.criterion)}</strong><span class="polarity ${draft.tone}">${draft.tone==='strength'?'Strength':isFeedback()?'Action':'Limitation'}</span></div><textarea id="draftTextEdit" maxlength="1800" aria-label="Personalise only this stamp comment">${escapeHtml(draft.text)}</textarea>${priorityField(draft)}${appearanceEditor(draft,'draftStamp')}<div class="selection-actions"><small>Personalise this stamp before placing it on the PDF.</small><button type="button" class="btn primary" id="placeHint">${isReady()?'Click PDF to place':'Add PDF first'} &#8594;</button></div></div>`;
+    $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Ready: criterion ${escapeHtml(draft.criterion)}</strong><span class="polarity ${draft.tone}">${draft.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span></div><textarea id="draftTextEdit" maxlength="1800" aria-label="Personalise only this stamp comment">${escapeHtml(draft.text)}</textarea>${priorityField(draft)}${appearanceEditor(draft,'draftStamp')}<div class="selection-actions"><small>Personalise this stamp before placing it on the PDF.</small><button type="button" class="btn primary" id="placeHint">${isReady()?'Click PDF to place':'Add PDF first'} &#8594;</button></div></div>`;
     $('draftTextEdit').addEventListener('input',e=>{draft.text=e.target.value;});
+    restoreAppearance();
     bindAppearanceEditor(draft,'draftStamp',false);
     bindPriority(draft,false);
     $('placeHint').addEventListener('click',()=>{
@@ -928,7 +956,7 @@ let pdfRendererLoad = null;
       return `<div role="button" tabindex="0" class="onpage-stamp ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};background:${layout.fillColor};border-color:${layout.borderColor};color:${layout.textColor};border-width:${Math.max(.7,1.25*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag comment to move; drag bottom-right corner to resize">
         <span class="onpage-border-accent" style="background:${layout.borderColor};width:${Math.max(2,3*scale)}px"></span>
         <span class="onpage-circle" style="left:${8*scale}px;top:${11*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
-        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${10*scale}px;font-size:${layout.headerFontSize*scale}px;line-height:${Math.max(12,layout.headerFontSize*1.12)*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':'Limitation'}</span>
+        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${10*scale}px;font-size:${layout.headerFontSize*scale}px;line-height:${Math.max(12,layout.headerFontSize*1.12)*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span>
         <span class="onpage-note-body" style="left:${layout.textX*scale}px;top:${25*scale}px;font-size:${layout.fontSize*scale}px;line-height:${layout.lineHeight*scale}px;color:${layout.textColor}">${lines}</span>
         <button type="button" class="note-resize-handle" data-resize-pin="${escapeHtml(stamp.id)}" aria-label="Resize width and height of ${escapeHtml(label)} comment" title="Drag to resize comment width and height"></button>
       </div>`;
@@ -1034,7 +1062,7 @@ let pdfRendererLoad = null;
     });
     const container=$('stampsList');
     const sorted=[...state.stamps].sort((a,b)=>a.page-b.page||a.y-b.y);
-    container.innerHTML=sorted.length?sorted.map(stamp=>`<button type="button" class="stamp-row ${selectedStampId===stamp.id?'is-selected':''}" data-sidebar-pin="${escapeHtml(stamp.id)}"><span class="mini-circle ${stamp.tone}" style="background:${stampColor(stamp)};color:${stampTextColor(stamp)}">${stamp.criterion}</span><span class="stamp-info"><strong>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':'Limitation'}</strong><span>${escapeHtml(stamp.text)}</span></span></button>`).join(''):'<p class="muted centered">Your evidence annotations will appear here.</p>';
+    container.innerHTML=sorted.length?sorted.map(stamp=>`<button type="button" class="stamp-row ${selectedStampId===stamp.id?'is-selected':''}" data-sidebar-pin="${escapeHtml(stamp.id)}"><span class="mini-circle ${stamp.tone}" style="background:${stampColor(stamp)};color:${stampTextColor(stamp)}">${stamp.criterion}</span><span class="stamp-info"><strong>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</strong><span>${escapeHtml(stamp.text)}</span></span></button>`).join(''):'<p class="muted centered">Your evidence annotations will appear here.</p>';
     container.querySelectorAll('[data-sidebar-pin]').forEach(button=>button.addEventListener('click',()=>{
       const stamp=state.stamps.find(s=>s.id===button.dataset.sidebarPin);if(!stamp)return;
       selectedStampId=stamp.id;draft=null;movingStampId=null;
@@ -1122,12 +1150,12 @@ let pdfRendererLoad = null;
       pdfDoc=loaded;state.pdfBytes=clone;state.pdfName=name || 'uploaded-ia.pdf';
       currentPage=1;zoom=1;
       $('emptyViewer').classList.add('hidden');$('pageShell').classList.remove('hidden');
-      $('uploadTitle').textContent='Replace PDF';$('uploadSubtext').textContent='Click to choose a new final IA';
+      $('uploadTitle').textContent='Replace PDF';$('uploadSubtext').textContent=isFeedback()?'Choose a different draft PDF':'Choose a different final IA';
       $('documentMeta').classList.remove('hidden');$('documentName').textContent=state.pdfName;
       $('documentDetails').textContent=`${loaded.numPages} pages  /  ${niceBytes(clone.byteLength)}`;
       $('pageTotal').textContent=String(loaded.numPages);$('pageNumber').max=String(loaded.numPages);
       $('footerDocInfo').textContent=`${loaded.numPages} pages  /  ${state.pdfName}`;
-      updateScores();renderEditor();renderStamps();setInstruction();
+      updateModeUI();updateScores();renderEditor();renderStamps();setInstruction();
       try {await ensureUnicodeMetrics();}
       catch(fontError){
         console.warn('Unicode PDF fonts not available yet:',fontError);
@@ -1896,7 +1924,7 @@ let pdfRendererLoad = null;
           const letterSize=Math.min(layout.circle*.55,18);
           pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
           const fullTextColor=pdfHexColor(layout.textColor);
-          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':isFeedback()?'Action':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,layout.headerFontSize,bold,fullTextColor);
+          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,layout.headerFontSize,bold,fullTextColor);
           layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.textX,height-layout.y-33-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
         }
       }
@@ -2226,8 +2254,8 @@ let pdfRendererLoad = null;
       $('customTopic').value='';$('customText').value='';$('customDialog').showModal();$('customText').focus();
     });
     $('saveCustom').addEventListener('click',()=>{
-      const txt=$('customText').value.trim();if(!txt){toast('Write an evidence comment first.');return;}
-      const item={id:'custom-'+makeId(),criterion:$('customCriterion').value,tone:$('customTone').value,topic:$('customTopic').value.trim()||'Personal evidence',text:txt,tags:[],courses:allCourses,origin:'Teacher custom comment'};
+      const txt=$('customText').value.trim();if(!txt){toast('Write a comment first.');return;}
+      const item={id:'custom-'+makeId(),criterion:$('customCriterion').value,tone:$('customTone').value,topic:$('customTopic').value.trim()||(isFeedback()?'Personal feedback':'Personal evidence'),text:txt,tags:[],courses:allCourses,origin:'Teacher custom comment'};
       activeCustomComments().unshift(item);
       saveLibrarySettings();
       $('customDialog').close();tab=item.criterion;tone=item.tone;search='';$('commentSearch').value='';renderTabs();renderTone();renderBank();prepareComment(item.id);
@@ -2335,7 +2363,7 @@ let pdfRendererLoad = null;
       toast('Please select a PDF file.');return;
     }
     const wasOpen=isReady();
-    if(wasOpen&&!confirm('Open this PDF as a new IA? The current assessment will remain saved in My IAs and its marks will not be carried into the new project.'))return;
+    if(wasOpen&&!confirm('Open this PDF as a new IA? Your current project will remain in My IAs. Its marks, feedback and annotations will not carry into the new project.'))return;
     if(wasOpen&&!await preserveActiveProject())return;
     const bytes=new Uint8Array(await file.arrayBuffer());
     projectLoading=true;
