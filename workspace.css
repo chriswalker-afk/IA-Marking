@@ -167,12 +167,13 @@
 .bank-browse-view {
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:7px;
   flex:1 1 auto;
   min-height:0;
-  overflow:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
 }
-.bank-browse-view #bankIntro {flex:none;margin:0 0 3px}
+.bank-browse-view #bankIntro {flex:none;margin:0 0 3px;font-size:11.5px;line-height:1.5}
 .bank-browse-view #criterionTabs,.bank-browse-view .bank-filters,
 .bank-browse-view .bank-quick-heading,.bank-browse-view .bank-list-heading,
 .bank-browse-view #openLibrary,.bank-browse-view #independentLibraryLink {flex:none}
@@ -184,7 +185,11 @@
   padding:0 4px 5px 0;
   overflow:auto;
 }
-.bank-browse-view #bankCaption {flex:none;margin-top:0;padding:7px 0 0;border-top:1px solid #e5edf2}
+.bank-source-details {flex:none;border-top:1px solid #e5edf2;padding:7px 0 0}
+.bank-source-details>summary {font-size:10.5px;font-weight:750;color:#54768a;cursor:pointer;list-style:none;padding:5px 2px}
+.bank-source-details>summary::before {content:"▸";font-size:10px;margin-right:7px}
+.bank-source-details[open]>summary::before {content:"▾"}
+.bank-browse-view #bankCaption {margin:5px 0 0;padding:7px 2px 3px;line-height:1.55}
 .workspace[data-bank-view="browse"] > .bank-pane .selection-editor,
 .workspace[data-bank-view="browse"] > .bank-pane #findAnotherComment {display:none!important}
 .workspace[data-bank-view="edit"] > .bank-pane .bank-browse-view {display:none!important}
@@ -319,7 +324,7 @@ body.pdf-focus .app .viewer-toolbar {position:sticky;top:0;z-index:5;box-shadow:
   .workspace > .document-pane .document-footer {margin-top:auto}
   .workspace > .bank-pane {overflow:hidden}
   .workspace > .bank-pane .bank-view-tabs {margin:0 0 12px}
-  .workspace > .bank-pane .bank-browse-view {overflow:hidden;min-height:0}
+  .workspace > .bank-pane .bank-browse-view {overflow-y:auto;min-height:0}
   .workspace > .bank-pane .comment-list {max-height:none}
   .workspace > .bank-pane .selection-editor {max-height:none}
   .viewer-toolbar {min-height:58px;padding:8px 13px}
