@@ -7,7 +7,7 @@ const css=readFileSync('workspace.css','utf8');
 const js=readFileSync('app.js','utf8');
 const build=readFileSync('scripts/build.mjs','utf8');
 test('PDF-first workspace exposes accessible panel and editor controls',()=>{
-  for(const id of ['workspace','documentPane','viewerPane','bankPane','workspaceBackdrop','documentRailToggle','toggleDocumentPane','toggleCommentPane','toggleEditorPane','bankBrowseTab','bankEditorTab','bankBrowseView','selectionEditor','findAnotherComment','focusPdf']){
+  for(const id of ['workspace','documentPane','viewerPane','bankPane','workspaceBackdrop','documentRailToggle','toggleDocumentPane','toggleCommentPane','toggleEditorPane','bankBrowseTab','bankEditorTab','bankBrowseView','selectionEditor','findAnotherComment','focusPdf','mobileDetailsToggle','mobileProjectToolsToggle','mobileDetailsSummary']){
     assert.ok(html.includes('id="'+id+'"'),id);
   }
   for(const [control,target] of [['toggleDocumentPane','documentPane'],['toggleCommentPane','bankPane'],['toggleEditorPane','selectionEditor'],['bankBrowseTab','bankBrowseView'],['bankEditorTab','selectionEditor']]){
