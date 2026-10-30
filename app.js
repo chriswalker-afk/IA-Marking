@@ -187,16 +187,17 @@ window.pdfjsLib = pdfjsLib;
   }
   function filteredLibraryComments() {
     const query=$('librarySearch').value.toLowerCase().trim();
+    const libraryCourse=$('libraryCourse').value;
     const criterion=$('libraryCriterion').value;
     const selectedTone=$('libraryTone').value;
-    return getComments().filter(item => (item.courses||[]).includes(state.course)
+    return getComments().filter(item => (libraryCourse==='all'||(item.courses||[]).includes(libraryCourse))
       && (criterion==='all'||item.criterion===criterion)
       && (selectedTone==='all'||item.tone===selectedTone)
       && (!query||[item.criterion,item.topic,item.text,...(item.tags||[])].join(' ').toLowerCase().includes(query)));
   }
   function renderFullLibrary() {
     const items=filteredLibraryComments();
-    $('libraryCount').textContent=`Showing all ${items.length} matching ${items.length===1?'comment':'comments'} · ${getComments().filter(item=>(item.courses||[]).includes(state.course)).length} available for ${state.course}`;
+    $('libraryCount').textContent=`Showing ${items.length} of ${getComments().length} library comments`;
     $('copyLibraryVisible').disabled=!items.length;
     $('libraryResults').innerHTML=items.length ? items.map(item=>{
       const isCustom=item.origin==='Teacher custom comment';
@@ -207,6 +208,7 @@ window.pdfjsLib = pdfjsLib;
   }
   function openLibrary(editId=null) {
     libraryEditingId=editId;
+    $('libraryCourse').value='all';
     if(editId){
       const item=getComments().find(c=>c.id===editId);
       $('libraryCriterion').value=item?.criterion||'all';$('libraryTone').value=item?.tone||'all';$('librarySearch').value='';
@@ -763,6 +765,7 @@ window.pdfjsLib = pdfjsLib;
     $('libraryCloseBottom').addEventListener('click',()=>$('libraryDialog').close());
     $('librarySearch').addEventListener('input',()=>{libraryEditingId=null;renderFullLibrary();});
     $('libraryCriterion').addEventListener('change',()=>{libraryEditingId=null;renderFullLibrary();});
+    $('libraryCourse').addEventListener('change',()=>{libraryEditingId=null;renderFullLibrary();});
     $('libraryTone').addEventListener('change',()=>{libraryEditingId=null;renderFullLibrary();});
     $('libraryResults').addEventListener('click',handleLibraryAction);
     $('copyLibraryVisible').addEventListener('click',()=>{
