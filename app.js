@@ -306,6 +306,11 @@ let pdfRendererLoad = null;
     wasPhone=phone;
     document.body.classList.toggle('mobile-details-open',phone&&mobileDetailsExpanded);
     document.querySelector('.masthead').classList.toggle('mobile-projects-open',phone&&mobileProjectsExpanded);
+    // Make project control visibility deterministic even under legacy header
+    // rules. Only the phone disclosure controls these interface-only classes.
+    for(const node of [$('openProjects'),$('newProject'),$('projectSave'),document.querySelector('.header-actions label[for="projectOpen"]')]){
+      if(node)node.classList.toggle('mobile-project-control-hidden',phone&&!mobileProjectsExpanded);
+    }
     $('mobileDetailsToggle').setAttribute('aria-expanded',String(phone&&mobileDetailsExpanded));
     $('mobileProjectToolsToggle').setAttribute('aria-expanded',String(phone&&mobileProjectsExpanded));
     const count=state.stamps.length;
