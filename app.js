@@ -1,3 +1,5 @@
+import {createUnicodeFonts,normaliseAnnotationText,pdfFontError} from './unicode-fonts.js';
+import {inspectModerationPages} from './moderation-preflight.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
 (() => {
@@ -498,9 +500,36 @@ let pdfRendererLoad = null;
   function stampLabel(stamp) { return `${stamp.criterion}${1+state.stamps.filter(s=>s.criterion===stamp.criterion).findIndex(s=>s.id===stamp.id)}`; }
   // A placed comment is on the original student page, not in a separate
   // margin. The same PDF-point measurements are used for preview and export.
+  // Live preview and final export both use the exact same embedded Unicode
+  // fonts and text-width metrics, rather than substituting ASCII placeholders.
+  let unicodeBytesPromise=null,unicodeMetricsPromise=null,unicodeMetricFonts=null;
+  const pdfFontPaths=[
+    'vendor/fonts/NotoSans-Regular.ttf',
+    'vendor/fonts/NotoSans-Bold.ttf',
+    'vendor/fonts/NotoSansMath-Regular.ttf',
+  ];
+  async function getUnicodeFontBytes() {
+    if(!unicodeBytesPromise)unicodeBytesPromise=Promise.all(pdfFontPaths.map(async path=>{
+      const response=await fetch(path,{cache:'force-cache'});
+      if(!response.ok)throw new Error('Missing required PDF text font: '+path);
+      return new Uint8Array(await response.arrayBuffer());
+    })).catch(error=>{unicodeBytesPromise=null;throw error;});
+    return unicodeBytesPromise;
+  }
+  async function ensureUnicodeMetrics(){
+    if(!unicodeMetricsPromise)unicodeMetricsPromise=(async()=>{
+      if(!window.PDFLib||!window.fontkit)throw new Error('The Unicode PDF font library is unavailable.');
+      const doc=await window.PDFLib.PDFDocument.create();
+      const metrics=await createUnicodeFonts(doc,window.fontkit,await getUnicodeFontBytes());
+      unicodeMetricFonts=metrics;
+      return metrics;
+    })().catch(error=>{unicodeMetricsPromise=null;throw error;});
+    return unicodeMetricsPromise;
+  }
   function pdfMeasureFont() {
-    try { return window.PDFLib?.StandardFontEmbedder.for(window.PDFLib.StandardFonts.Helvetica); }
-    catch(e) { return {widthOfTextAtSize:(txt,size)=>txt.length*size*.51}; }
+    // Safe approximate metrics are used only before the fonts have loaded;
+    // the editor and export are remeasured once the fonts are available.
+    return unicodeMetricFonts?.regular || {widthOfTextAtSize:(txt,size)=>Array.from(String(txt)).length*size*.54};
   }
   function noteLayout(stamp,pageWidth,pageHeight,font=pdfMeasureFont()) {
     const width=Math.min(normalNoteWidth(stamp.noteWidth ?? state.stampStyle.noteWidth),Math.max(100,pageWidth-2*NOTE_PAD));
@@ -758,6 +787,12 @@ let pdfRendererLoad = null;
       $('pageTotal').textContent=String(loaded.numPages);$('pageNumber').max=String(loaded.numPages);
       $('footerDocInfo').textContent=`${loaded.numPages} pages  /  ${state.pdfName}`;
       updateScores();renderEditor();renderStamps();setInstruction();
+      try {await ensureUnicodeMetrics();}
+      catch(fontError){
+        console.warn('Unicode PDF fonts not available yet:',fontError);
+        $('pdfLibraryStatus').textContent='Unicode PDF fonts could not be loaded. You can continue annotating, but export preview will require the fonts to load successfully.';
+        $('pdfLibraryStatus').classList.remove('hidden');
+      }
       await renderPage();scheduleSave();
       return true;
     } catch(e) {console.error(e);const reason=e?.name==='PasswordException'?'This PDF is password protected. Please use an unlocked copy.':e?.name==='InvalidPDFException'?'The file is not recognised as a valid PDF.':'The PDF could not be opened. Please check the file and retry.';$('pdfLibraryStatus').textContent=reason;$('pdfLibraryStatus').classList.remove('hidden');toast(reason);return false;}
@@ -815,6 +850,7 @@ let pdfRendererLoad = null;
     } catch(e){console.warn('Browser autosave failed',e);}
   }
   function scheduleSave() {
+    if(reviewPreview.bytes)invalidateReviewPreview();
     clearTimeout(savingTimer);
     savingTimer=setTimeout(storeAutosave,1400);
   }
@@ -961,25 +997,27 @@ let pdfRendererLoad = null;
     }
   }
 
-  function sanitizePdfText(text) {
-    return String(text??'').replace(/\u2018|\u2019/g,"'").replace(/\u201c|\u201d/g,'"').replace(/[\u2013\u2014]/g,'-').replace(/\u2026/g,'...').replace(/\u00a0/g,' ')
-      .replace(/\u03c7\u00b2/g,'chi-squared').replace(/\u03c0/g,'pi').replace(/\u03a3/g,'sum').replace(/\u03b1/g,'alpha').replace(/\u03b2/g,'beta')
-      .replace(/\u2264/g,'<=').replace(/\u2265/g,'>=').replace(/\u2248/g,'approximately').replace(/[^\x20-\x7e\n\r]/g,'?');
-  }
+  function sanitizePdfText(text) {return normaliseAnnotationText(text);}
   function pdfWrap(text,font,size,maxWidth) {
-    const words = sanitizePdfText(text).replace(/\r/g,'').split(/\s+/).filter(Boolean);
-    const rows=[];let line='';
-    for(const word of words){
-      const candidate=line?line+' '+word:word;
-      if(font.widthOfTextAtSize(candidate,size)<=maxWidth){line=candidate;continue;}
-      if(line)rows.push(line);
-      if(font.widthOfTextAtSize(word,size)<=maxWidth)line=word;
-      else {
-        let part='';for(const char of word){if(font.widthOfTextAtSize(part+char,size)>maxWidth && part){rows.push(part);part='';}part+=char;}
+    const paragraphs=sanitizePdfText(text).split('\n');
+    const rows=[];
+    for(const paragraph of paragraphs){
+      const words=paragraph.split(/\s+/u).filter(Boolean);
+      let line='';
+      for(const word of words){
+        const candidate=line?line+' '+word:word;
+        if(font.widthOfTextAtSize(candidate,size)<=maxWidth){line=candidate;continue;}
+        if(line){rows.push(line);line='';}
+        if(font.widthOfTextAtSize(word,size)<=maxWidth){line=word;continue;}
+        let part='';
+        for(const char of Array.from(word)){
+          if(part && font.widthOfTextAtSize(part+char,size)>maxWidth){rows.push(part);part='';}
+          part+=char;
+        }
         line=part;
       }
+      rows.push(line);
     }
-    if(line)rows.push(line);
     return rows.length?rows:[''];
   }
   function pdfHexColor(hex) {
@@ -990,20 +1028,107 @@ let pdfRendererLoad = null;
   function pdfNoteColor(stamp){return brightColor(stampColor(stamp))?window.PDFLib.rgb(.17,.25,.33):pdfColor(stamp);}
 
   function pdfFaint(tone){return tone==='strength'?window.PDFLib.rgb(.94,.97,.98):window.PDFLib.rgb(1,.977,.941);}
-  function pdfText(page,text,x,y,size,font,color) {page.drawText(sanitizePdfText(text),{x,y,size,font,color});}
-  async function exportPdf() {
-    if(!isReady()){toast('Upload an IA before exporting its annotations.');return;}
-    if(usesNewFramework()){toast('May 2029 or later needs the new four-criterion IB framework; A-E export is blocked.');return;}
-    if(!window.PDFLib){toast('PDF export library unavailable. Check your connection and reload.');return;}
-    const button=$('exportAnnotated');button.disabled=true;button.textContent='Preparing PDF...';
-    try {
-      const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
+  function pdfText(page,text,x,y,size,font,color) {
+    if(font?.isUnicode)font.draw(page,text,x,y,size,color);
+    else page.drawText(sanitizePdfText(text),{x,y,size,font,color});
+  }
+  // The moderation preview is made from the exact bytes that Export downloads.
+  // Any project edit invalidates approval and requires a new preview.
+  let reviewPreview={bytes:null,signature:null,pdf:null,page:1,zoom:1,issues:[],visited:new Set()};
+  let reviewPreviewTask=null;
+  let reviewPreviewLoading=false;
+  function previewSignature(){
+    // Exclude volatile project timestamps. Any visible/printed change
+    // (including mark rationales and box positions) must invalidate approval.
+    return JSON.stringify({
+      course:state.course,candidate:state.candidate,session:state.session,
+      marks:state.marks,justifications:state.justifications,
+      stamps:state.stamps,pdfName:state.pdfName,pdfSize:state.pdfBytes?.length||0,
+    });
+  }
+  function invalidateReviewPreview(){
+    reviewPreview.bytes=null;
+    reviewPreview.signature=null;
+    reviewPreview.visited.clear();
+    $('reviewConfirmed').checked=false;
+    $('reviewConfirmed').disabled=true;
+    $('reviewPreviewBox').classList.add('hidden');
+    $('exportAnnotated').disabled=true;
+    $('reviewExportNotice').textContent='Generate the current PDF preview and inspect every page before exporting.';
+    if(reviewPreviewTask){try{reviewPreviewTask.cancel();}catch(error){}reviewPreviewTask=null;}
+    if(reviewPreview.pdf){if(typeof reviewPreview.pdf.cleanup==='function')Promise.resolve(reviewPreview.pdf.cleanup()).catch(()=>{});reviewPreview.pdf=null;}
+  }
+  function renderPreflightIssues(issues){
+    reviewPreview.issues=issues;
+    const errors=issues.filter(x=>x.severity==='error').length;
+    const warnings=issues.filter(x=>x.severity==='warning').length;
+    const badge=$('preflightBadge');
+    badge.className='preflight-badge'+(errors?' has-errors':warnings?' has-issues':'');
+    badge.textContent=errors?errors+' blocking':warnings?warnings+' to review':'No automatic warnings';
+    $('preflightList').innerHTML=issues.map(item=>
+      '<li class="preflight-'+escapeHtml(item.severity)+'">'+escapeHtml(item.message)+'</li>'
+    ).join('');
+    return errors;
+  }
+  function updateReviewGate(){
+    const valid=Boolean(reviewPreview.bytes && reviewPreview.signature===previewSignature());
+    const numPages=reviewPreview.pdf?.numPages||0;
+    const visited=reviewPreview.visited.size;
+    const complete=valid && numPages>0 && visited===numPages;
+    $('reviewConfirmed').disabled=!complete;
+    if(!complete)$('reviewConfirmed').checked=false;
+    const approved=complete && $('reviewConfirmed').checked;
+    $('exportAnnotated').disabled=!approved;
+    $('reviewExportNotice').textContent=!valid?'Generate the current PDF preview first.'
+      :!complete?'Pages inspected: '+visited+' / '+numPages+'. View each page, including the marking summary, then confirm.'
+      :approved?'Preview approved. This exact PDF is ready for download.'
+      :'All '+numPages+' pages viewed. Confirm legibility and unobscured student work to enable export.';
+  }
+  async function renderModeratorPreviewPage(){
+    if(!reviewPreview.pdf)return;
+    if(reviewPreviewTask){try{reviewPreviewTask.cancel();}catch(error){}reviewPreviewTask=null;}
+    const token=reviewPreview.pdf;
+    const page=await token.getPage(reviewPreview.page);
+    if(reviewPreview.pdf!==token)return;
+    const viewport1=page.getViewport({scale:1});
+    const maxWidth=$('reviewPreviewBox').clientWidth-42;
+    const fitScale=Math.max(.38,Math.min(1.5,maxWidth/viewport1.width));
+    const viewport=page.getViewport({scale:fitScale*reviewPreview.zoom});
+    const canvas=$('reviewPreviewCanvas');
+    const pixelRatio=Math.min(2,window.devicePixelRatio||1);
+    canvas.width=Math.ceil(viewport.width*pixelRatio);
+    canvas.height=Math.ceil(viewport.height*pixelRatio);
+    canvas.style.width=viewport.width+'px';
+    canvas.style.height=viewport.height+'px';
+    const ctx=canvas.getContext('2d',{alpha:false});
+    reviewPreviewTask=page.render({
+      canvasContext:ctx,viewport,
+      transform:[pixelRatio,0,0,pixelRatio,0,0],
+    });
+    try{await reviewPreviewTask.promise;}
+    catch(error){if(error?.name==='RenderingCancelledException')return;throw error;}
+    finally{reviewPreviewTask=null;}
+    if(reviewPreview.pdf!==token)return;
+    reviewPreview.visited.add(reviewPreview.page);
+    $('reviewPreviewPage').textContent='Page '+reviewPreview.page+' / '+token.numPages;
+    $('reviewPreviewPrevious').disabled=reviewPreview.page===1;
+    $('reviewPreviewNext').disabled=reviewPreview.page===token.numPages;
+    $('reviewPreviewZoomLabel').textContent=reviewPreview.zoom===1?'Fit':Math.round(reviewPreview.zoom*100)+'%';
+    $('reviewPreviewZoomOut').disabled=reviewPreview.zoom<=.75;
+    $('reviewPreviewZoomIn').disabled=reviewPreview.zoom>=3;
+    updateReviewGate();
+  }
+  async function buildAnnotatedPdf(){
+    if(!isReady())throw new Error('Upload a student IA PDF first.');
+    if(usesNewFramework())throw new Error('The 2029 Mathematics IA assessment needs its new four-criterion rubric; this A–E export cannot be used.');
+    if(!window.PDFLib||!window.fontkit)throw new Error('PDF export or Unicode font support is missing from this deployment.');
+    await ensureUnicodeMetrics();
+      const {PDFDocument,rgb}=window.PDFLib;
       // Draw *onto the existing PDF pages*. No widened pages, side rail,
       // hidden popups or separate continuation notes: the moderator sees
       // exactly the full evidence comment where the teacher placed it.
       const output=await PDFDocument.load(state.pdfBytes,{ignoreEncryption:false});
-      const font=await output.embedFont(StandardFonts.Helvetica);
-      const bold=await output.embedFont(StandardFonts.HelveticaBold);
+      const {regular:font,bold}=await createUnicodeFonts(output,window.fontkit,await getUnicodeFontBytes());
       const pages=output.getPages();
       const ink=rgb(.17,.25,.33),muted=rgb(.45,.53,.60),line=rgb(.83,.88,.90);
       const allProblems=[];
@@ -1015,10 +1140,7 @@ let pdfRendererLoad = null;
         allProblems.push(...pagePlan.problems);
       }
       if(allProblems.length){
-        const message='Cannot export: every on-page comment must fit inside its box without overlapping another. '+allProblems.join('; ')+'. Resize or move the boxes, use Fit to text, or change the font size and retry.';
-        toast(message);
-        $('annotationNotice').textContent=message;$('annotationNotice').classList.remove('hidden');
-        return;
+        throw new Error('Cannot export because some on-page annotations would overlap or lose text: '+allProblems.join('; '));
       }
       for(let i=0;i<pages.length;i++){
         const page=pages[i],{height}=page.getSize();
@@ -1079,10 +1201,60 @@ let pdfRendererLoad = null;
       output.setSubject('Teacher annotation and criterion marking record');
       output.setProducer('IA Marking Desk - local browser export');
       const data=await output.save();
-      download(new Blob([data],{type:'application/pdf'}),`${saveSafeName()}-annotated.pdf`);
-      toast('Exported with complete comments printed directly on the original IA pages. Check legibility before moderation.');
-    }catch(err){console.error(err);toast('PDF export failed. Please save your editable project and check the console.');}
-    finally {button.disabled=false;button.innerHTML='Export annotated PDF <span aria-hidden="true">&#8595;</span>';}
+      return data;
+  }
+  async function prepareModeratorPreview(){
+    if(reviewPreviewLoading)return;
+    reviewPreviewLoading=true;
+    const button=$('buildReviewPreview');
+    button.disabled=true;button.textContent='Preparing exact PDF preview…';
+    invalidateReviewPreview();
+    $('preflightBadge').textContent='Checking PDF…';
+    try{
+      await ensureUnicodeMetrics();
+      const issues=await inspectModerationPages({
+        pdfDocument:pdfDoc,
+        stamps:state.stamps,
+        getPageStamps:pageStamps,
+        noteLayout,
+        pageLayoutProblems,
+        criterionKeys:CRITERION_KEYS,
+        marks:state.marks,
+      });
+      const errorCount=renderPreflightIssues(issues);
+      if(errorCount)throw new Error('Fix the blocking annotation problems listed above before previewing.');
+      const fingerprint=previewSignature();
+      const bytes=await buildAnnotatedPdf();
+      if(fingerprint!==previewSignature())throw new Error('Assessment changed while the preview was being built. Generate it again.');
+      if(!pdfjsLib)throw new Error('The PDF viewer is unavailable.');
+      reviewPreview.bytes=bytes;
+      reviewPreview.signature=fingerprint;
+      reviewPreview.pdf=await pdfjsLib.getDocument({data:new Uint8Array(bytes)}).promise;
+      reviewPreview.page=1;
+      reviewPreview.zoom=1;
+      reviewPreview.visited.clear();
+      $('reviewPreviewBox').classList.remove('hidden');
+      await renderModeratorPreviewPage();
+      $('reviewExportNotice').scrollIntoView({block:'nearest'});
+    }catch(error){
+      console.error('Moderator PDF preview failed:',error);
+      const message=pdfFontError(error);
+      renderPreflightIssues([{severity:'error',message}]);
+      $('reviewExportNotice').textContent=message;
+      invalidateReviewPreview();
+      $('reviewExportNotice').textContent=message;
+    }finally{
+      reviewPreviewLoading=false;
+      button.disabled=false;button.textContent='Rebuild exact PDF preview';
+    }
+  }
+  async function exportPdf(){
+    const valid=reviewPreview.bytes && reviewPreview.signature===previewSignature()
+      && reviewPreview.visited.size===reviewPreview.pdf?.numPages && $('reviewConfirmed').checked;
+    if(!valid){toast('Inspect and approve the exact PDF preview before exporting.');return;}
+    // Use exactly the bytes that were inspected - no separate re-rendering.
+    download(new Blob([reviewPreview.bytes],{type:'application/pdf'}),saveSafeName()+'-annotated.pdf');
+    toast('Exported the exact PDF reviewed on every page. Check it once more after downloading.');
   }
 
   function initStampStyleEvents() {
@@ -1178,7 +1350,27 @@ let pdfRendererLoad = null;
       $('customDialog').close();tab=item.criterion;tone=item.tone;search='';$('commentSearch').value='';renderTabs();renderTone();renderBank();prepareComment(item.id);
       toast('Personal comment saved to this browser and selected.');
     });
-    $('openReview').addEventListener('click',()=>{renderReview();$('reviewDialog').showModal();});
+    $('openReview').addEventListener('click',()=>{
+      renderReview();$('reviewDialog').showModal();invalidateReviewPreview();
+      $('buildReviewPreview').textContent='Generate actual PDF preview';
+    });
+    $('reviewDialog').addEventListener('close',invalidateReviewPreview);
+    $('buildReviewPreview').addEventListener('click',prepareModeratorPreview);
+    $('reviewPreviewPrevious').addEventListener('click',()=>{
+      if(reviewPreview.pdf && reviewPreview.page>1){reviewPreview.page--;renderModeratorPreviewPage().catch(console.error);}
+    });
+    $('reviewPreviewNext').addEventListener('click',()=>{
+      if(reviewPreview.pdf && reviewPreview.page<reviewPreview.pdf.numPages){reviewPreview.page++;renderModeratorPreviewPage().catch(console.error);}
+    });
+    $('reviewPreviewZoomIn').addEventListener('click',()=>{
+      reviewPreview.zoom=Math.min(3,Math.round((reviewPreview.zoom+.5)*100)/100);
+      renderModeratorPreviewPage().catch(console.error);
+    });
+    $('reviewPreviewZoomOut').addEventListener('click',()=>{
+      reviewPreview.zoom=Math.max(.75,Math.round((reviewPreview.zoom-.5)*100)/100);
+      renderModeratorPreviewPage().catch(console.error);
+    });
+    $('reviewConfirmed').addEventListener('change',updateReviewGate);
     $('openCriteria').addEventListener('click',openCriteriaDialog);
     $('reviewOpenCriteria').addEventListener('click',()=>{$('reviewDialog').close();openCriteriaDialog();});
     $('closeCriteria').addEventListener('click',()=>$('criteriaDialog').close());

@@ -194,8 +194,27 @@
 
   <dialog id="reviewDialog" class="modal review-modal" aria-labelledby="reviewTitle">
     <div class="review-header"><div><span class="eyebrow">MARKING RECORD</span><h2 id="reviewTitle">Review &amp; export</h2><p>Capture criterion-specific reasons for the awarded marks. A stamp count never determines a score.</p></div><button id="closeReview" class="icon-button" type="button" aria-label="Close review">&#10005;</button></div>
-    <div class="review-body"><div id="reviewStatus" class="review-status"></div><div id="reviewScores" class="review-scores"></div><div class="review-note"><strong>Before IB submission</strong><p>Check the current official descriptors and your school procedures. Inspect the exported file, verify anonymity and readable mathematical content, and confirm that comments match the marks awarded.</p><button id="reviewOpenCriteria" type="button" class="btn subtle">View full IB criteria and marks</button></div></div>
-    <div class="review-footer"><button id="exportProject" class="btn subtle" type="button">Save editable project</button><button id="exportAnnotated" class="btn primary" type="button">Export annotated PDF <span aria-hidden="true">&#8595;</span></button></div>
+    <div class="review-body">
+      <div id="reviewStatus" class="review-status" role="status"></div>
+      <div id="reviewScores" class="review-scores"></div>
+      <div class="review-note"><strong>Before IB submission</strong><p>Check the applicable official descriptors and your school's moderation arrangements. All teacher comments are printed on the original IA pages, so inspect each page for readability and unobscured mathematical work.</p><button id="reviewOpenCriteria" type="button" class="btn subtle">View full IB criteria and marks</button></div>
+      <section class="moderation-preflight" aria-labelledby="moderationPreflightTitle">
+        <div class="moderation-preflight-heading"><div><span class="eyebrow">EXPORT RELIABILITY</span><h3 id="moderationPreflightTitle">Moderator-ready PDF check</h3><p>Automated checks identify likely problems. Inspect the exact annotated export before releasing it.</p></div><span id="preflightBadge" class="preflight-badge">Not checked</span></div>
+        <ul id="preflightList" class="preflight-list" aria-live="polite"><li>Build a preview to check all pages.</li></ul>
+        <button id="buildReviewPreview" type="button" class="btn subtle">Generate actual PDF preview</button>
+        <div id="reviewPreviewBox" class="review-preview hidden">
+          <div class="review-preview-bar">
+            <strong>Exact PDF export preview</strong>
+            <div class="review-preview-controls"><button id="reviewPreviewPrevious" type="button" class="icon-button" aria-label="Previous exported page">&#8592;</button><span id="reviewPreviewPage">Page — / —</span><button id="reviewPreviewNext" type="button" class="icon-button" aria-label="Next exported page">&#8594;</button><div class="review-preview-zoom"><button id="reviewPreviewZoomOut" type="button" class="icon-button" aria-label="Zoom out exported PDF preview">−</button><span id="reviewPreviewZoomLabel">Fit</span><button id="reviewPreviewZoomIn" type="button" class="icon-button" aria-label="Zoom in exported PDF preview">+</button></div></div>
+          </div>
+          <div class="review-preview-scroll"><canvas id="reviewPreviewCanvas" aria-label="Rendered exported PDF page including teacher annotations"></canvas></div>
+          <p class="review-preview-hint">Page through the student work and marking summary. The PDF you see here is the same file used by Export.</p>
+        </div>
+        <label class="review-acknowledge"><input id="reviewConfirmed" type="checkbox" disabled><span>I have inspected the exported preview, confirmed that the full comments are legible and that no important student mathematics is obscured.</span></label>
+        <p id="reviewExportNotice" class="review-export-notice" role="status">Generate the preview, then confirm it before exporting.</p>
+      </section>
+    </div>
+    <div class="review-footer"><button id="exportProject" class="btn subtle" type="button">Save editable project</button><button id="exportAnnotated" class="btn primary" type="button" disabled>Export annotated PDF <span aria-hidden="true">&#8595;</span></button></div>
   </dialog>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -203,6 +222,7 @@
   <script src="comments.js"></script>
   <script src="rubric.js"></script>
   <script src="vendor/pdf-lib.min.js" defer></script>
+  <script src="vendor/fontkit.umd.min.js" defer></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>
