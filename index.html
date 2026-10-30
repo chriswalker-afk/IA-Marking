@@ -17,10 +17,12 @@
       </div>
       <div class="header-center"><span class="teacher-chip"><span class="status-dot"></span>Teacher assessment workspace</span><span class="privacy-note">PDF stays in this browser</span></div>
       <div class="header-actions">
+        <span id="localSaveState" class="local-save-state" role="status" aria-live="polite">Local storage checking…</span>
+        <button id="openProjects" type="button" class="btn subtle project-dashboard-trigger">My IAs <span id="projectCountBadge">0</span></button>
         <button id="newProject" class="btn subtle" type="button" title="Start a new marking project">New</button>
         <label for="projectOpen" class="btn subtle file-label" title="Open a previously saved .iamark.json project">Open project</label>
         <input id="projectOpen" type="file" accept=".json,.iamark.json,application/json" class="sr-only">
-        <button id="projectSave" class="btn subtle" type="button">Save project</button>
+        <button id="projectSave" class="btn subtle" type="button" title="Download a portable backup containing the original PDF">Download backup</button>
         <button id="openReview" class="btn primary" type="button">Review &amp; export <span aria-hidden="true">&#8594;</span></button>
       </div>
     </header>
@@ -62,7 +64,7 @@
         </label>
         <input id="pdfInput" class="sr-only" type="file" accept=".pdf,application/pdf">
         <p id="pdfLibraryStatus" class="pdf-error hidden" role="alert"></p>
-        <button id="resumeLast" class="btn subtle hidden" type="button">Resume browser draft</button>
+        <button id="resumeLast" class="btn subtle hidden" type="button">Resume most recent local IA</button>
         <div id="documentMeta" class="document-meta hidden"><div class="doc-symbol">PDF</div><div class="doc-info"><strong id="documentName"></strong><small id="documentDetails"></small></div><button class="tiny-icon" id="replacePdf" type="button" title="Choose a different PDF">&#8635;</button></div>
         <div class="pane-divider"></div>
         <div class="subhead"><span>Evidence stamps</span><span class="counter" id="allPinCount">0</span></div>
@@ -146,6 +148,39 @@
     </main>
   </div>
 
+  <dialog id="projectsDialog" class="modal projects-modal" aria-labelledby="projectsTitle">
+    <div class="projects-modal-header">
+      <div><span class="eyebrow">LOCAL COHORT WORKSPACE</span><h2 id="projectsTitle">My IA marking projects</h2>
+        <p>Switch between assessments, review your progress and download confidential backups. Projects are stored only in this browser on this device.</p></div>
+      <button id="closeProjects" class="icon-button" type="button" aria-label="Close project dashboard">✕</button>
+    </div>
+    <div id="projectsStorageWarning" class="projects-storage-warning hidden" role="alert"></div>
+    <div class="projects-stat-strip" id="projectsStats" aria-label="Local project progress"></div>
+    <div class="projects-search-bar">
+      <input id="projectsSearch" type="search" placeholder="Search assessment ID, PDF or session…" aria-label="Search locally saved IA projects" autocomplete="off">
+      <select id="projectsCourse" aria-label="Filter local IA projects by course"><option value="all">All courses</option><option>AA SL</option><option>AI SL</option><option>AA HL</option><option>AI HL</option></select>
+    </div>
+    <div id="projectsRows" class="projects-modal-body" role="region" aria-label="Saved IA marking projects" tabindex="0"></div>
+    <div class="projects-modal-footer">
+      <p class="projects-data-warning">These PDFs and annotations are <strong>unencrypted</strong> browser data. Download a backup before clearing the browser or using another device. Backups and ZIPs also contain student work.</p>
+      <div class="projects-footer-actions">
+        <button id="downloadAllProjects" class="btn subtle" type="button">Download all backups (.zip)</button>
+        <button id="openClearProjects" class="btn projects-danger" type="button">Clear stored IA data…</button>
+        <button id="projectsDone" class="btn primary" type="button">Done</button>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="clearProjectsDialog" class="modal clear-projects-modal" aria-labelledby="clearProjectsTitle">
+    <div class="projects-modal-header"><div><span class="eyebrow">CONFIDENTIAL DATA REMOVAL</span><h2 id="clearProjectsTitle">Clear local IA projects</h2></div><button id="closeClearProjects" class="icon-button" type="button" aria-label="Cancel clearing local projects">✕</button></div>
+    <div class="clear-projects-body">
+      <p>This permanently deletes <strong>all saved student PDFs and marking projects from this browser's IA Marking Desk storage</strong>, including the currently open IA and the previous-version draft.</p>
+      <p>Existing downloaded backups, exported PDFs, browser caches, device backups and other open tabs are not affected. Browser deletion does not guarantee forensic erasure from the device.</p>
+      <label class="clear-preferences-option"><input id="clearTeacherPreferences" type="checkbox"> Also reset my personal comment library, wording edits, stamp defaults, favourites and recent comments on this device.</label>
+      <label class="clear-confirm-label">To confirm, type <strong>DELETE ALL</strong><input id="clearProjectsPhrase" type="text" autocomplete="off" placeholder="DELETE ALL" aria-label="Type DELETE ALL to confirm clearing local IA data"></label>
+      <div id="clearProjectsNotice" role="status"></div>
+    </div>
+    <div class="projects-modal-footer"><div class="projects-footer-actions"><button id="cancelClearProjects" class="btn subtle" type="button">Cancel</button><button id="confirmClearProjects" class="btn projects-danger" type="button" disabled>Delete all local IA projects</button></div></div>
+  </dialog>
   <dialog id="evidenceDialog" class="modal evidence-modal" aria-labelledby="evidenceTitle">
     <div class="evidence-modal-header">
       <div><span class="eyebrow">TEACHER ASSESSMENT EVIDENCE</span><h2 id="evidenceTitle">Criterion evidence navigator</h2><p>See all placed comments grouped by A–E. Select any observation to jump to its page and edit the stamp.</p></div>
