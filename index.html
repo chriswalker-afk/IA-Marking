@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' blob:; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>IA Marking Desk | Mathematics</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="masthead">
+      <div class="brand" aria-label="IA Marking Desk">
+        <span class="brand-mark">A<span class="brand-dot"></span></span>
+        <span><strong>IA Marking Desk</strong><small>Mathematics exploration</small></span>
+      </div>
+      <div class="header-center"><span class="teacher-chip"><span class="status-dot"></span>Teacher assessment workspace</span><span class="privacy-note">PDF stays in this browser</span></div>
+      <div class="header-actions">
+        <button id="newProject" class="btn subtle" type="button" title="Start a new marking project">New</button>
+        <label for="projectOpen" class="btn subtle file-label" title="Open a previously saved .iamark.json project">Open project</label>
+        <input id="projectOpen" type="file" accept=".json,.iamark.json,application/json" class="sr-only">
+        <button id="projectSave" class="btn subtle" type="button">Save project</button>
+        <button id="openReview" class="btn primary" type="button">Review &amp; export <span aria-hidden="true">&#8594;</span></button>
+      </div>
+    </header>
+
+    <section class="assessment-bar" aria-label="Assessment details and criterion marks">
+      <div class="assessment-fields">
+        <label>Course
+          <select id="course" aria-label="IB mathematics course">
+            <option>AA SL</option><option>AI SL</option><option>AA HL</option><option>AI HL</option>
+          </select>
+        </label>
+        <label>Assessment ID <span class="muted-inline">(no name)</span>
+          <input id="candidate" type="text" placeholder="e.g. IA-014" maxlength="60" autocomplete="off">
+        </label>
+        <label>Session
+          <input id="session" type="text" placeholder="e.g. May 2027" maxlength="50" autocomplete="off">
+        </label>
+      </div>
+      <div class="score-strip" id="scoreStrip" aria-label="Criterion marks"></div>
+      <div class="total-card"><span>Total</span><strong id="totalMark">--<small>/20</small></strong></div>
+    </section>
+
+    <div id="frameworkNotice" class="framework-notice" role="status">A-E assessment framework (final assessment November 2028). The new May 2029 criteria are not supported by this version.</div>
+
+    <main class="workspace">
+      <aside class="document-pane" aria-label="Document and annotations">
+        <div class="pane-heading"><div><span class="eyebrow">01 / SOURCE</span><h2>Document</h2></div><span class="pane-help" title="Use a final submitted PDF. Files never leave the browser.">?</span></div>
+        <label for="pdfInput" class="upload-card" id="dropzone">
+          <span class="upload-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V3m0 0L7 8m5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg></span>
+          <strong id="uploadTitle">Upload student IA</strong>
+          <span id="uploadSubtext">Drop a PDF here or browse files</span>
+          <span class="upload-action">Choose PDF</span>
+        </label>
+        <input id="pdfInput" class="sr-only" type="file" accept=".pdf,application/pdf">
+        <button id="resumeLast" class="btn subtle hidden" type="button">Resume browser draft</button>
+        <div id="documentMeta" class="document-meta hidden"><div class="doc-symbol">PDF</div><div class="doc-info"><strong id="documentName"></strong><small id="documentDetails"></small></div><button class="tiny-icon" id="replacePdf" type="button" title="Choose a different PDF">&#8635;</button></div>
+        <div class="pane-divider"></div>
+        <div class="subhead"><span>Evidence stamps</span><span class="counter" id="allPinCount">0</span></div>
+        <div class="legend"><span><i class="legend-dot strength"></i>Strength</span><span><i class="legend-dot limitation"></i>Limitation</span></div>
+        <div class="stamps-list" id="stampsList"><p class="muted centered">Your evidence annotations will appear here.</p></div>
+        <div class="document-footer"><span class="lock-icon">&#9638;</span><span>Local-first. No PDF or comments are uploaded to a server.</span></div>
+      </aside>
+
+      <section class="viewer-pane" aria-label="PDF page viewer">
+        <div class="viewer-toolbar">
+          <div class="toolbar-left"><span class="eyebrow">02 / ANNOTATE</span><strong>Exploration</strong></div>
+          <div class="toolbar-controls">
+            <button type="button" id="prevPage" aria-label="Previous page" class="icon-button">&#8592;</button>
+            <span class="page-counter"><input id="pageNumber" type="number" min="1" value="1" aria-label="Page number"> / <span id="pageTotal">--</span></span>
+            <button type="button" id="nextPage" aria-label="Next page" class="icon-button">&#8594;</button>
+            <span class="toolbar-rule"></span>
+            <button type="button" id="zoomOut" aria-label="Zoom out" class="icon-button">&#8722;</button>
+            <span id="zoomLabel" class="zoom-label">Fit</span>
+            <button type="button" id="zoomIn" aria-label="Zoom in" class="icon-button">+</button>
+          </div>
+        </div>
+        <div class="instruction-bar" id="instructionBar"><span class="instruction-icon">i</span><span id="instructionText">Select a comment from the bank, then click the relevant place on the PDF to add its stamp.</span><button id="cancelPlacement" class="text-button hidden" type="button">Cancel</button></div>
+        <div class="pdf-scroll" id="pdfScroll">
+          <div id="emptyViewer" class="empty-viewer">
+            <div class="empty-art" aria-hidden="true"><div class="empty-page"><div class="empty-line long"></div><div class="empty-line"></div><div class="empty-line medium"></div><div class="empty-equation">f(x) = ax<sup>2</sup> + bx + c</div><div class="empty-line medium"></div><div class="empty-line long"></div><div class="illustrative-stamp">A</div></div></div>
+            <h2>Mark the evidence, not the page.</h2>
+            <p>Upload a final IA, choose a criterion-specific assessment comment, and place a small evidence stamp directly beside the relevant mathematics.</p>
+            <label for="pdfInput" class="btn primary file-label">Select an IA PDF <span aria-hidden="true">&#8594;</span></label>
+          </div>
+          <div id="pageShell" class="page-shell hidden"><canvas id="pdfCanvas" aria-label="Rendered PDF page"></canvas><div id="stampLayer" class="stamp-layer" role="group" aria-label="Evidence stamps on page"></div></div>
+        </div>
+        <div class="viewer-bottom"><span id="footerDocInfo">Awaiting a PDF</span><span>Stamps stay outside the mathematics in exported margin notes</span></div>
+      </section>
+
+      <aside class="bank-pane" aria-label="Criterion evidence comment bank">
+        <div class="pane-heading"><div><span class="eyebrow">03 / EVIDENCE</span><h2>Stamp library</h2></div><span class="bank-total" id="bankTotal">-- comments</span></div>
+        <p class="bank-intro">Choose a teacher-facing assessment observation. Edit it to reflect the actual evidence before stamping.</p>
+        <div class="criterion-tabs" id="criterionTabs" role="group" aria-label="Filter comments by criterion"></div>
+        <div class="bank-filters"><input id="commentSearch" type="search" placeholder="Search comments or topics..." aria-label="Search the comment bank"><div class="tone-toggle" role="group" aria-label="Filter strengths and limitations"><button class="tone-btn active" data-tone="all" type="button">All</button><button class="tone-btn" data-tone="strength" type="button">Strengths</button><button class="tone-btn" data-tone="limitation" type="button">Limitations</button></div></div>
+        <div class="bank-list-heading"><strong id="bankFilteredCount">Comments</strong><button id="newCustom" class="link-button" type="button">+ Write my own</button></div>
+        <div class="comment-list" id="commentList"></div>
+        <div class="selection-editor" id="selectionEditor"><div class="selection-empty"><span class="small-ring">A</span><span>Choose a comment to prepare a stamp.</span></div></div>
+        <div class="bank-caption">Curated from the supplied 2021-2026 examiner-feedback synthesis. These are prompts, not IB descriptors or automatic marks.</div>
+      </aside>
+    </main>
+  </div>
+
+  <dialog id="customDialog" class="modal custom-modal" aria-labelledby="customTitle">
+    <form method="dialog" id="customForm">
+      <div class="modal-heading"><div><span class="eyebrow">PERSONAL COMMENT</span><h2 id="customTitle">Add an evidence comment</h2></div><button class="icon-button" value="cancel" type="submit" aria-label="Close dialog">&#10005;</button></div>
+      <div class="form-grid"><label>Criterion<select id="customCriterion"><option value="A">A - Presentation</option><option value="B">B - Mathematical communication</option><option value="C">C - Personal engagement</option><option value="D">D - Reflection</option><option value="E">E - Use of mathematics</option></select></label><label>Evidence type<select id="customTone"><option value="strength">Strength</option><option value="limitation">Limitation</option></select></label></div>
+      <label>Category<input id="customTopic" type="text" placeholder="e.g. Mathematical modelling" maxlength="90"></label>
+      <label>Your comment<textarea id="customText" rows="5" maxlength="1800" placeholder="Describe what the submitted work demonstrates..."></textarea></label>
+      <p class="form-hint">Phrase this as evidence for a marking decision, rather than instructions to the student. Saved to this browser's personal bank.</p>
+      <div class="modal-actions"><button class="btn subtle" value="cancel" type="submit">Cancel</button><button id="saveCustom" class="btn primary" type="button">Save to comment bank</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="reviewDialog" class="modal review-modal" aria-labelledby="reviewTitle">
+    <div class="review-header"><div><span class="eyebrow">MARKING RECORD</span><h2 id="reviewTitle">Review &amp; export</h2><p>Capture criterion-specific reasons for the awarded marks. A stamp count never determines a score.</p></div><button id="closeReview" class="icon-button" type="button" aria-label="Close review">&#10005;</button></div>
+    <div class="review-body"><div id="reviewStatus" class="review-status"></div><div id="reviewScores" class="review-scores"></div><div class="review-note"><strong>Before IB submission</strong><p>Check the current official descriptors and your school procedures. Inspect the exported file, verify anonymity and readable mathematical content, and confirm that comments match the marks awarded.</p></div></div>
+    <div class="review-footer"><button id="exportProject" class="btn subtle" type="button">Save editable project</button><button id="exportAnnotated" class="btn primary" type="button">Export annotated PDF <span aria-hidden="true">&#8595;</span></button></div>
+  </dialog>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script src="comments.js"></script>
+  <script src="vendor/pdf-lib.min.js" defer></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
