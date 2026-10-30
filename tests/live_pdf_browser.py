@@ -384,8 +384,10 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#mobileDetailsToggle').click()
         expect(page.locator('#assessmentBar')).to_be_hidden()
         page.locator('#mobileProjectToolsToggle').click()
+        expect(page.locator('#mobileProjectToolsToggle')).to_have_attribute('aria-expanded','true')
         expect(page.locator('#openProjects')).to_be_visible()
         page.locator('#mobileProjectToolsToggle').click()
+        expect(page.locator('#mobileProjectToolsToggle')).to_have_attribute('aria-expanded','false')
         expect(page.locator('#openProjects')).to_be_hidden()
         # The PDF remains the primary surface on narrow screens: document
         # and library are drawers rather than a long stack underneath it.
