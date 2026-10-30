@@ -326,7 +326,7 @@ let pdfRendererLoad = null;
       ?'Browse feedback library <span aria-hidden="true">↗</span>'
       :'Browse marking library <span aria-hidden="true">↗</span>';
     $('referenceLibraryLink').href=isFeedback()?'library.html?mode=feedback':'library.html';
-    $('independentLibraryLink').href=$('referenceLibraryLink').href;
+    $('independentLibraryLink').setAttribute('href',isFeedback()?'library.html?mode=feedback':'library.html');
     $('independentLibraryLink').textContent=isFeedback()?'Open feedback library in a separate page ↗':'Open marking library in a separate page ↗';
     $('documentHelp').title=isFeedback()?'Choose a first-draft IA PDF. Nothing is uploaded to a server.':'Choose a final IA PDF. Nothing is uploaded to a server.';
     if(isReady())$('uploadSubtext').textContent=isFeedback()?'Choose a different draft PDF':'Choose a different final IA';
