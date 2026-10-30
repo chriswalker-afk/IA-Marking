@@ -29,6 +29,15 @@ jobs:
           test -s dist/vendor/pdf-lib.min.js
           test -s dist/library.html
           test -s dist/library.js
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install browser test dependencies
+        run: |
+          python -m pip install --disable-pip-version-check playwright pymupdf
+          python -m playwright install --with-deps chromium
+      - name: Test real PDF upload, annotation and export in Chromium
+        run: python tests/live_pdf_browser.py
       - name: Upload browser-testable site
         uses: actions/upload-artifact@v4
         with:
