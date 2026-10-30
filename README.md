@@ -1,10 +1,24 @@
 # IA Marking Desk - Mathematics
 
-**Teacher-only, local-first marking workspace for final IB Mathematics explorations.** An independent aid for recording assessment evidence, not an official IB product, a student-feedback system or an automated marking service.
+**Teacher-only, local-first review workspace for IB Mathematics explorations.** Supports both final assessment and constructive first-draft feedback. It is an independent teacher aid, not an official IB product or an automated marking service.
+
+## Review workflows
+
+- **First draft feedback:** place strengths and actionable improvement prompts on a student draft, prioritise revisions, and export an annotated PDF containing a student checklist. No marks are awarded in this mode.
+- **Final assessment:** place evidence observations and assign teacher-controlled criterion marks using the existing A–E framework, then inspect the exact PDF export.
+- Both workflows have separate editable banks and stamp sets, while sharing the secure browser-local project manager. The original PDF and teacher comments remain on the device unless the teacher exports them.
+
+## Pass 1 — visual refinement
+
+- Introduces shared, more legible typography, colours, button hierarchy and consistent focus styles across the workspace and standalone comment library.
+- Makes default stamp settings and per-stamp appearance controls **expandable, closed by default**, leaving full formatting and resize tools one click away.
+- Standardises student-facing terminology across the feedback mode (strengths and *improvements*, rather than marking *limitations*) and fixes the standalone library link.
+- Cleans up project action labels: **New IA**, **Import backup** and **Back up IA**. Nothing about annotation geometry, assessment marks, PDF export integrity, or local storage was changed.
+- Adds smoke checks for collapsed controls, keyboard-accessible appearance adjustments, UI terms and both libraries.
 
 ## What you can do
 
-- Upload a final IA PDF (rendered within your browser, not uploaded to this repository or a server). The annotated export prints notes directly onto each original PDF page, rather than placing them in a separate right-hand margin.
+- Upload an IA PDF (rendered within your browser, not uploaded to this repository or a server). The annotated export prints notes directly onto each original PDF page, rather than placing them in a separate right-hand margin.
 - Select AA SL, AI SL, AA HL or AI HL; add an anonymous assessment ID and exam session.
 - Place **circular A-E evidence stamps** on pages. Each **complete strength/limitation comment is printed directly ON the student’s original PDF page, beside its A–E circle**, so the moderator sees the wording in place. Teachers drag and resize the on-page callout to find available whitespace; the PDF export keeps the same original page size. Each stamp's text is independently editable. Choose the A–E circle **diameter (14–42 PDF points)** and its colour, then separately customise the **full comment's font size (7–18 pt), text colour, box background, border colour, width and height**. Each placed comment has a draggable lower-right resize handle; the sidebar also provides width and height sliders plus **Fit box height to full comment**. Use the collapsible default comment-style controls to set reusable formatting for new notes or explicitly apply font and colours to all placed comments without resetting their individually sized boxes. Drag a stamp or move it to another page; use the side panel to revisit it.
 - Search **294 original assessment-evidence comments** from the supplied 2021–2026 examiner-feedback synthesis (147 strengths, 147 limitations), organised by criterion and searchable topic. Open the independent **[full comment library](library.html)** (it works even when the PDF renderer is missing) to see all comments in one searchable view, copy an individual comment, copy all filtered comments, edit an existing library entry or add your own reusable comments. This works even before uploading an IA.
