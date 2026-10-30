@@ -1276,11 +1276,12 @@ let pdfRendererLoad = null;
     $('openClearProjects').disabled=!count||!projectVault;
     $('resumeLast').classList.toggle('hidden',count===0||isReady());
     const recorded=all.filter(row=>row.markedCount===5).length;
-    const inProgress=all.filter(row=>row.markedCount>0&&row.markedCount<5||row.markedCount===0&&row.annotations>0).length;
-    const stamps=all.reduce((total,row)=>total+row.annotations,0);
+    const inProgress=all.filter(row=>row.activeMode==='feedback'?row.feedbackAnnotations>0:row.markedCount>0&&row.markedCount<5||row.markedCount===0&&row.annotations>0).length;
+    const stamps=all.reduce((total,row)=>total+row.annotations+(row.feedbackAnnotations||0),0);
+    const feedbackActions=all.reduce((total,row)=>total+(row.feedbackActions||0),0);
     $('projectsStats').innerHTML=[
       ['Local projects',count],['5/5 marks recorded',recorded],
-      ['In progress',inProgress],['Evidence stamps',stamps],
+      ['In progress',inProgress],['All stamps',stamps],['Student actions',feedbackActions],
     ].map(([label,value])=>'<div class="projects-stat"><strong>'+value+'</strong><small>'+label+'</small></div>').join('');
     const search=$('projectsSearch').value.trim().toLowerCase(),course=$('projectsCourse').value;
     const visible=all.filter(row=>(course==='all'||row.course===course)
@@ -1288,7 +1289,7 @@ let pdfRendererLoad = null;
     $('projectsRows').innerHTML=visible.length?visible.map(row=>{
       const name=row.candidate||'Unlabelled IA';
       const current=row.id===activeProjectId;
-      const progress=row.markedCount*20;
+      const progress=row.activeMode==='feedback'?(row.feedbackActions?Math.round(row.feedbackDone/row.feedbackActions*100):0):row.markedCount*20;
       return '<article class="project-card '+(current?'is-current':'')+'" data-project-card="'+escapeHtml(row.id)+'">'
         +'<div class="project-card-heading"><div><strong>'+escapeHtml(name)+'</strong>'
         +'<p>'+escapeHtml(row.pdfName)+'</p></div>'
@@ -1296,10 +1297,14 @@ let pdfRendererLoad = null;
         +'<div class="project-card-details"><span>'+escapeHtml(row.course)+'</span>'
         +'<span>'+escapeHtml(row.session||'Session not set')+'</span>'
         +'<span>'+(row.pageCount?row.pageCount+' pages':'Page count on open')+'</span><span>'+niceBytes(row.fileSize)+'</span>'
-        +'<span>'+row.annotations+' evidence stamps</span></div>'
-        +'<div class="project-progress-row"><span>'+row.markedCount+'/5 criterion marks</span>'
-        +'<span class="project-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="'+row.markedCount+'" aria-label="Number of criterion marks recorded"><span style="width:'+progress+'%"></span></span>'
-        +'<small>'+(row.total===null?'Not fully marked':row.total+'/20 recorded')+'</small></div>'
+        +'<span>'+row.annotations+' evidence stamps</span><span>'+(row.feedbackAnnotations||0)+' feedback stamps</span></div>'
+        +(row.activeMode==='feedback'
+          ?'<div class="project-progress-row"><span>'+row.feedbackDone+'/'+row.feedbackActions+' revision actions checked</span>'
+            +'<span class="project-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+progress+'" aria-label="Feedback revisions checked"><span style="width:'+progress+'%"></span></span>'
+            +'<small>First draft feedback</small></div>'
+          :'<div class="project-progress-row"><span>'+row.markedCount+'/5 criterion marks</span>'
+            +'<span class="project-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="'+row.markedCount+'" aria-label="Number of criterion marks recorded"><span style="width:'+progress+'%"></span></span>'
+            +'<small>'+(row.total===null?'Not fully marked':row.total+'/20 recorded')+'</small></div>')
         +'<div class="project-card-footer"><span class="project-card-last">Saved '+escapeHtml(formatSavedDate(row.savedAt))+' · '+escapeHtml(row.status)+'</span>'
         +'<div class="project-card-actions">'
         +'<button class="btn primary" type="button" data-local-open="'+escapeHtml(row.id)+'">'+(current?'Return to IA':'Open IA')+'</button>'
