@@ -132,9 +132,22 @@ with tempfile.TemporaryDirectory() as folder:
         assert page.locator('[data-score="A"]').input_value() == '3'
         assert page.locator('[data-score="E"]').input_value() == '5'
 
-        # Upload a REAL two-page PDF and wait for PDF.js worker to render it.
-        page.locator('#pdfInput').set_input_files(str(sample))
+        # A mobile teacher can upload directly from the PDF's central CTA
+        # even though the document drawer (and its duplicate label) is closed.
+        page.set_viewport_size({'width':430,'height':850})
+        expect(page.locator('#documentPane')).to_be_hidden()
+        with page.expect_file_chooser(timeout=15000) as chooser:
+            page.locator('#emptyViewer .file-label').click()
+        chooser.value.set_files(str(sample))
         expect(page.locator('#pageTotal')).to_have_text('2', timeout=30000)
+        page.set_viewport_size({'width':1450,'height':930})
+        expect(page.locator('#workspace')).to_have_class('workspace document-collapsed')
+        expect(page.locator('#documentRailToggle')).to_be_visible()
+        page.locator('#toggleDocumentPane').click()
+        assert page.locator('#documentPane').is_visible()
+        expect(page.locator('#documentRailToggle')).to_be_hidden()
+        page.locator('#toggleDocumentPane').click()
+        expect(page.locator('#documentRailToggle')).to_be_visible()
         page.locator('#pdfCanvas').wait_for(state='visible')
         assert page.locator('#documentName').inner_text() == 'example-ia.pdf'
         assert page.locator('[data-score="A"]').input_value() == '3', 'First PDF upload must preserve previously entered marks.'
