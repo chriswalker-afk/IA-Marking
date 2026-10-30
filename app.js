@@ -14,17 +14,38 @@ let pdfRendererLoad = null;
   const CRITERIA_GUIDANCE={A:'Coherence, organisation and concision of the exploration.',B:'Appropriate and consistent mathematical communication, notation and representations.',C:'Authentic mathematical choices and independent engagement with the investigation.',D:'The significance and critical depth of reflection on the mathematics.',E:'Relevant, accurate and understood mathematics appropriate for the course. SL and HL descriptors differ.'};
   const CRITERION_KEYS = Object.keys(CRITERIA);
   const BANK = window.IA_COMMENT_BANK || [];
-  const STAMP_DEFAULTS = Object.freeze({size:20,strengthColor:'#477b97',limitationColor:'#b7803c'});
-  const NOTE_FONT = 9.25, NOTE_LINE = 12.4, NOTE_PAD = 6;
-  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(170,Math.min(350,Math.round(Number(value)/10)*10)) : 250;
+  const STAMP_DEFAULTS = Object.freeze({
+    size:20,strengthColor:'#477b97',limitationColor:'#b7803c',
+    fontSize:9.5,textColor:'#263d4f',fillColor:'#fbfdff',borderColor:'#477b97',noteWidth:250,
+  });
+  const NOTE_PAD=6;
+  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(170,Math.min(450,Math.round(Number(value)/5)*5)) : 250;
+  const normalNoteHeight = value => value===null || value===undefined || value==='' ? null :
+    Number.isFinite(Number(value)) ? Math.max(55,Math.min(750,Math.round(Number(value)))) : null;
+  const normalFontSize = value => value!==null && value!==undefined && value!=='' && Number.isFinite(Number(value)) ?
+    Math.max(7,Math.min(18,Math.round(Number(value)*2)/2)) : STAMP_DEFAULTS.fontSize;
+  const noteLineHeight = size => Math.round(normalFontSize(size)*1.35*10)/10;
   const normalSize = value => Number.isFinite(Number(value)) ? Math.max(14,Math.min(42,Math.round(Number(value)))) : STAMP_DEFAULTS.size;
   const normalColor = (value,fallback) => typeof value==='string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
   function normalStyle(value={}) {
-    return {size:normalSize(value?.size),strengthColor:normalColor(value?.strengthColor,STAMP_DEFAULTS.strengthColor),limitationColor:normalColor(value?.limitationColor,STAMP_DEFAULTS.limitationColor)};
+    return {
+      size:normalSize(value?.size),
+      strengthColor:normalColor(value?.strengthColor,STAMP_DEFAULTS.strengthColor),
+      limitationColor:normalColor(value?.limitationColor,STAMP_DEFAULTS.limitationColor),
+      fontSize:normalFontSize(value?.fontSize),
+      textColor:normalColor(value?.textColor,STAMP_DEFAULTS.textColor),
+      fillColor:normalColor(value?.fillColor,STAMP_DEFAULTS.fillColor),
+      borderColor:normalColor(value?.borderColor,STAMP_DEFAULTS.borderColor),
+      noteWidth:normalNoteWidth(value?.noteWidth),
+    };
   }
   function stampColor(stamp) {
     return normalColor(stamp?.color,stamp?.tone==='limitation'?state.stampStyle.limitationColor:state.stampStyle.strengthColor);
   }
+  function noteFontSize(stamp){return normalFontSize(stamp?.fontSize ?? state.stampStyle.fontSize);}
+  function noteTextColor(stamp){return normalColor(stamp?.textColor,state.stampStyle.textColor);}
+  function noteFillColor(stamp){return normalColor(stamp?.fillColor,state.stampStyle.fillColor);}
+  function noteBorderColor(stamp){return normalColor(stamp?.borderColor,state.stampStyle.borderColor);}
   function brightColor(hex) {
     const [r,g,b]=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
     return (r*299+g*587+b*114)/1000>=158;
