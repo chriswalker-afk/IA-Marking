@@ -1,5 +1,5 @@
-import * as pdfjsLib from './vendor/pdf.mjs';
-window.pdfjsLib = pdfjsLib;
+let pdfjsLib = window.pdfjsLib || null;
+let pdfRendererLoad = null;
 (() => {
   'use strict';
 
@@ -371,11 +371,32 @@ window.pdfjsLib = pdfjsLib;
     renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
     toast(`${stamp.criterion} ${stamp.tone} stamp placed on page ${currentPage}.`);
   }
+  async function ensurePdfRenderer() {
+    if (pdfjsLib) return pdfjsLib;
+    if (!pdfRendererLoad) {
+      pdfRendererLoad = import('./vendor/pdf.mjs').then(module => {
+        pdfjsLib = module;
+        window.pdfjsLib = module;
+        module.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.mjs';
+        $('pdfLibraryStatus').classList.add('hidden');
+        return module;
+      }).catch(error => {
+        console.error('IA Marking Desk: PDF renderer failed to load from deployed vendor assets.',error);
+        pdfRendererLoad = null;
+        $('pdfLibraryStatus').textContent = 'The PDF viewer is missing from this deployment. The comment library and marking criteria are still available. The site must be published from its compiled GitHub Actions build.';
+        $('pdfLibraryStatus').classList.remove('hidden');
+        return null;
+      });
+    }
+    return pdfRendererLoad;
+  }
+
   async function loadPdf(bytes,name,keepStamps=false) {
-    if(!window.pdfjsLib){toast('PDF renderer unavailable. Check your connection and reload.');return false;}
+    const renderer = await ensurePdfRenderer();
+    if(!renderer) { toast('PDF viewer missing from this deployment. Open the reference library while the site build is corrected.'); return false; }
     const clone = new Uint8Array(bytes);
     try {
-      const loaded = await pdfjsLib.getDocument({
+      const loaded = await renderer.getDocument({
         data:new Uint8Array(clone),isEvalSupported:false,
         cMapUrl:'vendor/cmaps/',cMapPacked:true,standardFontDataUrl:'vendor/standard_fonts/',wasmUrl:'vendor/wasm/'
       }).promise;
@@ -391,7 +412,7 @@ window.pdfjsLib = pdfjsLib;
       updateScores();renderEditor();renderStamps();setInstruction();
       await renderPage();scheduleSave();
       return true;
-    } catch(e) {console.error(e);toast('Could not open the PDF. It may be password-protected or damaged.');return false;}
+    } catch(e) {console.error(e);const reason=e?.name==='PasswordException'?'This PDF is password protected. Please use an unlocked copy.':e?.name==='InvalidPDFException'?'The file is not recognised as a valid PDF.':'The PDF could not be opened. Please check the file and retry.';$('pdfLibraryStatus').textContent=reason;$('pdfLibraryStatus').classList.remove('hidden');toast(reason);return false;}
   }
   async function renderPage() {
     if(!isReady())return;
@@ -801,15 +822,15 @@ window.pdfjsLib = pdfjsLib;
     if(isReady()&&(state.stamps.length||Object.values(state.marks).some(v=>v!==null))&&!confirm('Replace the source PDF and clear the existing stamps and marks?'))return;
     const bytes=new Uint8Array(await file.arrayBuffer());
     const result=await loadPdf(bytes,file.name);
-    if(result)toast(`${file.name} is ready for evidence stamps.`);
+    if(result){$('pdfLibraryStatus').classList.add('hidden');toast(`${file.name} is ready for evidence stamps.`);}
   }
   function init() {
     try {state.customComments=JSON.parse(localStorage.getItem('ia-marking-desk-comments')||'[]');if(!Array.isArray(state.customComments))state.customComments=[];}catch(e){state.customComments=[];}
     try {const edits=JSON.parse(localStorage.getItem('ia-marking-desk-edits')||'{}');state.commentEdits=edits && !Array.isArray(edits) && typeof edits==='object' ? edits:{};}catch(e){state.commentEdits={};}
     try {state.stampStyle=normalStyle(JSON.parse(localStorage.getItem('ia-marking-desk-stamp-style')||'{}'));}catch(e){state.stampStyle=normalStyle();}
-    if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.mjs';
+    if(pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.mjs';
     initScores();renderStampStyle();renderTabs();renderTone();renderBank();renderEditor();renderStamps();setInstruction();updateFrameworkNotice();initEvents();initDatabase();
-    if(!window.pdfjsLib||!window.PDFLib)console.warn('Local PDF libraries not loaded. Use the GitHub Pages Actions build or run npm run build to create vendor files.');
+    if(!window.PDFLib)console.warn('PDF export library missing from this deployment; evidence reference tools remain available.');
   }
   init();
 })();
