@@ -355,6 +355,9 @@ body.pdf-focus .app .viewer-toolbar {position:sticky;top:0;z-index:5;box-shadow:
 }
 
 
+/* Explicit phone visibility wins over any earlier generic button display rules. */
+@media(max-width:650px){ .masthead .header-actions .mobile-project-control-hidden {display:none!important} }
+
 /* On a phone, secondary project controls and scoring tools no longer push
    the PDF below the fold. Both disclosures remain accessible and reversible. */
 .mobile-project-tools-toggle,.mobile-details-toggle {display:none}
