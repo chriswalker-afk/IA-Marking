@@ -46,3 +46,22 @@ test('application script syntax and dependencies are pinned', () => {
   assert.ok(!html.includes('https://cdnjs.'));
   assert.ok(html.includes('frameworkNotice'));
 });
+
+
+test('stamp appearance and full-library controls are wired into the UI', () => {
+  const html=readFileSync('index.html','utf8');
+  const app=readFileSync('app.js','utf8');
+  for (const id of [
+    'defaultStampSize','defaultStampSizeValue','strengthStampColour','limitationStampColour','applyStampStyle',
+    'openLibrary','libraryDialog','librarySearch','libraryCriterion','libraryTone','libraryResults','copyLibraryVisible',
+  ]) {
+    assert.ok(html.includes(`id="${id}"`), `Missing UI control: ${id}`);
+  }
+  for (const part of ['saveLibrarySettings','renderFullLibrary','copyCommentText','stampStyle','commentEdits','pdfColor(stamp)','size:normalSize(draft.size)']) {
+    assert.ok(app.includes(part), `Missing logic: ${part}`);
+  }
+  // Editing a reusable bank entry must not rewrite an already placed stamp.
+  assert.ok(app.includes('state.commentEdits[id]={text:'));
+  assert.ok(app.includes('stamp.text=e.target.value'));
+  assert.ok(!app.includes('state.stamps.forEach(stamp=>stamp.text'));
+});
