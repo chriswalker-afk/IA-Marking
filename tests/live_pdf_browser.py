@@ -55,17 +55,70 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#referenceSaveEdit').click()
         assert 'logically organised' in page.locator('.ref-comment').first.inner_text()
 
-        # Main site initialises with the full official guide reference.
+        # All five criterion rubrics, including every mark from zero upwards,
+        # must be readable in an actual phone-sized FULL-HEIGHT dialog.
         page.goto(base_url + '/index.html')
         page.locator('#openCriteria').click()
         page.locator('#criteriaDialog[open]').wait_for()
         assert page.locator('.criteria-card').count() == 5
+        assert page.locator('.criteria-level').count() == 25
+        assert page.locator('#criteriaCard_A .criteria-level').count() == 5
+        assert page.locator('#criteriaCard_E .criteria-level').count() == 7
         assert 'ibo.org' in page.locator('#criteriaGuideLink').get_attribute('href')
-        page.locator('[data-criteria-score="A"]').select_option('3')
-        page.locator('[data-criteria-score="E"]').select_option('5')
+        assert 'SL descriptor set' in page.locator('#criteriaCard_E').inner_text()
+
+        page.set_viewport_size({'width':390, 'height':844})
+        dialog_bounds=page.locator('#criteriaDialog').bounding_box()
+        body_bounds=page.locator('#criteriaScrollArea').bounding_box()
+        assert dialog_bounds and body_bounds
+        assert dialog_bounds['x'] <= 1 and dialog_bounds['y'] <= 1
+        assert dialog_bounds['width'] >= 389
+        assert dialog_bounds['height'] >= 840, f'Mobile modal too short: {dialog_bounds}'
+        assert body_bounds['height'] >= 350, f'Rubric content is hidden behind header/footer: {body_bounds}'
+        assert page.locator('#criteriaDialog').evaluate(
+            '(el) => el.scrollWidth <= el.clientWidth + 2'), 'Rubric window has horizontal overflow'
+        page.screenshot(path=str(ROOT/'qa-full-rubric-mobile.png'))
+
+        # Every criterion remains reachable from the jump bar, and tapping a
+        # level changes the underlying award without clearing the rationale.
+        page.locator('[data-criteria-jump="E"]').click()
+        expect(page.locator('#criteriaCard_E')).to_be_in_viewport(ratio=.20,timeout=10000)
+        page.locator('[data-rubric-key="E"][data-rubric-score="6"]').click()
+        expect(page.locator('[data-score="E"]')).to_have_value('6')
+        expect(page.locator('[data-rubric-key="E"][data-rubric-score="6"]')).to_have_attribute('aria-pressed','true')
+        expect(page.locator('[data-jump-mark="E"]')).to_have_text('6 / 6')
+        page.locator('[data-criteria-jump="A"]').click()
+        expect(page.locator('#criteriaCard_A')).to_be_in_viewport(ratio=.20,timeout=10000)
         page.locator('[data-criteria-rationale="A"]').fill('Clearly organised investigation.')
-        assert page.locator('[data-score="A"]').input_value() == '3'
+        page.locator('[data-rubric-key="A"][data-rubric-score="3"]').click()
+        expect(page.locator('[data-score="A"]')).to_have_value('3')
+        assert page.locator('[data-criteria-rationale="A"]').input_value()=='Clearly organised investigation.'
+        expect(page.locator('#criteriaProgress')).to_have_text('2 of 5 criteria marked')
+        page.locator('[data-criteria-score="E"]').select_option('5')
+        expect(page.locator('[data-jump-mark="E"]')).to_have_text('5 / 6')
+
+        # Official verbatim descriptors remain available from the IB guide and
+        # from an authorised guide PDF viewed directly in the same modal.
+        page.locator('#criteriaOpenGuide').click()
+        expect(page.locator('#criteriaOfficialGuideDetails')).to_have_attribute('open','')
+        page.locator('#criteriaGuideInput').set_input_files(str(sample))
+        expect(page.locator('#criteriaGuidePreview')).to_be_visible()
+        assert page.locator('#criteriaGuideFrame').get_attribute('src').startswith('blob:')
+        page.locator('#removeCriteriaGuide').click()
+        expect(page.locator('#criteriaGuidePreview')).to_be_hidden()
         page.locator('#criteriaDone').click()
+
+        # Criterion E must change to the HL bands when the course changes.
+        page.set_viewport_size({'width':1450,'height':930})
+        page.locator('#course').select_option('AA HL')
+        page.locator('#openCriteria').click()
+        assert 'HL descriptor set' in page.locator('#criteriaCard_E').inner_text()
+        assert 'sophistication AND rigour' in page.locator('#criteriaCard_E .criteria-level').last.inner_text()
+        expect(page.locator('#criteriaCoursePill')).to_have_text('AA HL')
+        page.locator('#criteriaDone').click()
+        page.locator('#course').select_option('AA SL')
+        assert page.locator('[data-score="A"]').input_value() == '3'
+        assert page.locator('[data-score="E"]').input_value() == '5'
 
         # Upload a REAL two-page PDF and wait for PDF.js worker to render it.
         page.locator('#pdfInput').set_input_files(str(sample))
