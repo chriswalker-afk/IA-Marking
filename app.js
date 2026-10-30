@@ -1,3 +1,4 @@
+import {createUnicodeFonts,normaliseAnnotationText,pdfFontError} from './unicode-fonts.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
 (() => {
@@ -498,9 +499,36 @@ let pdfRendererLoad = null;
   function stampLabel(stamp) { return `${stamp.criterion}${1+state.stamps.filter(s=>s.criterion===stamp.criterion).findIndex(s=>s.id===stamp.id)}`; }
   // A placed comment is on the original student page, not in a separate
   // margin. The same PDF-point measurements are used for preview and export.
+  // Live preview and final export both use the exact same embedded Unicode
+  // fonts and text-width metrics, rather than substituting ASCII placeholders.
+  let unicodeBytesPromise=null,unicodeMetricsPromise=null,unicodeMetricFonts=null;
+  const pdfFontPaths=[
+    'vendor/fonts/NotoSans-Regular.ttf',
+    'vendor/fonts/NotoSans-Bold.ttf',
+    'vendor/fonts/NotoSansMath-Regular.ttf',
+  ];
+  async function getUnicodeFontBytes() {
+    if(!unicodeBytesPromise)unicodeBytesPromise=Promise.all(pdfFontPaths.map(async path=>{
+      const response=await fetch(path,{cache:'force-cache'});
+      if(!response.ok)throw new Error('Missing required PDF text font: '+path);
+      return new Uint8Array(await response.arrayBuffer());
+    })).catch(error=>{unicodeBytesPromise=null;throw error;});
+    return unicodeBytesPromise;
+  }
+  async function ensureUnicodeMetrics(){
+    if(!unicodeMetricsPromise)unicodeMetricsPromise=(async()=>{
+      if(!window.PDFLib||!window.fontkit)throw new Error('The Unicode PDF font library is unavailable.');
+      const doc=await window.PDFLib.PDFDocument.create();
+      const metrics=await createUnicodeFonts(doc,window.fontkit,await getUnicodeFontBytes());
+      unicodeMetricFonts=metrics;
+      return metrics;
+    })().catch(error=>{unicodeMetricsPromise=null;throw error;});
+    return unicodeMetricsPromise;
+  }
   function pdfMeasureFont() {
-    try { return window.PDFLib?.StandardFontEmbedder.for(window.PDFLib.StandardFonts.Helvetica); }
-    catch(e) { return {widthOfTextAtSize:(txt,size)=>txt.length*size*.51}; }
+    // Safe approximate metrics are used only before the fonts have loaded;
+    // the editor and export are remeasured once the fonts are available.
+    return unicodeMetricFonts?.regular || {widthOfTextAtSize:(txt,size)=>Array.from(String(txt)).length*size*.54};
   }
   function noteLayout(stamp,pageWidth,pageHeight,font=pdfMeasureFont()) {
     const width=Math.min(normalNoteWidth(stamp.noteWidth ?? state.stampStyle.noteWidth),Math.max(100,pageWidth-2*NOTE_PAD));
@@ -758,6 +786,12 @@ let pdfRendererLoad = null;
       $('pageTotal').textContent=String(loaded.numPages);$('pageNumber').max=String(loaded.numPages);
       $('footerDocInfo').textContent=`${loaded.numPages} pages  /  ${state.pdfName}`;
       updateScores();renderEditor();renderStamps();setInstruction();
+      try {await ensureUnicodeMetrics();}
+      catch(fontError){
+        console.warn('Unicode PDF fonts not available yet:',fontError);
+        $('pdfLibraryStatus').textContent='Unicode PDF fonts could not be loaded. You can continue annotating, but export preview will require the fonts to load successfully.';
+        $('pdfLibraryStatus').classList.remove('hidden');
+      }
       await renderPage();scheduleSave();
       return true;
     } catch(e) {console.error(e);const reason=e?.name==='PasswordException'?'This PDF is password protected. Please use an unlocked copy.':e?.name==='InvalidPDFException'?'The file is not recognised as a valid PDF.':'The PDF could not be opened. Please check the file and retry.';$('pdfLibraryStatus').textContent=reason;$('pdfLibraryStatus').classList.remove('hidden');toast(reason);return false;}
@@ -961,25 +995,27 @@ let pdfRendererLoad = null;
     }
   }
 
-  function sanitizePdfText(text) {
-    return String(text??'').replace(/\u2018|\u2019/g,"'").replace(/\u201c|\u201d/g,'"').replace(/[\u2013\u2014]/g,'-').replace(/\u2026/g,'...').replace(/\u00a0/g,' ')
-      .replace(/\u03c7\u00b2/g,'chi-squared').replace(/\u03c0/g,'pi').replace(/\u03a3/g,'sum').replace(/\u03b1/g,'alpha').replace(/\u03b2/g,'beta')
-      .replace(/\u2264/g,'<=').replace(/\u2265/g,'>=').replace(/\u2248/g,'approximately').replace(/[^\x20-\x7e\n\r]/g,'?');
-  }
+  function sanitizePdfText(text) {return normaliseAnnotationText(text);}
   function pdfWrap(text,font,size,maxWidth) {
-    const words = sanitizePdfText(text).replace(/\r/g,'').split(/\s+/).filter(Boolean);
-    const rows=[];let line='';
-    for(const word of words){
-      const candidate=line?line+' '+word:word;
-      if(font.widthOfTextAtSize(candidate,size)<=maxWidth){line=candidate;continue;}
-      if(line)rows.push(line);
-      if(font.widthOfTextAtSize(word,size)<=maxWidth)line=word;
-      else {
-        let part='';for(const char of word){if(font.widthOfTextAtSize(part+char,size)>maxWidth && part){rows.push(part);part='';}part+=char;}
+    const paragraphs=sanitizePdfText(text).split('\n');
+    const rows=[];
+    for(const paragraph of paragraphs){
+      const words=paragraph.split(/\s+/u).filter(Boolean);
+      let line='';
+      for(const word of words){
+        const candidate=line?line+' '+word:word;
+        if(font.widthOfTextAtSize(candidate,size)<=maxWidth){line=candidate;continue;}
+        if(line){rows.push(line);line='';}
+        if(font.widthOfTextAtSize(word,size)<=maxWidth){line=word;continue;}
+        let part='';
+        for(const char of Array.from(word)){
+          if(part && font.widthOfTextAtSize(part+char,size)>maxWidth){rows.push(part);part='';}
+          part+=char;
+        }
         line=part;
       }
+      rows.push(line);
     }
-    if(line)rows.push(line);
     return rows.length?rows:[''];
   }
   function pdfHexColor(hex) {
@@ -990,7 +1026,10 @@ let pdfRendererLoad = null;
   function pdfNoteColor(stamp){return brightColor(stampColor(stamp))?window.PDFLib.rgb(.17,.25,.33):pdfColor(stamp);}
 
   function pdfFaint(tone){return tone==='strength'?window.PDFLib.rgb(.94,.97,.98):window.PDFLib.rgb(1,.977,.941);}
-  function pdfText(page,text,x,y,size,font,color) {page.drawText(sanitizePdfText(text),{x,y,size,font,color});}
+  function pdfText(page,text,x,y,size,font,color) {
+    if(font?.isUnicode)font.draw(page,text,x,y,size,color);
+    else page.drawText(sanitizePdfText(text),{x,y,size,font,color});
+  }
   async function exportPdf() {
     if(!isReady()){toast('Upload an IA before exporting its annotations.');return;}
     if(usesNewFramework()){toast('May 2029 or later needs the new four-criterion IB framework; A-E export is blocked.');return;}
