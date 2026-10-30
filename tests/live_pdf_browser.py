@@ -10,6 +10,7 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from functools import partial
 import tempfile
 import json
+import zipfile
 
 import fitz
 from playwright.sync_api import sync_playwright, expect
@@ -458,6 +459,138 @@ with tempfile.TemporaryDirectory() as folder:
         expect(page.locator('#exportAnnotated')).to_be_disabled()
         page.locator('#closeReview').click()
         page.screenshot(path=str(ROOT/'qa-pass8-desktop-quick-tools.png'),full_page=True)
+
+        # Pass 9: the project vault preserves multiple original PDFs without
+        # loading them into the dashboard, and each IA retains its own marks.
+        page.locator('#candidate').fill('IA-SECOND')
+        expect(page.locator('#localSaveState')).to_have_text('Saved on this device',timeout=25000)
+        page.locator('#openProjects').click()
+        expect(page.locator('#projectsDialog[open]')).to_be_visible()
+        expect(page.locator('#projectsRows .project-card')).to_have_count(2,timeout=15000)
+        assert 'IA-SECOND' in page.locator('#projectsRows').inner_text()
+        assert '4 evidence stamps' in page.locator('#projectsRows').inner_text()
+        assert page.locator('#projectsStats').inner_text().count('Local projects')==1
+        expect(page.locator('#projectCountBadge')).to_have_text('2')
+
+        # Full-height mobile project manager must leave substantial space for
+        # scrolling the list and showing backup/delete controls.
+        page.set_viewport_size({'width':390,'height':844})
+        mobile_dialog=page.locator('#projectsDialog').bounding_box()
+        content=page.locator('#projectsRows').bounding_box()
+        assert mobile_dialog and mobile_dialog['width']>=389 and mobile_dialog['height']>=840
+        assert content and content['height']>=220, f'Project list is hidden by fixed headers: {content}'
+        assert page.locator('#projectsDialog').evaluate(
+            '(el)=>el.scrollWidth <= el.clientWidth+2'), 'Project dashboard has horizontal overflow'
+        page.screenshot(path=str(ROOT/'qa-pass9-mobile-projects.png'))
+        page.set_viewport_size({'width':1450,'height':930})
+
+        # A portable backup from an individual row includes the original IA.
+        with page.expect_download(timeout=20000) as single_download:
+            page.locator('#projectsRows .project-card.is-current [data-local-backup]').click()
+        individual=json.loads(Path(single_download.value.path()).read_text())
+        assert individual['candidate']=='IA-SECOND'
+        assert len(individual['stamps'])==4
+        assert individual['pdfBase64'] and individual['format']=='ia-marking-desk'
+
+        # Switch to the OTHER IA. It had only the original two annotations.
+        prior=page.locator('#projectsRows .project-card:not(.is-current)').first
+        prior_id=prior.get_attribute('data-project-card')
+        prior.locator('[data-local-open]').click()
+        expect(page.locator('#projectsDialog')).not_to_be_visible(timeout=20000)
+        expect(page.locator('#allPinCount')).to_have_text('2',timeout=15000)
+        expect(page.locator('#undoMark')).to_be_disabled()
+        # Switch back and verify marks, all four comments and anonymous ID.
+        page.locator('#openProjects').click()
+        page.locator('#projectsSearch').fill('IA-SECOND')
+        expect(page.locator('#projectsRows .project-card')).to_have_count(1)
+        page.locator('#projectsRows [data-local-open]').click()
+        expect(page.locator('#allPinCount')).to_have_text('4',timeout=15000)
+        expect(page.locator('#candidate')).to_have_value('IA-SECOND')
+        expect(page.locator('[data-score="A"]')).to_have_value('3')
+        page.locator('[data-score="B"]').select_option('1')
+        expect(page.locator('#localSaveState')).to_have_text('Saved on this device',timeout=25000)
+
+        # Create a truly new third IA. It must NEVER inherit other students'
+        # candidate IDs, marks, evidence, or original PDFs.
+        page.locator('#newProject').click()
+        expect(page.locator('#emptyViewer')).to_be_visible(timeout=25000)
+        page.locator('#pdfInput').set_input_files(str(sample))
+        expect(page.locator('#pageTotal')).to_have_text('2',timeout=30000)
+        expect(page.locator('#candidate')).to_have_value('')
+        expect(page.locator('#allPinCount')).to_have_text('0')
+        expect(page.locator('[data-score="A"]')).to_have_value('')
+        expect(page.locator('[data-score="E"]')).to_have_value('')
+        page.locator('#candidate').fill('IA-THIRD')
+        page.locator('[data-score="A"]').select_option('0')
+        expect(page.locator('#localSaveState')).to_have_text('Saved on this device',timeout=25000)
+        page.locator('#openProjects').click()
+        expect(page.locator('#projectsRows .project-card')).to_have_count(1)
+        # Previous search remains in effect: clear it to see the full cohort.
+        page.locator('#projectsSearch').fill('')
+        expect(page.locator('#projectsRows .project-card')).to_have_count(3)
+        page.locator('#projectsCourse').select_option('AA SL')
+        expect(page.locator('#projectsRows .project-card')).to_have_count(3)
+
+        # One click generates a complete local ZIP containing the portable
+        # project files; no PDF uploads to any remote server.
+        with page.expect_download(timeout=50000) as cohort_download:
+            page.locator('#downloadAllProjects').click()
+        zip_path=Path(cohort_download.value.path())
+        with zipfile.ZipFile(zip_path) as archive:
+            project_names=[name for name in archive.namelist() if name.endswith('.iamark.json')]
+            assert len(project_names)==3, project_names
+            backed_up=[json.loads(archive.read(name)) for name in project_names]
+            assert any(x['candidate']=='IA-THIRD' and x['marks']['A']==0 for x in backed_up)
+            assert any(x['candidate']=='IA-SECOND' and len(x['stamps'])==4 for x in backed_up)
+            for saved in backed_up:
+                assert saved['pdfBase64'] and saved['version']==1
+            assert 'BACKUP-INSTRUCTIONS.txt' in archive.namelist()
+        (ROOT/'qa-pass9-cohort-backup-check.txt').write_text(
+            'ZIP validated: 3 complete portable .iamark.json IAs and privacy instructions.\\n'
+        )
+
+        # Removing one IA does not erase any of the other projects.
+        page.once('dialog',lambda dialog:dialog.accept())
+        page.locator('#projectsRows .project-card.is-current [data-local-delete]').click()
+        expect(page.locator('#projectCountBadge')).to_have_text('2',timeout=15000)
+        expect(page.locator('#emptyViewer')).to_be_visible()
+        expect(page.locator('#projectsRows .project-card')).to_have_count(2)
+
+        # A destructive cohort-wide clear is impossible until the teacher
+        # types the exact confirmation phrase. Personal comment settings
+        # are cleared only if the separate checkbox is ticked.
+        page.locator('#openClearProjects').click()
+        expect(page.locator('#clearProjectsDialog[open]')).to_be_visible()
+        expect(page.locator('#confirmClearProjects')).to_be_disabled()
+        page.locator('#clearProjectsPhrase').fill('delete all')
+        expect(page.locator('#confirmClearProjects')).to_be_disabled()
+        page.locator('#clearTeacherPreferences').check()
+        page.locator('#clearProjectsPhrase').fill('DELETE ALL')
+        expect(page.locator('#confirmClearProjects')).to_be_enabled()
+        page.locator('#confirmClearProjects').click()
+        expect(page.locator('#clearProjectsDialog')).not_to_be_visible(timeout=20000)
+        expect(page.locator('#projectCountBadge')).to_have_text('0')
+        assert page.evaluate(
+            "localStorage.getItem('ia-marking-desk-quick-picks-v1')") is None
+        page.locator('#openProjects').click()
+        expect(page.locator('#projectsRows .project-card')).to_have_count(0)
+        page.locator('#projectsDone').click()
+
+        # Backups are portable: restore an IA from the downloaded ZIP, then
+        # reopen it from IndexedDB even after a page reload.
+        recovery=next(x for x in backed_up if x['candidate']=='IA-SECOND')
+        page.locator('#projectOpen').set_input_files({
+            'name':'restored.iamark.json','mimeType':'application/json',
+            'buffer':json.dumps(recovery).encode(),
+        })
+        expect(page.locator('#allPinCount')).to_have_text('4',timeout=20000)
+        expect(page.locator('#candidate')).to_have_value('IA-SECOND')
+        expect(page.locator('#projectCountBadge')).to_have_text('1',timeout=25000)
+        page.reload()
+        expect(page.locator('#resumeLast')).to_be_visible(timeout=20000)
+        page.locator('#resumeLast').click()
+        expect(page.locator('#allPinCount')).to_have_text('4',timeout=20000)
+        expect(page.locator('#candidate')).to_have_value('IA-SECOND')
 
         assert errors==[], f'Browser JS errors: {errors}'
         context.close()
