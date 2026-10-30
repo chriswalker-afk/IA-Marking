@@ -36,3 +36,7 @@ body{background:#f2f5f8}
 .reference-dialog-actions{display:flex;justify-content:flex-end;gap:8px}
 @media(max-width:850px){.reference-controls{grid-template-columns:repeat(3,minmax(0,1fr))}.ref-search-label{grid-column:1/-1}}
 @media(max-width:650px){.reference-header{padding:13px 15px}.reference-brand small{font-size:9px}.reference-header .btn{padding:8px 9px;font-size:10px}.reference-intro{align-items:flex-start}.reference-stat{min-width:86px;padding:12px}.reference-stat strong{font-size:21px}.reference-stat span{font-size:9px}.reference-controls{grid-template-columns:1fr 1fr;gap:9px;padding:12px}.reference-controls label:last-child{grid-column:1/-1}.reference-results{grid-template-columns:1fr}.reference-summary{align-items:start;flex-direction:column}.ref-comment{padding:13px}.reference-main{padding:20px 13px}}
+
+/* Pass 8: stars also usable from the full standalone comment library. */
+.ref-comment-actions .ref-is-favourite,#referenceFavoritesOnly[aria-pressed="true"]{color:#8b651d;background:#fff7df;border-color:#e7d39a}
+.ref-comment-actions [data-action="favourite"]{font-weight:800}
