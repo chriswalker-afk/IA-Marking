@@ -585,6 +585,20 @@ let pdfRendererLoad = null;
     renderEditor();renderBank();renderStamps();setInstruction();
     if(!isReady()) toast('Comment selected. Upload a PDF to place the stamp.');
   }
+  function prepareFromExistingStamp(stamp){
+    if(!stamp)return;
+    draft={
+      id:stamp.libraryId||'repeat-'+stamp.id,
+      libraryId:stamp.libraryId||'',
+      criterion:stamp.criterion,tone:stamp.tone,topic:stamp.topic,text:stamp.text,
+      size:stamp.size,color:stamp.color,noteWidth:stamp.noteWidth,noteHeight:stamp.noteHeight,
+      fontSize:stamp.fontSize,textColor:stamp.textColor,
+      fillColor:stamp.fillColor,borderColor:stamp.borderColor,
+    };
+    selectedStampId=null;movingStampId=null;
+    renderEditor();renderBank();renderStamps();setInstruction();
+    if(isReady())$('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
   function appearanceEditor(item,prefix) {
     const size=normalSize(item.size),color=stampColor(item);
     const width=normalNoteWidth(item.noteWidth ?? state.stampStyle.noteWidth);
@@ -790,6 +804,8 @@ let pdfRendererLoad = null;
   function renderStamps() {
     const stampsOnPage=pageStamps(currentPage);
     $('allPinCount').textContent=state.stamps.length;
+    renderEvidenceIfOpen();
+    renderQuickPicker();
     const pageWidth=pageWidthPt||595,pageHeight=pageHeightPt||842;
     const preview=pageLayoutProblems(stampsOnPage,pageWidth,pageHeight);
     renderStampWarnings(preview.problems);
@@ -918,17 +934,22 @@ let pdfRendererLoad = null;
   }
   function handlePageClick(event) {
     if(!isReady()||event.target.closest('.onpage-stamp'))return;
+    finishFieldHistory();
     const position = positionOnPage(event);
     if(movingStampId) {
       const stamp = state.stamps.find(s=>s.id===movingStampId);
       if(!stamp)return;
+      const before=historySnapshot();
       stamp.x=position.x;stamp.y=position.y;stamp.page=currentPage;
       if(pageWidthPt&&pageHeightPt)placeNoteInFreeSpace(stamp,pageStamps(currentPage),pageWidthPt,pageHeightPt);
-      selectedStampId=stamp.id;movingStampId=null;renderStamps();renderEditor();setInstruction();scheduleSave();toast('Stamp moved.');
+      selectedStampId=stamp.id;movingStampId=null;renderStamps();renderEditor();setInstruction();scheduleSave();
+      recordHistory('move '+stamp.criterion+' comment',before);
+      toast('Stamp moved.');
       return;
     }
     if(!draft)return;
     if(!draft.text.trim()){toast('Write a comment before placing the stamp.');return;}
+    const before=historySnapshot();
     const stamp = {
       id:makeId(),page:currentPage,x:position.x,y:position.y,criterion:draft.criterion,tone:draft.tone,
       topic:draft.topic,text:draft.text.trim(),size:normalSize(draft.size),color:stampColor(draft),
@@ -937,9 +958,18 @@ let pdfRendererLoad = null;
       borderColor:noteBorderColor(draft),libraryId:draft.id,createdAt:now(),
     };
     if(pageWidthPt&&pageHeightPt)placeNoteInFreeSpace(stamp,pageStamps(currentPage),pageWidthPt,pageHeightPt);
-    state.stamps.push(stamp);selectedStampId=stamp.id;draft=null;
+    state.stamps.push(stamp);
+    lastPlacedDraft={...stamp};
+    const sourceId=stamp.libraryId;
+    if(repeatPlacement){
+      draft={...draft};
+      selectedStampId=null;
+    }else{selectedStampId=stamp.id;draft=null;}
+    recordHistory('place '+stamp.criterion+' comment',before);
     renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
-    toast(`${stamp.criterion} ${stamp.tone} stamp placed on page ${currentPage}.`);
+    recordRecentComment(sourceId);
+    toast(`${stamp.criterion} ${stamp.tone} stamp placed on page ${currentPage}.`
+      +(repeatPlacement?' Repeat is on: click another clear area to stamp again.':''));
   }
   async function ensurePdfRenderer() {
     if (pdfjsLib) return pdfjsLib;
@@ -1032,7 +1062,7 @@ let pdfRendererLoad = null;
     currentPage=next;
     $('pdfScroll').scrollTop=0;
     $('pdfScroll').scrollLeft=0;
-    renderPage();
+    return renderPage();
   }
 
   async function storeAutosave() {
