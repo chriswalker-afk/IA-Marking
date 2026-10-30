@@ -367,14 +367,18 @@ let pdfRendererLoad = null;
     catch(e) { return {widthOfTextAtSize:(txt,size)=>txt.length*size*.51}; }
   }
   function noteLayout(stamp,pageWidth,pageHeight,font=pdfMeasureFont()) {
-    const width=Math.min(normalNoteWidth(stamp.noteWidth),Math.max(100,pageWidth-2*NOTE_PAD));
+    const width=Math.min(normalNoteWidth(stamp.noteWidth ?? state.stampStyle.noteWidth),Math.max(100,pageWidth-2*NOTE_PAD));
     const circle=normalSize(stamp.size),textX=Math.max(circle+17,42);
-    const rows=pdfWrap(stamp.text,font,NOTE_FONT,Math.max(30,width-textX-8));
-    const height=Math.max(circle+20,39+rows.length*NOTE_LINE);
+    const fontSize=noteFontSize(stamp),lineHeight=noteLineHeight(fontSize);
+    const rows=pdfWrap(stamp.text,font,fontSize,Math.max(30,width-textX-8));
+    const minHeight=Math.ceil(Math.max(circle+20,39+rows.length*lineHeight));
+    const height=normalNoteHeight(stamp.noteHeight) ?? minHeight;
     const fits=height<=pageHeight-2*NOTE_PAD;
+    const contentFits=height>=minHeight;
     const x=Math.min(Math.max(NOTE_PAD,Number(stamp.x||0)*pageWidth),Math.max(NOTE_PAD,pageWidth-width-NOTE_PAD));
     const y=Math.min(Math.max(NOTE_PAD,Number(stamp.y||0)*pageHeight),Math.max(NOTE_PAD,pageHeight-height-NOTE_PAD));
-    return {x,y,width,height,circle,textX,rows,fits,pageWidth,pageHeight};
+    return {x,y,width,height,circle,textX,rows,fontSize,lineHeight,minHeight,contentFits,fits,
+      textColor:noteTextColor(stamp),fillColor:noteFillColor(stamp),borderColor:noteBorderColor(stamp),pageWidth,pageHeight};
   }
   function noteOverlap(a,b) {
     return a.x<b.x+b.width-3 && a.x+a.width>b.x+3 && a.y<b.y+b.height-3 && a.y+a.height>b.y+3;
@@ -384,7 +388,8 @@ let pdfRendererLoad = null;
     const problems=[];
     for(let i=0;i<items.length;i++) {
       const current=items[i];
-      if(!current.layout.fits) problems.push(`${stampLabel(current.stamp)} is too long to fit on page ${current.stamp.page}`);
+      if(!current.layout.fits) problems.push(`${stampLabel(current.stamp)} box is too tall for page ${current.stamp.page}`);
+      if(!current.layout.contentFits) problems.push(`${stampLabel(current.stamp)} needs at least ${current.layout.minHeight} pt height for its complete comment (currently ${current.layout.height} pt)`);
       for(let j=0;j<i;j++) if(noteOverlap(current.layout,items[j].layout)) {
         problems.push(`${stampLabel(current.stamp)} overlaps ${stampLabel(items[j].stamp)} on page ${current.stamp.page}`);
       }
@@ -420,7 +425,7 @@ let pdfRendererLoad = null;
     const el=$('annotationNotice');
     if(!el)return;
     if(!problems.length){el.classList.add('hidden');el.textContent='';return;}
-    el.textContent=`On-page annotations need attention: ${problems.join('; ')}. Move a comment, widen its box or shorten it before exporting.`;
+    el.textContent=`On-page annotations need attention: ${problems.join('; ')}. Move or resize a box, increase its height, reduce the font size, or shorten the comment before exporting.`;
     el.classList.remove('hidden');
   }
   function renderStamps() {
@@ -798,7 +803,7 @@ let pdfRendererLoad = null;
         allProblems.push(...pagePlan.problems);
       }
       if(allProblems.length){
-        const message='Cannot export: on-page comment boxes must fit without overlapping. '+allProblems.join('; ')+'. Move them, increase the box width or shorten the comment, then retry.';
+        const message='Cannot export: every on-page comment must fit inside its box without overlapping another. '+allProblems.join('; ')+'. Resize or move the boxes, use Fit to text, or change the font size and retry.';
         toast(message);
         $('annotationNotice').textContent=message;$('annotationNotice').classList.remove('hidden');
         return;
