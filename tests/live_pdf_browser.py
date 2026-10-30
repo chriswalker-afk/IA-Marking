@@ -197,6 +197,7 @@ with tempfile.TemporaryDirectory() as folder:
 
         # Resize the whole box with the lower-right handle, not by scaling the
         # font or cropping the comment. Both physical dimensions must change.
+        page.locator('.onpage-stamp').first.scroll_into_view_if_needed()
         original_box=page.locator('.onpage-stamp').first.bounding_box()
         handle=page.locator('.note-resize-handle').first.bounding_box()
         hx=handle['x']+handle['width']/2
@@ -206,7 +207,7 @@ with tempfile.TemporaryDirectory() as folder:
         page.mouse.move(hx+42,hy+48,steps=6)
         page.mouse.up()
         resized_box=page.locator('.onpage-stamp').first.bounding_box()
-        assert resized_box['width'] > original_box['width']+8, 'Corner drag did not resize the box width.'
+        assert resized_box['width'] > original_box['width']+8, f'Corner drag did not resize the box width: before={original_box}, after={resized_box}, handle={handle}'
         assert resized_box['height'] > original_box['height']+8, 'Corner drag did not resize the box height.'
         assert 'Auto' not in page.locator('#selectedStampHeightValue').inner_text()
 
