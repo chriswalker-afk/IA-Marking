@@ -1078,18 +1078,150 @@ let pdfRendererLoad = null;
     return renderPage();
   }
 
-  async function storeAutosave() {
-    if(!database||!state.pdfBytes?.length)return;
-    try {
-      const tx=database.transaction('draft','readwrite');
-      tx.objectStore('draft').put({id:'latest',date:now(),project:projectData(false),pdfBytes:state.pdfBytes});
-    } catch(e){console.warn('Browser autosave failed',e);}
+  function setLocalSaveStatus(message,kind='saved'){
+    const indicator=$('localSaveState');
+    indicator.textContent=message;
+    indicator.dataset.save=kind;
+    indicator.title=message;
   }
-  function scheduleSave() {
-    if(reviewPreview.bytes)invalidateReviewPreview();
+  function updateLocalSaveStatus(){
+    if(storageError){setLocalSaveStatus('Browser storage unavailable','error');return;}
+    if(!projectVault){setLocalSaveStatus('Checking local storage…','pending');return;}
+    if(!isReady()){setLocalSaveStatus('No IA open','saved');return;}
+    if(projectRevision>persistedRevision){
+      setLocalSaveStatus('Saving locally…','pending');return;
+    }
+    setLocalSaveStatus('Saved on this device','saved');
+  }
+  // Capture the current project while its ID and source PDF are stable. The
+  // serialized chain prevents a delayed write from overwriting newer data.
+  async function storeAutosave(){
+    if(projectLoading||!isReady()||!activeProjectId)return true;
+    if(!projectVault){
+      updateLocalSaveStatus();return false;
+    }
     clearTimeout(savingTimer);
-    savingTimer=setTimeout(storeAutosave,1400);
+    const id=activeProjectId,revision=projectRevision;
+    const snapshot=projectData(false);
+    const source=state.pdfBytes,pageCount=pdfDoc?.numPages||0;
+    const task=saveChain.catch(()=>{}).then(()=>projectVault.save({
+      id,project:snapshot,pdfBytes:source,pageCount,
+    }));
+    saveChain=task;
+    try{
+      const saved=await task;
+      if(id===activeProjectId){
+        persistedRevision=Math.max(persistedRevision,revision);
+        activeSavedAt=saved.savedAt;
+        updateLocalSaveStatus();
+      }
+      if($('projectsDialog').open)await refreshProjectDashboard();
+      return true;
+    }catch(error){
+      console.error('IA browser autosave failed:',error);
+      if(id===activeProjectId){
+        setLocalSaveStatus('Not saved — download backup','error');
+        $('projectsStorageWarning').textContent='Browser save failed: '+(error?.message||String(error))+'. Keep this IA open and download a portable backup before leaving.';
+        $('projectsStorageWarning').classList.remove('hidden');
+      }
+      return false;
+    }
   }
+  function scheduleSave(){
+    if(reviewPreview.bytes)invalidateReviewPreview();
+    if(projectLoading)return;
+    if(!isReady())return;
+    if(!activeProjectId)activeProjectId=createLocalProjectId();
+    projectRevision++;
+    updateLocalSaveStatus();
+    clearTimeout(savingTimer);
+    savingTimer=setTimeout(()=>{void storeAutosave();},1300);
+  }
+  async function preserveActiveProject(){
+    finishFieldHistory();
+    clearTimeout(savingTimer);
+    try{await saveChain;}catch(error){} // New attempt below reports any failure.
+    if(!isReady())return true;
+    if(!projectVault){
+      toast('Browser storage unavailable. Download the editable backup before switching projects.');
+      setLocalSaveStatus('Not saved — download backup','error');
+      return false;
+    }
+    if(projectRevision>persistedRevision){
+      const success=await storeAutosave();
+      if(!success){
+        toast('This IA could not be saved. Download its backup instead of switching.');
+        return false;
+      }
+    }
+    return true;
+  }
+  function formatSavedDate(value){
+    const time=new Date(value);
+    return Number.isNaN(time.getTime())?'Unknown':time.toLocaleString(undefined,{
+      year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'
+    });
+  }
+  function renderProjectDashboard(){
+    const all=cachedProjectSummaries;
+    const count=all.length;
+    $('projectCountBadge').textContent=String(count);
+    $('downloadAllProjects').disabled=!count||!projectVault;
+    $('openClearProjects').disabled=!count||!projectVault;
+    $('resumeLast').classList.toggle('hidden',count===0||isReady());
+    const recorded=all.filter(row=>row.markedCount===5).length;
+    const inProgress=all.filter(row=>row.markedCount>0&&row.markedCount<5||row.markedCount===0&&row.annotations>0).length;
+    const stamps=all.reduce((total,row)=>total+row.annotations,0);
+    $('projectsStats').innerHTML=[
+      ['Local projects',count],['5/5 marks recorded',recorded],
+      ['In progress',inProgress],['Evidence stamps',stamps],
+    ].map(([label,value])=>'<div class="projects-stat"><strong>'+value+'</strong><small>'+label+'</small></div>').join('');
+    const search=$('projectsSearch').value.trim().toLowerCase(),course=$('projectsCourse').value;
+    const visible=all.filter(row=>(course==='all'||row.course===course)
+      &&(!search||[row.candidate,row.pdfName,row.course,row.session].join(' ').toLowerCase().includes(search)));
+    $('projectsRows').innerHTML=visible.length?visible.map(row=>{
+      const name=row.candidate||'Unlabelled IA';
+      const current=row.id===activeProjectId;
+      const progress=row.markedCount*20;
+      return '<article class="project-card '+(current?'is-current':'')+'" data-project-card="'+escapeHtml(row.id)+'">'
+        +'<div class="project-card-heading"><div><strong>'+escapeHtml(name)+'</strong>'
+        +'<p>'+escapeHtml(row.pdfName)+'</p></div>'
+        +(current?'<span class="project-current-pill">Currently open</span>':'')+'</div>'
+        +'<div class="project-card-details"><span>'+escapeHtml(row.course)+'</span>'
+        +'<span>'+escapeHtml(row.session||'Session not set')+'</span>'
+        +'<span>'+row.pageCount+' pages</span><span>'+niceBytes(row.fileSize)+'</span>'
+        +'<span>'+row.annotations+' evidence stamps</span></div>'
+        +'<div class="project-progress-row"><span>'+row.markedCount+'/5 criterion marks</span>'
+        +'<span class="project-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="'+row.markedCount+'" aria-label="Number of criterion marks recorded"><span style="width:'+progress+'%"></span></span>'
+        +'<small>'+(row.total===null?'Not fully marked':row.total+'/20 recorded')+'</small></div>'
+        +'<div class="project-card-footer"><span class="project-card-last">Saved '+escapeHtml(formatSavedDate(row.savedAt))+' · '+escapeHtml(row.status)+'</span>'
+        +'<div class="project-card-actions">'
+        +'<button class="btn primary" type="button" data-local-open="'+escapeHtml(row.id)+'">'+(current?'Return to IA':'Open IA')+'</button>'
+        +'<button class="btn subtle" type="button" data-local-backup="'+escapeHtml(row.id)+'">Download backup</button>'
+        +'<button class="btn projects-danger" type="button" data-local-delete="'+escapeHtml(row.id)+'">Delete</button>'
+        +'</div></div></article>';
+    }).join(''):'<p class="projects-empty">'+(count?'No IAs match this search. Try a different course or assessment ID.':'No locally saved IAs yet. Open a PDF and begin marking; it will appear here after a successful browser save.')+'</p>';
+  }
+  async function refreshProjectDashboard(){
+    if(!projectVault){cachedProjectSummaries=[];renderProjectDashboard();return;}
+    try{
+      cachedProjectSummaries=await projectVault.list();
+      renderProjectDashboard();
+    }catch(error){
+      console.error('Cannot list saved IA projects',error);
+      $('projectsStorageWarning').textContent='Could not list local projects: '+(error?.message||String(error));
+      $('projectsStorageWarning').classList.remove('hidden');
+    }
+  }
+  async function openProjectsDashboard(){
+    if(!projectVault&&storageError){
+      $('projectsStorageWarning').textContent='Local project storage is unavailable. You can still export the current editable .iamark.json backup.';
+      $('projectsStorageWarning').classList.remove('hidden');
+    }
+    await refreshProjectDashboard();
+    $('projectsDialog').showModal();
+  }
+
   function projectData(includePdf=true) {
     return {
       format:'ia-marking-desk',version:1,createdAt:now(),
