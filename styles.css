@@ -92,3 +92,78 @@ h2{margin:4px 0 0;font-weight:750;font-size:18px;letter-spacing:-.035em;color:va
  .total-card strong{font-size:22px}
  .viewer-pane,.bank-pane,.document-pane{min-width:0}
 }
+
+/* Teacher-controlled on-script stamp appearance. PDF export uses the same
+   point diameter and HEX colour saved on each stamp, independent of zoom. */
+.stamp-style-panel{background:#f6f9fb;border:1px solid #e2e9ef;border-radius:10px;padding:11px 10px;display:flex;flex-direction:column;gap:7px}
+.stamp-style-header{display:flex;align-items:center;justify-content:space-between;gap:9px}
+.stamp-style-header strong{color:var(--heading);font-size:11px}
+.stamp-preview{display:flex;align-items:center;gap:5px;min-height:31px}
+.stamp-preview i{display:grid;place-items:center;flex:none;border-radius:50%;border:2px solid #fff;font-style:normal;font-family:Georgia,serif;font-weight:900;font-size:12px;box-shadow:0 1px 3px #172c4028}
+.stamp-size-field{display:flex;justify-content:space-between;gap:8px;color:#6b7b8d;font-size:10px;font-weight:700}
+.stamp-size-field output,.individual-stamp-style output{font-variant-numeric:tabular-nums;color:var(--heading)}
+#defaultStampSize{width:100%;padding:0;accent-color:var(--navy);height:16px}
+.stamp-colour-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stamp-colour-fields label{font-size:10px;font-weight:650;color:#607386;display:flex;justify-content:space-between;align-items:center;gap:5px;min-width:0}
+.stamp-colour-fields input[type=color],.individual-stamp-style input[type=color]{width:34px;height:29px;border:1px solid #cbd8e3;border-radius:6px;padding:3px;cursor:pointer;flex:none}
+.stamp-style-panel .text-button{text-align:left;width:100%;padding:3px 0;font-size:10px;font-weight:700;line-height:1.4;color:#376681}
+.stamp-style-panel p{margin:0;color:#95a3af;font-size:9.5px;line-height:1.45}
+.individual-stamp-style{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin:10px 0 7px;padding:10px;background:#f6f9fb;border:1px solid #e2e9ef;border-radius:8px}
+.individual-stamp-style label{font-size:10px;font-weight:700;color:#697f90;display:flex;flex-direction:column;gap:5px;min-width:0}
+.individual-stamp-style label:first-child{display:grid;grid-template-columns:1fr auto;gap:4px;align-items:center}
+.individual-stamp-style input[type=range]{grid-column:1 / -1;width:100%;height:19px;padding:0;accent-color:var(--navy)}
+.individual-stamp-style label:last-child{align-items:center}
+.individual-stamp-style input[type=color]{width:42px}
+
+/* A library card has distinct actions: select for marking, copy, or edit. */
+.comment-card{cursor:default;padding:0;overflow:hidden}
+.comment-select{display:block;text-align:left;width:100%;border:0;background:transparent;padding:11px 12px 7px;color:inherit;border-radius:9px;cursor:pointer}
+.comment-select p{white-space:normal}
+.comment-select:hover{background:#f6fafc}
+.comment-card-actions{display:flex;justify-content:flex-end;gap:4px;padding:1px 10px 8px}
+.comment-card-actions button{border:0;background:transparent;color:#4b7793;font-size:10px;font-weight:700;padding:5px 7px;border-radius:6px}
+.comment-card-actions button:hover{background:#ecf4f8}
+.library-open-button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 11px;border:1px solid #c7d9e5;border-radius:9px;background:#edf5f9;color:#2b516e;font-size:11px;font-weight:750;text-align:left}
+.library-open-button:hover{background:#e4f0f6;border-color:#a9c8d9}
+.library-open-button span:last-child{font-size:10px;font-weight:650;white-space:nowrap;color:#557e97}
+
+/* Full-screen, independently searchable and copyable teacher library. */
+.library-modal{width:min(980px,calc(100vw - 34px));height:min(88vh,900px);max-width:none;max-height:none;overflow:hidden;display:flex;flex-direction:column}
+.library-modal:not([open]){display:none}
+.library-modal-heading{display:flex;align-items:flex-start;justify-content:space-between;padding:23px 26px 14px;gap:20px;border-bottom:1px solid var(--border)}
+.library-modal-heading h2{font-size:24px;margin-top:5px}
+.library-modal-heading p{color:#7f8fa0;line-height:1.5;margin:7px 0 0;max-width:700px}
+.library-modal-filters{padding:15px 26px 10px;display:grid;grid-template-columns:minmax(180px,1fr) 175px 185px;gap:10px}
+.library-modal-filters input,.library-modal-filters select{width:100%;background:#f9fbfd;font-size:12px;height:39px}
+.library-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 26px 10px;color:#8393a4;font-size:11px}
+.library-summary .btn{padding:8px 10px;white-space:nowrap}
+.library-results{overflow-y:auto;overscroll-behavior:contain;flex:1;min-height:0;padding:2px 26px 18px;display:grid;grid-template-columns:1fr 1fr;align-content:start;gap:11px}
+.library-entry{border:1px solid #e2e8ee;border-radius:10px;padding:14px 15px 12px;background:#fff;display:flex;flex-direction:column;gap:9px;min-width:0}
+.library-entry-header{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.library-entry-header strong{font-size:11px;color:var(--heading)}
+.library-entry-header small{font-size:9px;color:#91a1af;margin-left:auto}
+.library-entry p{font-size:12px;color:#42586a;line-height:1.6;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.library-entry-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:auto}
+.library-entry-actions button{font-size:11px;font-weight:650;border:1px solid #dfe7ed;background:#f8fafc;border-radius:7px;padding:7px 9px;color:#477087}
+.library-entry-actions button:hover{background:#edf5f9;border-color:#b8d3e3}
+.library-entry-actions button:first-child{background:#edf5fa;border-color:#cfdfeb;color:#315c7b}
+.library-entry-actions button.btn.primary{color:#fff;background:var(--navy)}
+.library-edit{display:flex;flex-direction:column;gap:9px}
+.library-edit label{font-size:10px;font-weight:700;color:#6d8294;display:flex;flex-direction:column;gap:5px}
+.library-edit textarea{width:100%;resize:vertical;min-height:110px;line-height:1.55;font-size:12px}
+.library-edit input{width:100%;font-size:12px}
+.library-modal-footer{border-top:1px solid var(--border);padding:12px 26px;display:flex;align-items:center;justify-content:space-between;gap:15px;font-size:10px;color:#8897a4;background:#fafcfd}
+.library-modal-footer button{padding:8px 15px}
+@media(max-width:720px){
+ .library-modal{width:calc(100vw - 14px);height:94vh}
+ .library-modal-heading{padding:14px 15px 11px}
+ .library-modal-heading h2{font-size:19px}
+ .library-modal-filters{grid-template-columns:1fr 1fr;padding:10px 15px;gap:7px}
+ .library-modal-filters input{grid-column:1 / -1}
+ .library-modal-filters select{min-width:0}
+ .library-results{grid-template-columns:1fr;padding:0 15px 12px;gap:9px}
+ .library-summary{padding:0 15px 10px;align-items:center}
+ .library-summary .btn{font-size:10px}
+ .library-modal-footer{padding:9px 15px}
+ .library-modal-footer span{max-width:68%;line-height:1.4}
+}
