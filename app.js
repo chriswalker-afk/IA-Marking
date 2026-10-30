@@ -321,6 +321,19 @@ let pdfRendererLoad = null;
     document.body.classList.toggle('pdf-focus',focusedPdf);
     document.body.classList.toggle('workspace-drawer-open',small&&Boolean(mobileDrawer));
     $('workspaceBackdrop').hidden=!(small&&mobileDrawer);
+    const drawerActive=small&&Boolean(mobileDrawer);
+    // Keep hidden and obscured controls out of keyboard and screen reader
+    // navigation while a drawer is open. Modal dialogs retain their own focus.
+    for(const selector of ['.masthead','.review-mode-bar','.assessment-bar','.reference-bar','#frameworkNotice','#viewerPane']){
+      const element=document.querySelector(selector);
+      if(element)element.inert=drawerActive;
+    }
+    for(const [pane,name] of [['documentPane','document'],['bankPane','comments']]){
+      const element=$(pane);
+      element.setAttribute('role',drawerActive&&mobileDrawer===name?'dialog':'complementary');
+      if(drawerActive&&mobileDrawer===name)element.setAttribute('aria-modal','true');
+      else element.removeAttribute('aria-modal');
+    }
     $('bankBrowseTab').classList.toggle('is-selected',workspaceView==='browse');
     $('bankEditorTab').classList.toggle('is-selected',workspaceView==='edit');
     $('bankBrowseTab').setAttribute('aria-selected',String(workspaceView==='browse'));
@@ -372,12 +385,14 @@ let pdfRendererLoad = null;
     if(mobileWorkspace()){mobileDrawer=mobileDrawer==='document'?null:'document';}
     else{documentCollapsed=!documentCollapsed;layoutOverride=true;saveWorkspacePreferences();}
     updateWorkspaceLayout();
+    if(mobileWorkspace()&&mobileDrawer==='document')requestAnimationFrame(()=>$('closeDocumentPane').focus({preventScroll:true}));
   }
   function openCommentsPanel(view='browse'){
     focusedPdf=false;workspaceView=view;commentCollapsed=false;
     if(mobileWorkspace())mobileDrawer='comments';
     else saveWorkspacePreferences();
     updateWorkspaceLayout();
+    if(mobileWorkspace())requestAnimationFrame(()=>$('closeBankPane').focus({preventScroll:true}));
   }
   function toggleFocusPdf(){
     focusedPdf=!focusedPdf;
@@ -2471,6 +2486,18 @@ let pdfRendererLoad = null;
       }
     });
     document.addEventListener('keydown',e=>{
+      if(e.key==='Tab'&&mobileWorkspace()&&mobileDrawer&&!document.querySelector('dialog[open]')){
+        const pane=$(mobileDrawer==='document'?'documentPane':'bankPane');
+        const controls=Array.from(pane.querySelectorAll('button,a[href],input:not([type="hidden"]),select,textarea,summary'))
+          .filter(node=>!node.disabled&&!node.inert&&!node.closest('[inert]')&&node.getClientRects().length>0);
+        const first=controls[0],last=controls[controls.length-1];
+        if(first&&last&&(e.shiftKey&&(document.activeElement===first||!pane.contains(document.activeElement)))){
+          e.preventDefault();last.focus();return;
+        }
+        if(first&&!e.shiftKey&&(document.activeElement===last||!pane.contains(document.activeElement))){
+          e.preventDefault();first.focus();return;
+        }
+      }
       const inField=e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||
         e.target instanceof HTMLSelectElement||e.target?.isContentEditable;
       const modifier=e.ctrlKey||e.metaKey;
