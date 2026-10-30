@@ -1056,7 +1056,7 @@ let pdfRendererLoad = null;
     $('exportAnnotated').disabled=true;
     $('reviewExportNotice').textContent='Generate the current PDF preview and inspect every page before exporting.';
     if(reviewPreviewTask){try{reviewPreviewTask.cancel();}catch(error){}reviewPreviewTask=null;}
-    if(reviewPreview.pdf){reviewPreview.pdf.destroy().catch(()=>{});reviewPreview.pdf=null;}
+    if(reviewPreview.pdf){if(typeof reviewPreview.pdf.cleanup==='function')Promise.resolve(reviewPreview.pdf.cleanup()).catch(()=>{});reviewPreview.pdf=null;}
   }
   function renderPreflightIssues(issues){
     reviewPreview.issues=issues;
