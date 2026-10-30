@@ -318,6 +318,8 @@ let pdfRendererLoad = null;
     workspace.classList.toggle('bank-collapsed',!small&&(commentCollapsed||focusedPdf));
     workspace.dataset.mobileDrawer=small?(mobileDrawer||''):'';
     workspace.dataset.bankView=workspaceView;
+    $('bankPaneTitle').textContent=workspaceView==='edit'?'Stamp editor':isFeedback()?'Feedback library':'Comment library';
+    $('bankTotal').classList.toggle('hidden',workspaceView==='edit');
     document.body.classList.toggle('pdf-focus',focusedPdf);
     document.body.classList.toggle('workspace-drawer-open',small&&Boolean(mobileDrawer));
     $('workspaceBackdrop').hidden=!(small&&mobileDrawer);
