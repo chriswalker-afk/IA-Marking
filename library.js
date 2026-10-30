@@ -30,12 +30,15 @@
     document.querySelector('.reference-intro h1').textContent='Actionable feedback stamp library';
     document.querySelector('.reference-intro p').textContent='Browse and adapt student-facing comments that identify a mathematical issue or a next step, without providing replacement solutions. These prompts are distinct from final-marking evidence.';
     document.querySelector('.reference-note').textContent='The feedback comments and their source-page links are adapted from the supplied 2021-2026 examiner-feedback synthesis, not official achievement descriptors. Changes you save here will be used in the feedback mode. Previously placed comments are not rewritten.';
-    document.querySelector('.reference-brand small').textContent='Draft feedback library · A-E through November 2028';
+    document.querySelector('.reference-brand small').textContent='First-draft feedback · A-E framework';
     document.querySelector('.reference-stat span').textContent='draft feedback prompts';
     document.querySelector('.reference-header>a').textContent='← Back to IA review desk';
     byId('refSearch').placeholder='Search student actions, maths or reflection...';
     document.querySelector('.ref-search-label').firstChild.textContent='Search student feedback prompts';
-    byId('refTone').querySelector('option[value="limitation"]').textContent='Improvement actions';
+    byId('refTone').querySelector('option[value="limitation"]').textContent='Improvements';
+    byId('referenceEditTone').querySelector('option[value="limitation"]').textContent='Improvement';
+    byId('referenceCreate').textContent='+ Personal feedback';
+    document.querySelector('.reference-edit-note')?.classList.add('feedback-library-note');
   }
   function toast(message){
     const el=byId('referenceToast');el.textContent=message;el.classList.remove('hidden');
@@ -73,7 +76,7 @@
     byId('referenceResults').innerHTML=visible.length?visible.map(item=>{
       const original=BUILT_IN.some(x=>x.id===item.id),changed=Boolean(edits[item.id]);
       return `<article class="ref-comment" data-ref-id="${esc(item.id)}">
-       <div class="ref-comment-head"><span class="polarity ${item.tone==='limitation'?'limitation':'strength'}">${item.tone==='limitation'?(FEEDBACK_MODE?'Action':'Limitation'):'Strength'}</span><strong>${esc(item.criterion)} / ${esc(item.topic)}</strong><small>${esc(item.id)}${!original?' · Personal':changed?' · Edited':''}</small></div>
+       <div class="ref-comment-head"><span class="polarity ${item.tone==='limitation'?'limitation':'strength'}">${item.tone==='limitation'?(FEEDBACK_MODE?'Improvement':'Limitation'):'Strength'}</span><strong>${esc(item.criterion)} / ${esc(item.topic)}</strong><small>${esc(item.id)}${!original?' · Personal':changed?' · Edited':''}</small></div>
        <p>${esc(item.text)}</p>
        <div class="ref-comment-actions"><button type="button" class="${favorites.includes(item.id)?'ref-is-favourite':''}" data-action="favourite" data-id="${esc(item.id)}" aria-pressed="${favorites.includes(item.id)}">${favorites.includes(item.id)?'★ Saved favourite':'☆ Favourite'}</button><button type="button" data-action="copy" data-id="${esc(item.id)}">Copy comment</button><button type="button" data-action="edit" data-id="${esc(item.id)}">Edit</button>${changed?'<button type="button" data-action="restore" data-id="'+esc(item.id)+'">Restore original</button>':''}${!original?'<button class="ref-delete" type="button" data-action="delete" data-id="'+esc(item.id)+'">Delete</button>':''}</div>
        </article>`;
@@ -91,7 +94,7 @@
     const item=id?getComments().find(x=>x.id===id):null;
     if(id&&!item)return;
     const builtIn=item&&BUILT_IN.some(x=>x.id===item.id);
-    byId('referenceEditTitle').textContent=creating?'Add personal '+(FEEDBACK_MODE?'feedback':'comment'):'Edit '+(FEEDBACK_MODE?'feedback prompt':'evidence comment');
+    byId('referenceEditTitle').textContent=creating?(FEEDBACK_MODE?'Add a feedback prompt':'Add an assessment comment'):(FEEDBACK_MODE?'Edit feedback prompt':'Edit assessment comment');
     byId('referenceEditCriterion').value=item?.criterion||'A';
     byId('referenceEditTone').value=item?.tone||'strength';
     byId('referenceEditCriterion').disabled=Boolean(builtIn);
@@ -99,7 +102,7 @@
     byId('referenceEditTopic').value=item?.topic||'';
     byId('referenceEditText').value=item?.text||'';
     byId('referenceEditNote').textContent=builtIn
-      ?'The criterion and feedback type stay fixed. Edits apply only to future stamps.'
+      ?'The criterion and comment type stay fixed. Edits apply only to future stamps.'
       :'This personal '+(FEEDBACK_MODE?'student-facing feedback':'teacher evidence')+' comment will be available across all four Mathematics courses on this device.';
     byId('referenceEditDialog').showModal();
     byId('referenceEditText').focus();
