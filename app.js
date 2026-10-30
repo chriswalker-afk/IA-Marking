@@ -423,6 +423,7 @@ let pdfRendererLoad = null;
     const width=Math.min(normalNoteWidth(stamp.noteWidth ?? state.stampStyle.noteWidth),Math.max(100,pageWidth-2*NOTE_PAD));
     const circle=normalSize(stamp.size),textX=Math.max(circle+17,42);
     const fontSize=noteFontSize(stamp),lineHeight=noteLineHeight(fontSize);
+    const headerFontSize=Math.max(8,Math.min(12,Math.round(fontSize*.85*10)/10));
     const rows=pdfWrap(stamp.text,font,fontSize,Math.max(30,width-textX-8));
     const minHeight=Math.ceil(Math.max(circle+20,39+rows.length*lineHeight));
     const height=normalNoteHeight(stamp.noteHeight) ?? minHeight;
@@ -430,7 +431,7 @@ let pdfRendererLoad = null;
     const contentFits=height>=minHeight;
     const x=Math.min(Math.max(NOTE_PAD,Number(stamp.x||0)*pageWidth),Math.max(NOTE_PAD,pageWidth-width-NOTE_PAD));
     const y=Math.min(Math.max(NOTE_PAD,Number(stamp.y||0)*pageHeight),Math.max(NOTE_PAD,pageHeight-height-NOTE_PAD));
-    return {x,y,width,height,circle,textX,rows,fontSize,lineHeight,minHeight,contentFits,fits,
+    return {x,y,width,height,circle,textX,rows,fontSize,headerFontSize,lineHeight,minHeight,contentFits,fits,
       textColor:noteTextColor(stamp),fillColor:noteFillColor(stamp),borderColor:noteBorderColor(stamp),pageWidth,pageHeight};
   }
   function noteOverlap(a,b) {
@@ -495,7 +496,7 @@ let pdfRendererLoad = null;
       return `<div role="button" tabindex="0" class="onpage-stamp ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};background:${layout.fillColor};border-color:${layout.borderColor};color:${layout.textColor};border-width:${Math.max(.7,1.25*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag comment to move; drag bottom-right corner to resize">
         <span class="onpage-border-accent" style="background:${layout.borderColor};width:${Math.max(2,3*scale)}px"></span>
         <span class="onpage-circle" style="left:${8*scale}px;top:${11*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
-        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${10*scale}px;font-size:${8.5*scale}px;line-height:${12*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':'Limitation'}</span>
+        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${10*scale}px;font-size:${layout.headerFontSize*scale}px;line-height:${Math.max(12,layout.headerFontSize*1.12)*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':'Limitation'}</span>
         <span class="onpage-note-body" style="left:${layout.textX*scale}px;top:${25*scale}px;font-size:${layout.fontSize*scale}px;line-height:${layout.lineHeight*scale}px;color:${layout.textColor}">${lines}</span>
         <button type="button" class="note-resize-handle" data-resize-pin="${escapeHtml(stamp.id)}" aria-label="Resize width and height of ${escapeHtml(label)} comment" title="Drag to resize comment width and height"></button>
       </div>`;
@@ -950,7 +951,7 @@ let pdfRendererLoad = null;
           const letterSize=Math.min(layout.circle*.55,18);
           pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
           const fullTextColor=pdfHexColor(layout.textColor);
-          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,8.5,bold,fullTextColor);
+          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,layout.headerFontSize,bold,fullTextColor);
           layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.textX,height-layout.y-33-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
         }
       }
