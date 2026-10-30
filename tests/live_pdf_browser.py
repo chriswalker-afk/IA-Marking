@@ -75,68 +75,77 @@ with tempfile.TemporaryDirectory() as folder:
         assert page.locator('[data-score="E"]').input_value() == '5'
         assert page.locator('#pdfLibraryStatus').is_hidden(), page.locator('#pdfLibraryStatus').inner_text()
 
-        # Full comments appear *next to a duplicate A-E circle*, without
-        # covering the student's PDF. Two nearby stamps must not overlap.
-        first_text = ('The analysis uses residuals to check the accuracy of the fitted model. '
-                      'The interpretation relates the findings to the original aim and explains '
-                      'why an unexpected result is meaningful.')
-        second_text = ('The mathematical limitation is identified using numerical evidence. '
-                       'The conclusion makes the consequences of the approximation explicit.')
+        # Real on-page annotations: the complete text and its A-E circle are
+        # inside the original student-page rectangle, not in a separate rail.
+        first_text=('The analysis uses residuals to check the accuracy of the fitted model. '
+                    'The interpretation relates the findings to the aim and explains '
+                    'why an unexpected result is mathematically meaningful.')
+        second_text=('The numerical limitation of the model is evaluated and its '
+                     'consequences are explained in the conclusion.')
         page.locator('#commentList [data-comment-id]').first.click()
         page.locator('#draftTextEdit').fill(first_text)
-        page.locator('#stampLayer').click(position={'x': 120, 'y': 160})
-        assert page.locator('#allPinCount').inner_text() == '1'
-        expect(page.locator('#pageNotes .page-note')).to_have_count(1)
-        assert first_text in page.locator('#pageNotes .page-note-fulltext').inner_text()
-        first_note = page.locator('#pageNotes .page-note').first
-        bubble = first_note.locator('.page-note-circle').bounding_box()
-        full_comment = first_note.locator('.page-note-fulltext').bounding_box()
-        assert bubble and full_comment and bubble['x'] + bubble['width'] < full_comment['x']
+        page.locator('#stampLayer').click(position={'x': 120, 'y': 280})
+        expect(page.locator('.onpage-stamp')).to_have_count(1)
+        assert page.locator('#allPinCount').inner_text()=='1'
+        assert page.locator('#pageNotes').count()==0
+        assert ' '.join(page.locator('.onpage-stamp').inner_text().split()).endswith(first_text)
+        first_box=page.locator('.onpage-stamp').first.bounding_box()
+        pdf_box=page.locator('#pdfCanvas').bounding_box()
+        circle=page.locator('.onpage-circle').first.bounding_box()
+        note_text=page.locator('.onpage-note-body').first.bounding_box()
+        assert first_box and pdf_box and circle and note_text
+        assert first_box['x'] >= pdf_box['x'] and first_box['x'] + first_box['width'] <= pdf_box['x'] + pdf_box['width'] + 2
+        assert circle['x']+circle['width'] <= note_text['x'], 'Full comment text must sit beside its coloured A-E circle'
 
         page.locator('#commentList [data-comment-id]').nth(1).click()
         page.locator('#draftTextEdit').fill(second_text)
-        page.locator('#stampLayer').click(position={'x': 160, 'y': 200})
-        expect(page.locator('#pageNotes .page-note')).to_have_count(2)
-        page_notes = page.locator('#pageNotes .page-note')
-        first_box = page_notes.nth(0).bounding_box()
-        second_box = page_notes.nth(1).bounding_box()
-        assert first_box and second_box and second_box['y'] >= first_box['y'] + first_box['height'], 'Full note cards overlap.'
-        assert first_text in page_notes.nth(0).inner_text()
-        assert second_text in page_notes.nth(1).inner_text()
+        page.locator('#stampLayer').click(position={'x': 130, 'y': 300})
+        expect(page.locator('.onpage-stamp')).to_have_count(2)
+        box1=page.locator('.onpage-stamp').nth(0).bounding_box()
+        box2=page.locator('.onpage-stamp').nth(1).bounding_box()
+        assert not (box1['x'] < box2['x'] + box2['width'] and box1['x'] + box1['width'] > box2['x'] and box1['y'] < box2['y'] + box2['height'] and box1['y'] + box1['height'] > box2['y']), 'On-page comments overlap'
+        assert page.locator('#annotationNotice').is_hidden(), 'No notes should overflow after initial placement.'
 
-        # A stamp text edit updates both the on-page card and the final export.
-        page_notes.first.click()
-        revised_text = first_text + ' This updated sentence is also visible in the page margin.'
+        # Editing a placed stamp changes the printed note and persists.
+        page.locator('.onpage-stamp').first.click()
+        revised_text=first_text+' The mathematical evidence supports the awarded mark.'
         page.locator('#stampTextEdit').fill(revised_text)
-        assert revised_text in page.locator('#pageNotes .page-note-fulltext').first.inner_text()
+        assert revised_text in ' '.join(page.locator('.onpage-stamp').first.inner_text().split())
         assert revised_text in page.locator('#stampsList .stamp-row').first.inner_text()
-        page.screenshot(path=str(ROOT / 'qa-full-comments-desktop.png'), full_page=True)
+        page.screenshot(path=str(ROOT/'qa-inline-moderator-page.png'),full_page=True)
 
+        # Export a REAL PDF and inspect both the retained original page geometry
+        # and whether the FULL comment is physically within that page.
         page.locator('#openReview').click()
         with page.expect_download(timeout=35000) as download_info:
             page.locator('#exportAnnotated').click()
-        saved = download_info.value.path()
-        exported = fitz.open(saved)
-        assert len(exported) >= 3, f'Expected two source pages plus marking summary, got {len(exported)}.'
-        assert 'ASSESSMENT EVIDENCE' in exported[0].get_text().upper()
-        pdf_text = ' '.join(exported[0].get_text().split())
-        assert revised_text in pdf_text, 'Edited full comment was clipped or missing from annotated page.'
-        assert second_text in pdf_text, 'Second full comment was omitted from annotated page.'
-        assert 'A1' in pdf_text and 'A2' in pdf_text
-        assert 'MARKING' in exported[-1].get_text().upper() or 'ASSESSMENT' in exported[-1].get_text().upper()
+        exported=fitz.open(download_info.value.path())
+        assert len(exported)==3, 'Only the original two pages plus marking-summary page are expected.'
+        assert abs(exported[0].rect.width-595)<1 and abs(exported[0].rect.height-842)<1, 'IA pages must retain their original physical dimensions.'
+        pdf_text=' '.join(exported[0].get_text().split())
+        assert revised_text in pdf_text, 'Complete updated teacher comment missing from original page.'
+        assert second_text in pdf_text, 'Second comment missing from original page.'
+        assert 'Example Mathematics IA' in pdf_text, 'Student source page must remain intact.'
+        assert 'A1' in pdf_text and 'A2' in pdf_text, 'Criterion labels must print beside comments.'
+        for keyword in ['residuals','mathematically','limitation','consequences']:
+            words=[x for x in exported[0].get_text('words') if keyword.lower() in x[4].lower()]
+            assert words and all(0<=x[0] and 0<=x[1] and x[2]<=595 and x[3]<=842 for x in words), f'Comment {keyword} is clipped or outside the actual page.'
+        exported[0].get_pixmap(matrix=fitz.Matrix(1.5,1.5)).save(ROOT/'qa-inline-export.pdf-page.png')
         exported.close()
         page.locator('#closeReview').click()
 
-        # At phone widths the entire text moves below the PDF, rather than
-        # covering the mathematical work or clipping at the page edge.
+        # On a narrower display the same complete notes remain inside the PDF
+        # page instead of being moved beneath it or to an external margin.
         page.set_viewport_size({'width': 430, 'height': 850})
-        expect(page.locator('#pageShell')).to_have_attribute('data-notes-layout', 'below', timeout=10000)
-        assert page.locator('#pageNotes .page-note').count() == 2
-        assert revised_text in page.locator('#pageNotes').inner_text()
-        page.locator('#pageNotes').scroll_into_view_if_needed()
-        page.screenshot(path=str(ROOT / 'qa-full-comments-mobile.png'), full_page=True)
+        expect(page.locator('.onpage-stamp')).to_have_count(2)
+        assert ' '.join(page.locator('.onpage-stamp').first.inner_text().split()).endswith(revised_text)
+        mobile_page=page.locator('#pdfCanvas').bounding_box()
+        mobile_note=page.locator('.onpage-stamp').first.bounding_box()
+        assert mobile_page and mobile_note
+        assert mobile_note['x']>=mobile_page['x']-1 and mobile_note['x']+mobile_note['width']<=mobile_page['x']+mobile_page['width']+2
+        page.screenshot(path=str(ROOT/'qa-inline-mobile.png'),full_page=True)
 
-        assert errors == [], f'Browser JS errors: {errors}'
+        assert errors==[], f'Browser JS errors: {errors}'
         context.close()
 
         # Degraded mode: missing PDF viewer should display a useful error but
