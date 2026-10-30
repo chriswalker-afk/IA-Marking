@@ -400,6 +400,11 @@ with tempfile.TemporaryDirectory() as folder:
         expect(page.locator('#workspace')).to_have_attribute('data-mobile-drawer','comments')
         expect(page.locator('#bankPane')).to_be_visible()
         expect(page.locator('#workspaceBackdrop')).to_be_visible()
+        # CSS drawers animate in; wait for the settled position before QA.
+        expect(page.locator('#bankPane')).to_have_css('transform','matrix(1, 0, 0, 1, 0, 0)',timeout=5000)
+        drawer_bounds=page.locator('#bankPane').bounding_box()
+        assert drawer_bounds and drawer_bounds['x']<=20 and drawer_bounds['width']>=390, (
+            f'Comment drawer did not reach the visible phone viewport: {drawer_bounds}')
         page.screenshot(path=str(ROOT/'qa-pass2-mobile-comment-drawer.png'))
         page.locator('#closeBankPane').click()
         expect(page.locator('#workspaceBackdrop')).to_be_hidden()
