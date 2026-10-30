@@ -1,0 +1,5902 @@
+[
+  {
+    "id": "A001",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Aim and focus",
+    "text": "The investigation establishes a clear, focused aim near the beginning.",
+    "tags": [
+      "aim"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A002",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Aim and focus",
+    "text": "The intended aim is difficult to identify or is introduced too late.",
+    "tags": [
+      "aim"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A003",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Aim and focus",
+    "text": "The title, aim and central question describe the same investigation.",
+    "tags": [
+      "aim"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A004",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Aim and focus",
+    "text": "The title, aim and stated question point towards different investigations.",
+    "tags": [
+      "aim"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A005",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Aim and focus",
+    "text": "The introduction gives the context needed to understand the mathematical purpose.",
+    "tags": [
+      "introduction"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A006",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Aim and focus",
+    "text": "The introduction contains considerable background material unrelated to the mathematical purpose.",
+    "tags": [
+      "introduction"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A007",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Aim and focus",
+    "text": "The investigation maintains a clear mathematical focus despite its wider context.",
+    "tags": [
+      "focus"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A008",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Aim and focus",
+    "text": "Discussion of the real-world context often displaces the mathematical investigation.",
+    "tags": [
+      "focus"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A009",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Aim and focus",
+    "text": "The aim is sufficiently focused to support a coherent exploration.",
+    "tags": [
+      "aim"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A010",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Aim and focus",
+    "text": "The aim is broad enough to produce disconnected lines of investigation.",
+    "tags": [
+      "aim"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A011",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Organisation",
+    "text": "The exploration develops logically from the introduction through the mathematics to the conclusion.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A012",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Organisation",
+    "text": "The sequence of sections is difficult to follow and does not form a clear mathematical narrative.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A013",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Organisation",
+    "text": "Each major stage is introduced with a clear reason for undertaking it.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A014",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Organisation",
+    "text": "Several mathematical stages are presented without establishing why they are needed.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A015",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Organisation",
+    "text": "The links between successive mathematical stages are made explicit.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A016",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Organisation",
+    "text": "The transitions between mathematical stages are unclear or unexplained.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A017",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Organisation",
+    "text": "New mathematical representations appear where they support the surrounding discussion.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A018",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Organisation",
+    "text": "Graphs, tables or calculations appear as isolated blocks detached from the surrounding explanation.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A019",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Organisation",
+    "text": "The exploration explains why the approach changes in response to its results.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A020",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Organisation",
+    "text": "Changes of method are made without a coherent explanation of how they arose.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A021",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Organisation",
+    "text": "The report is structured as a connected mathematical exploration rather than a rigid template.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A022",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Organisation",
+    "text": "The report follows a generic research-report structure that interrupts the mathematics.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A023",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Organisation",
+    "text": "Headings support navigation without fragmenting the mathematical argument.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A024",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Organisation",
+    "text": "Excessive headings break the exploration into short disconnected sections.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A025",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Organisation",
+    "text": "Key calculations and their interpretations are presented close together.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A026",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Organisation",
+    "text": "Important results are separated from their interpretation by lengthy unrelated material.",
+    "tags": [
+      "structure"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A027",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Conciseness",
+    "text": "Repeated calculations are condensed into representative examples where appropriate.",
+    "tags": [
+      "concise"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A028",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Conciseness",
+    "text": "Essentially identical calculations are repeated without adding mathematical insight.",
+    "tags": [
+      "concise"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A029",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Conciseness",
+    "text": "The discussion is concise and concentrates on material relevant to the stated aim.",
+    "tags": [
+      "concise"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A030",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Conciseness",
+    "text": "Repetition and unnecessary commentary weaken the conciseness of the exploration.",
+    "tags": [
+      "concise"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A031",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Conciseness",
+    "text": "Standard course mathematics is explained at an appropriate level without lengthy textbook digressions.",
+    "tags": [
+      "concise"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A032",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Conciseness",
+    "text": "Lengthy explanations of routine mathematics distract from the investigation.",
+    "tags": [
+      "concise"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A033",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Conciseness",
+    "text": "Technology outputs are selected because they advance the argument.",
+    "tags": [
+      "technology"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A034",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Conciseness",
+    "text": "Screenshots or procedural explanations occupy space without contributing to the investigation.",
+    "tags": [
+      "technology"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A035",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Conciseness",
+    "text": "Essential mathematics remains in the main body and supplemental material is appropriately separated.",
+    "tags": [
+      "appendix"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A036",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Conciseness",
+    "text": "Important mathematical reasoning is hidden in appendices and is not accessible in the main argument.",
+    "tags": [
+      "appendix"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A037",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Conciseness",
+    "text": "Appendix material is referenced concisely when it supports the exploration.",
+    "tags": [
+      "appendix"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A038",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Conciseness",
+    "text": "Large appendices are included without a clear connection to the mathematical argument.",
+    "tags": [
+      "appendix"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A039",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Conclusion",
+    "text": "The conclusion directly addresses the investigation's stated aim.",
+    "tags": [
+      "conclusion"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A040",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Conclusion",
+    "text": "The conclusion does not clearly answer the investigation's stated aim.",
+    "tags": [
+      "conclusion"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A041",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Conclusion",
+    "text": "The conclusion synthesises the main mathematical findings rather than listing calculations.",
+    "tags": [
+      "conclusion"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A042",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Conclusion",
+    "text": "The conclusion largely repeats calculations without drawing them together into an outcome.",
+    "tags": [
+      "conclusion"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A043",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Conclusion",
+    "text": "The conclusion is consistent with the mathematics actually developed.",
+    "tags": [
+      "conclusion"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A044",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Conclusion",
+    "text": "The conclusion makes claims that are not supported by the preceding investigation.",
+    "tags": [
+      "conclusion"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A045",
+    "criterion": "A",
+    "tone": "strength",
+    "topic": "Conclusion",
+    "text": "The exploration finishes decisively without starting substantial new mathematics after the conclusion.",
+    "tags": [
+      "conclusion"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "A046",
+    "criterion": "A",
+    "tone": "limitation",
+    "topic": "Conclusion",
+    "text": "Significant new material appears after the conclusion and weakens the overall structure.",
+    "tags": [
+      "conclusion"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B047",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Variables and units",
+    "text": "Variables and parameters are defined clearly when first introduced.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B048",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Variables and units",
+    "text": "Several variables or parameters are used before their meanings are established.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B049",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Variables and units",
+    "text": "Variable definitions make sense in the context of the investigation.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B050",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Variables and units",
+    "text": "Variables are given abstract definitions that do not clarify their real-world meaning.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B051",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Variables and units",
+    "text": "Relevant units are included consistently in calculations, tables and explanations.",
+    "tags": [
+      "units"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B052",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Variables and units",
+    "text": "Units are frequently omitted or applied inconsistently.",
+    "tags": [
+      "units"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B053",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Variables and units",
+    "text": "Distinct quantities are represented by appropriately distinct symbols.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B054",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Variables and units",
+    "text": "Symbols are reused for different quantities, making the mathematics ambiguous.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B055",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Variables and units",
+    "text": "Uppercase and lowercase notation is used consistently.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B056",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Variables and units",
+    "text": "Inconsistent capitalisation changes the apparent meaning of mathematical symbols.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      5
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B057",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Mathematical notation",
+    "text": "Mathematical expressions use conventional notation rather than calculator syntax.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B058",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Mathematical notation",
+    "text": "Calculator or computer syntax is left in the submitted mathematical expressions.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B059",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Mathematical notation",
+    "text": "Subscripts, superscripts and function notation are used accurately.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B060",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Mathematical notation",
+    "text": "Subscripts, superscripts or function notation are applied inconsistently.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B061",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Mathematical notation",
+    "text": "Equations and expressions are distinguished and equality symbols are used appropriately.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B062",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Mathematical notation",
+    "text": "Equals signs are used for steps that are not mathematically equal.",
+    "tags": [
+      "notation"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B063",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Mathematical notation",
+    "text": "Standard mathematical terminology is used accurately throughout.",
+    "tags": [
+      "terminology"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B064",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Mathematical notation",
+    "text": "Mathematical terms are used with meanings that are imprecise or incorrect.",
+    "tags": [
+      "terminology"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B065",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Mathematical notation",
+    "text": "Different models are given distinct, clearly explained names.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B066",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Mathematical notation",
+    "text": "Different model functions are represented by the same unexplained notation.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B067",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Mathematical notation",
+    "text": "Derivative and function notation is consistent between stages of the investigation.",
+    "tags": [
+      "calculus"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B068",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Mathematical notation",
+    "text": "Changes between derivative and function notation are not explained.",
+    "tags": [
+      "calculus"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B069",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Mathematical notation",
+    "text": "Advanced notation is used consistently and correctly for the processes shown.",
+    "tags": [
+      "calculus"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B070",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Mathematical notation",
+    "text": "Notation for more advanced processes is inaccurate or ambiguous.",
+    "tags": [
+      "calculus"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B071",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Graphs and diagrams",
+    "text": "Graph axes identify the quantities represented and include appropriate units.",
+    "tags": [
+      "graph"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B072",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Graphs and diagrams",
+    "text": "Graph axes lack the labels or units needed to interpret the representation.",
+    "tags": [
+      "graph"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B073",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Graphs and diagrams",
+    "text": "Graph scales and plotted domains are appropriate for the problem.",
+    "tags": [
+      "graph"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B074",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Graphs and diagrams",
+    "text": "Graph scales or domains are inappropriate for the represented situation.",
+    "tags": [
+      "graph"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B075",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Graphs and diagrams",
+    "text": "Important graph details remain legible even when an area is enlarged.",
+    "tags": [
+      "graph"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B076",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Graphs and diagrams",
+    "text": "Enlarged graph views omit axes, numerical scales or necessary labels.",
+    "tags": [
+      "graph"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B077",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Graphs and diagrams",
+    "text": "Graphs and diagrams are relevant and explained in the accompanying text.",
+    "tags": [
+      "graph"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B078",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Graphs and diagrams",
+    "text": "Visual representations are included without explaining their mathematical relevance.",
+    "tags": [
+      "graph"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B079",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Graphs and diagrams",
+    "text": "Table headings clearly identify variables and units.",
+    "tags": [
+      "table"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B080",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Graphs and diagrams",
+    "text": "Tables are missing headings or units needed to interpret their entries.",
+    "tags": [
+      "table"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B081",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Graphs and diagrams",
+    "text": "Equations and mathematical figures are typeset legibly and without distortion.",
+    "tags": [
+      "layout"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B082",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Graphs and diagrams",
+    "text": "Mathematical figures or equations are cut off, distorted or difficult to read.",
+    "tags": [
+      "layout"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B083",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Graphs and diagrams",
+    "text": "Captions and their associated figures remain clearly connected.",
+    "tags": [
+      "layout"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B084",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Graphs and diagrams",
+    "text": "Figures, captions or important equations are awkwardly separated across pages.",
+    "tags": [
+      "layout"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B085",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Precision",
+    "text": "Exact and approximate values are distinguished appropriately.",
+    "tags": [
+      "precision"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B086",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Precision",
+    "text": "Rounded results are repeatedly written as exact equalities.",
+    "tags": [
+      "precision"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B087",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Precision",
+    "text": "Reported precision is appropriate to the accuracy of the underlying data.",
+    "tags": [
+      "precision"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B088",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Precision",
+    "text": "Numerical precision suggests greater accuracy than the data justify.",
+    "tags": [
+      "precision"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B089",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Precision",
+    "text": "Rounding conventions are consistent and explained where they affect the results.",
+    "tags": [
+      "precision"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B090",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Precision",
+    "text": "Changes in rounding or precision are made without explanation.",
+    "tags": [
+      "precision"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B091",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Explanation",
+    "text": "The meaning of important equations and mathematical quantities is clear to a reader on the same course.",
+    "tags": [
+      "explanation"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B092",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Explanation",
+    "text": "Mathematical symbols and quantities are not explained sufficiently for a reader on the same course.",
+    "tags": [
+      "explanation"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B093",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Explanation",
+    "text": "Mathematical steps are presented symbolically when a verbal description alone would be unclear.",
+    "tags": [
+      "explanation"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B094",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Explanation",
+    "text": "Important transformations are only described in words, leaving the actual mathematics obscure.",
+    "tags": [
+      "explanation"
+    ],
+    "sourcePages": [
+      6
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B095",
+    "criterion": "B",
+    "tone": "strength",
+    "topic": "Explanation",
+    "text": "Technology results are communicated in a mathematical format that supports understanding.",
+    "tags": [
+      "technology"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "B096",
+    "criterion": "B",
+    "tone": "limitation",
+    "topic": "Explanation",
+    "text": "Unedited technology screenshots substitute for clear mathematical presentation.",
+    "tags": [
+      "technology"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C097",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Ownership",
+    "text": "The student makes independent mathematical decisions that shape the investigation.",
+    "tags": [
+      "decisions"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C098",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Ownership",
+    "text": "The exploration gives little evidence of mathematical decisions made by the student.",
+    "tags": [
+      "decisions"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C099",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Ownership",
+    "text": "The investigation develops from a question or conjecture formulated by the student.",
+    "tags": [
+      "inquiry"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C100",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Ownership",
+    "text": "The mathematical direction appears prescribed rather than arising from a question explored by the student.",
+    "tags": [
+      "inquiry"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C101",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Ownership",
+    "text": "The student explains why a particular method was selected from reasonable alternatives.",
+    "tags": [
+      "decisions"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C102",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Ownership",
+    "text": "Methods are applied without evidence of a considered choice between approaches.",
+    "tags": [
+      "decisions"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C103",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Ownership",
+    "text": "The mathematics is adapted to the particular investigation rather than reproduced mechanically.",
+    "tags": [
+      "adaptation"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C104",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Ownership",
+    "text": "Established methods are followed mechanically without meaningful adaptation.",
+    "tags": [
+      "adaptation"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C105",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Ownership",
+    "text": "The student's mathematical reasoning is visible within the development of the argument.",
+    "tags": [
+      "ownership"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C106",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Ownership",
+    "text": "The exploration reads largely as a reproduction of external procedures rather than the student's own reasoning.",
+    "tags": [
+      "ownership"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C107",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Ownership",
+    "text": "The student's own decisions influence how the investigation proceeds after results are obtained.",
+    "tags": [
+      "ownership"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C108",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Ownership",
+    "text": "The exploration follows a fixed procedure even when its results suggest another direction.",
+    "tags": [
+      "ownership"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C109",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Ownership",
+    "text": "The student demonstrates engagement with mathematical ideas rather than merely expressing enthusiasm for the topic.",
+    "tags": [
+      "engagement"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C110",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Ownership",
+    "text": "Personal motivation is presented at length but is not developed into mathematical engagement.",
+    "tags": [
+      "engagement"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C111",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Ownership",
+    "text": "Independent mathematical effort is supported by evidence of choices, reasoning and ownership.",
+    "tags": [
+      "engagement"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C112",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Ownership",
+    "text": "Effort or the apparent difficulty of the task is treated as the main evidence of personal engagement.",
+    "tags": [
+      "engagement"
+    ],
+    "sourcePages": [
+      7
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C113",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Exploration",
+    "text": "The student tests an original prediction or conjecture using mathematical evidence.",
+    "tags": [
+      "conjecture"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C114",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Exploration",
+    "text": "The exploration contains little evidence of predictions or conjectures being tested.",
+    "tags": [
+      "conjecture"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C115",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Exploration",
+    "text": "Unexpected findings are used to generate further mathematical questions.",
+    "tags": [
+      "inquiry"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C116",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Exploration",
+    "text": "Interesting results are reported but do not shape the next stage of the exploration.",
+    "tags": [
+      "inquiry"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C117",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Exploration",
+    "text": "Relevant special cases or extremes are investigated to deepen the mathematical inquiry.",
+    "tags": [
+      "extension"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C118",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Exploration",
+    "text": "The exploration makes no meaningful attempt to examine potentially revealing special cases.",
+    "tags": [
+      "extension"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C119",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Exploration",
+    "text": "The investigation extends or generalises mathematical findings where this is relevant.",
+    "tags": [
+      "extension"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C120",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Exploration",
+    "text": "Opportunities for a relevant mathematical extension are not explored.",
+    "tags": [
+      "extension"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C121",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Exploration",
+    "text": "Additional approaches are used because they reveal a genuinely different mathematical perspective.",
+    "tags": [
+      "alternatives"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C122",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Exploration",
+    "text": "Additional methods are included without a clear investigative reason.",
+    "tags": [
+      "alternatives"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C123",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Exploration",
+    "text": "The investigation is modified in response to mathematical evidence and findings.",
+    "tags": [
+      "adaptation"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C124",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Exploration",
+    "text": "The approach remains unchanged despite results that call its suitability into question.",
+    "tags": [
+      "adaptation"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C125",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Exploration",
+    "text": "A familiar topic is made personal through substantial mathematical decisions.",
+    "tags": [
+      "ownership"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C126",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Exploration",
+    "text": "The topic is familiar and the exploration adds little independent mathematical development.",
+    "tags": [
+      "ownership"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C127",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Exploration",
+    "text": "A student-developed approach makes the investigation more than a standard textbook exercise.",
+    "tags": [
+      "ownership"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C128",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Exploration",
+    "text": "A standard worked example is reproduced with only superficial contextual changes.",
+    "tags": [
+      "ownership"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C129",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Data and context",
+    "text": "The choice of primary or secondary data supports an independent mathematical investigation.",
+    "tags": [
+      "data"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C130",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Data and context",
+    "text": "The source of the data does not contribute to any clear independent mathematical decisions.",
+    "tags": [
+      "data"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C131",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Data and context",
+    "text": "The student justifies choices in the design of the data collection or experiment.",
+    "tags": [
+      "data"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C132",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Data and context",
+    "text": "The design of the experiment or data collection is not explained as a set of mathematical choices.",
+    "tags": [
+      "data"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C133",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Data and context",
+    "text": "The analysis shows how newly collected data influences subsequent choices.",
+    "tags": [
+      "data"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C134",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Data and context",
+    "text": "Primary data is presented as evidence of engagement without showing how it shaped the mathematics.",
+    "tags": [
+      "data"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C135",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Data and context",
+    "text": "Secondary data is used independently and creatively to investigate a personally chosen question.",
+    "tags": [
+      "data"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C136",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Data and context",
+    "text": "Secondary data is processed through a standard sequence with little independent interpretation.",
+    "tags": [
+      "data"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C137",
+    "criterion": "C",
+    "tone": "strength",
+    "topic": "Data and context",
+    "text": "New mathematical techniques are explained and used purposefully in the student's investigation.",
+    "tags": [
+      "advanced"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "C138",
+    "criterion": "C",
+    "tone": "limitation",
+    "topic": "Data and context",
+    "text": "Advanced techniques are reproduced without evidence that the student has taken ownership of the mathematics.",
+    "tags": [
+      "advanced"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D139",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Ongoing reflection",
+    "text": "Reflection appears at meaningful points throughout the mathematical development.",
+    "tags": [
+      "ongoing"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D140",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Ongoing reflection",
+    "text": "Almost all reflection is confined to a short section at the end.",
+    "tags": [
+      "ongoing"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D141",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Ongoing reflection",
+    "text": "Important results are interpreted in terms of the original aim.",
+    "tags": [
+      "interpretation"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D142",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Ongoing reflection",
+    "text": "Results are reported without exploring what they mean for the investigation's aim.",
+    "tags": [
+      "interpretation"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D143",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Ongoing reflection",
+    "text": "The student distinguishes the numerical result from its mathematical significance.",
+    "tags": [
+      "interpretation"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D144",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Ongoing reflection",
+    "text": "Numerical findings are restated and treated as reflection without substantive interpretation.",
+    "tags": [
+      "interpretation"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D145",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Ongoing reflection",
+    "text": "The exploration distinguishes what the evidence establishes from what remains uncertain.",
+    "tags": [
+      "evaluation"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D146",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Ongoing reflection",
+    "text": "The significance of the results is overstated beyond what the mathematics establishes.",
+    "tags": [
+      "evaluation"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D147",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Ongoing reflection",
+    "text": "The plausibility of mathematical conclusions is evaluated in context.",
+    "tags": [
+      "evaluation"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D148",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Ongoing reflection",
+    "text": "Implausible results are accepted without mathematical scrutiny.",
+    "tags": [
+      "evaluation"
+    ],
+    "sourcePages": [
+      8
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D149",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Ongoing reflection",
+    "text": "Unexpected results are investigated rather than merely noted.",
+    "tags": [
+      "evaluation"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D150",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Ongoing reflection",
+    "text": "Unexpected findings are acknowledged but their possible mathematical causes are not examined.",
+    "tags": [
+      "evaluation"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D151",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Ongoing reflection",
+    "text": "The suitability of the chosen method is critically evaluated using mathematical evidence.",
+    "tags": [
+      "methods"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D152",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Ongoing reflection",
+    "text": "The method's suitability is assumed rather than evaluated.",
+    "tags": [
+      "methods"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D153",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Ongoing reflection",
+    "text": "The mathematical strengths and weaknesses of the chosen approach are identified.",
+    "tags": [
+      "methods"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D154",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Ongoing reflection",
+    "text": "Reflection consists largely of general observations unrelated to the method used.",
+    "tags": [
+      "methods"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D155",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Ongoing reflection",
+    "text": "The exploration uses reflection to motivate a justified change of method.",
+    "tags": [
+      "development"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D156",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Ongoing reflection",
+    "text": "Limitations are identified but do not inform the subsequent investigation.",
+    "tags": [
+      "development"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D157",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Ongoing reflection",
+    "text": "A method that fails is analysed to understand the mathematical reason for the outcome.",
+    "tags": [
+      "development"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D158",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Ongoing reflection",
+    "text": "An unsuccessful method is abandoned without investigating why it failed.",
+    "tags": [
+      "development"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D159",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Assumptions",
+    "text": "Important model assumptions are clearly stated and evaluated.",
+    "tags": [
+      "assumptions"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D160",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Assumptions",
+    "text": "The assumptions needed for the model are not explicitly considered.",
+    "tags": [
+      "assumptions"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D161",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Assumptions",
+    "text": "The reasonableness of assumptions is discussed in the context of the particular problem.",
+    "tags": [
+      "assumptions"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D162",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Assumptions",
+    "text": "Model assumptions are listed without examining whether they are realistic.",
+    "tags": [
+      "assumptions"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D163",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Assumptions",
+    "text": "The consequences of changing an important assumption are investigated.",
+    "tags": [
+      "sensitivity"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D164",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Assumptions",
+    "text": "The exploration does not consider whether its conclusions depend strongly on key assumptions.",
+    "tags": [
+      "sensitivity"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D165",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Assumptions",
+    "text": "The analysis distinguishes reliable conclusions from those affected by uncertainty.",
+    "tags": [
+      "reliability"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D166",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Assumptions",
+    "text": "Correct calculations are treated as sufficient evidence that the conclusions are reliable.",
+    "tags": [
+      "reliability"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D167",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Assumptions",
+    "text": "Measurement uncertainty or the quality of input data is connected to the reliability of the results.",
+    "tags": [
+      "uncertainty"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D168",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Assumptions",
+    "text": "The effect of data accuracy or measurement uncertainty is not examined.",
+    "tags": [
+      "uncertainty"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D169",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Assumptions",
+    "text": "Important limitations are assessed for their actual effect on the outcome.",
+    "tags": [
+      "limitations"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D170",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Assumptions",
+    "text": "A list of generic limitations is provided without establishing their significance.",
+    "tags": [
+      "limitations"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D171",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Assumptions",
+    "text": "Improvements are supported by a clear mathematical reason why they could affect the outcome.",
+    "tags": [
+      "improvements"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D172",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Assumptions",
+    "text": "Suggested improvements are vague and their mathematical benefit is not established.",
+    "tags": [
+      "improvements"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D173",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Assumptions",
+    "text": "The exploration considers how rounding or numerical approximation may affect the conclusion.",
+    "tags": [
+      "precision"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D174",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Assumptions",
+    "text": "Potentially important rounding or approximation errors are not considered.",
+    "tags": [
+      "precision"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D175",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Data and modelling",
+    "text": "The consequences of sample size and sampling bias are evaluated where relevant.",
+    "tags": [
+      "statistics"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D176",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Data and modelling",
+    "text": "The reliability of conclusions is discussed without addressing a potentially biased or small sample.",
+    "tags": [
+      "statistics"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D177",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Data and modelling",
+    "text": "Unusual data values are investigated for their effect on mathematical conclusions.",
+    "tags": [
+      "statistics"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D178",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Data and modelling",
+    "text": "Potentially influential outliers are ignored or excluded without evaluation.",
+    "tags": [
+      "statistics"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D179",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Data and modelling",
+    "text": "The fit and limitations of the chosen model are considered in its intended domain.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D180",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Data and modelling",
+    "text": "The fitted model is treated as valid without considering domain restrictions or mathematical behaviour.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D181",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Data and modelling",
+    "text": "Predictions are assessed against the limitations of the model and available data.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D182",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Data and modelling",
+    "text": "Model predictions are reported without assessing their reliability.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D183",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Data and modelling",
+    "text": "Sensitivity to important parameters or inputs is considered where it affects conclusions.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D184",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Data and modelling",
+    "text": "The exploration does not examine how sensitive its findings are to key parameter choices.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D185",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Data and modelling",
+    "text": "The basis for comparing two mathematical approaches is explained and evaluated.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D186",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Data and modelling",
+    "text": "Alternative approaches are compared superficially without a meaningful mathematical basis.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D187",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Data and modelling",
+    "text": "For piecewise models, the mathematical significance of continuity or smoothness is considered.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D188",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Data and modelling",
+    "text": "The implications of joins in a piecewise model are overlooked.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      9
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D189",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Final evaluation",
+    "text": "The conclusion evaluates how successfully the original aim was addressed.",
+    "tags": [
+      "conclusion"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D190",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Final evaluation",
+    "text": "The conclusion does not assess whether the investigation actually answered its original aim.",
+    "tags": [
+      "conclusion"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D191",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Final evaluation",
+    "text": "The remaining uncertainty and scope of the conclusions are made clear.",
+    "tags": [
+      "conclusion"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D192",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Final evaluation",
+    "text": "The final conclusion is presented with unwarranted certainty.",
+    "tags": [
+      "conclusion"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D193",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Final evaluation",
+    "text": "Proposed further investigations follow logically from the mathematical findings.",
+    "tags": [
+      "extension"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D194",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Final evaluation",
+    "text": "Extensions are listed without explaining how they arise from the results.",
+    "tags": [
+      "extension"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D195",
+    "criterion": "D",
+    "tone": "strength",
+    "topic": "Final evaluation",
+    "text": "In a pure mathematical exploration, reflection addresses mathematical obstacles and choices.",
+    "tags": [
+      "pure"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "D196",
+    "criterion": "D",
+    "tone": "limitation",
+    "topic": "Final evaluation",
+    "text": "A pure mathematics exploration offers little evaluation of the mathematical decisions and challenges encountered.",
+    "tags": [
+      "pure"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E197",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Relevance and level",
+    "text": "The chosen mathematics directly advances the stated investigative aim.",
+    "tags": [
+      "relevance"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E198",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Relevance and level",
+    "text": "Some mathematical techniques add little to the investigation's aim.",
+    "tags": [
+      "relevance"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E199",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Relevance and level",
+    "text": "The mathematics is appropriate to the level and nature of the course.",
+    "tags": [
+      "course"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E200",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Relevance and level",
+    "text": "The exploration relies mainly on mathematics too elementary for the course level.",
+    "tags": [
+      "course"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E201",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Relevance and level",
+    "text": "The investigation prioritises well-understood mathematics over unnecessary complexity.",
+    "tags": [
+      "relevance"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E202",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Relevance and level",
+    "text": "Advanced techniques are included without a convincing mathematical purpose.",
+    "tags": [
+      "relevance"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E203",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Relevance and level",
+    "text": "The mathematical process involves reasoning rather than repeated formula substitution.",
+    "tags": [
+      "reasoning"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E204",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Relevance and level",
+    "text": "Much of the work consists of substituting into formulas without investigating underlying relationships.",
+    "tags": [
+      "reasoning"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E205",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Relevance and level",
+    "text": "The mathematical content remains central despite an interdisciplinary setting.",
+    "tags": [
+      "relevance"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E206",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Relevance and level",
+    "text": "Explanations from another subject dominate the actual mathematics.",
+    "tags": [
+      "relevance"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E207",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Relevance and level",
+    "text": "The chosen approach is an efficient and appropriate way to answer the question.",
+    "tags": [
+      "relevance"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E208",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Relevance and level",
+    "text": "A complicated method is selected despite a simpler equally informative approach.",
+    "tags": [
+      "relevance"
+    ],
+    "sourcePages": [
+      10
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E209",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Understanding",
+    "text": "The student explains why the selected mathematical method is appropriate.",
+    "tags": [
+      "understanding"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E210",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Understanding",
+    "text": "The method is applied without showing why it is appropriate for this problem.",
+    "tags": [
+      "understanding"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E211",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Understanding",
+    "text": "The underlying mathematics is explained rather than represented only by numerical answers.",
+    "tags": [
+      "understanding"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E212",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Understanding",
+    "text": "Correct numerical outputs are presented without enough evidence of conceptual understanding.",
+    "tags": [
+      "understanding"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E213",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Understanding",
+    "text": "Parameters and coefficients are interpreted meaningfully in context.",
+    "tags": [
+      "parameters"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E214",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Understanding",
+    "text": "Model parameters are calculated but their meanings are not explained.",
+    "tags": [
+      "parameters"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E215",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Understanding",
+    "text": "The conditions required for a mathematical procedure are explained and addressed.",
+    "tags": [
+      "conditions"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E216",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Understanding",
+    "text": "An important mathematical condition is assumed or overlooked.",
+    "tags": [
+      "conditions"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E217",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Understanding",
+    "text": "Calculations are connected to the relationships being investigated.",
+    "tags": [
+      "reasoning"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E218",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Understanding",
+    "text": "Symbolic manipulations are shown without an explanation of what they establish.",
+    "tags": [
+      "reasoning"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E219",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Understanding",
+    "text": "Mathematical reasoning is sufficiently self-contained for the intended reader.",
+    "tags": [
+      "explanation"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E220",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Understanding",
+    "text": "The explanation depends too heavily on outside sources to make the mathematical reasoning understandable.",
+    "tags": [
+      "explanation"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E221",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Understanding",
+    "text": "Essential unfamiliar techniques are introduced with an explanation of their mathematical basis.",
+    "tags": [
+      "advanced"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E222",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Understanding",
+    "text": "Unfamiliar advanced formulae are used with little explanation of how or why they work.",
+    "tags": [
+      "advanced"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E223",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Understanding",
+    "text": "Representative worked steps or verification demonstrate genuine understanding of the method.",
+    "tags": [
+      "working"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E224",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Understanding",
+    "text": "The exploration does not provide sufficient representative working to establish understanding.",
+    "tags": [
+      "working"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E225",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Understanding",
+    "text": "Established methods are developed or adapted rather than simply reproduced from another source.",
+    "tags": [
+      "originality"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E226",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Understanding",
+    "text": "A substantial section reproduces known mathematics without independent development.",
+    "tags": [
+      "originality"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E227",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Accuracy",
+    "text": "Mathematical operations and results are accurate enough to sustain the conclusions.",
+    "tags": [
+      "accuracy"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E228",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Accuracy",
+    "text": "Errors in the mathematics compromise important subsequent results.",
+    "tags": [
+      "accuracy"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E229",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Accuracy",
+    "text": "Technology-generated results are checked for plausibility before being used.",
+    "tags": [
+      "technology"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E230",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Accuracy",
+    "text": "Technology-generated outputs are accepted without checking their mathematical plausibility.",
+    "tags": [
+      "technology"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E231",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Technology",
+    "text": "Technology is used efficiently for routine computation so that attention remains on the mathematics.",
+    "tags": [
+      "technology"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E232",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Technology",
+    "text": "Lengthy routine calculations crowd out analysis that could have been supported by technology.",
+    "tags": [
+      "technology"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E233",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Technology",
+    "text": "The mathematical meaning of technology outputs is clearly explained.",
+    "tags": [
+      "technology"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E234",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Technology",
+    "text": "Technology outputs are copied into the report without interpreting their significance.",
+    "tags": [
+      "technology"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E235",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Technology",
+    "text": "Simulations and coding are connected to the mathematical assumptions and results.",
+    "tags": [
+      "simulation"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E236",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Technology",
+    "text": "The technical process of coding or simulation replaces the mathematical explanation.",
+    "tags": [
+      "simulation"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E237",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Data and statistics",
+    "text": "The population, sampling unit and selection method are explained sufficiently for the analysis.",
+    "tags": [
+      "statistics",
+      "data"
+    ],
+    "sourcePages": [
+      12
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E238",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Data and statistics",
+    "text": "The sampling process is not described sufficiently to judge its suitability.",
+    "tags": [
+      "statistics",
+      "data"
+    ],
+    "sourcePages": [
+      12
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E239",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Data and statistics",
+    "text": "The selected sampling approach is justified in relation to the aim.",
+    "tags": [
+      "statistics",
+      "data"
+    ],
+    "sourcePages": [
+      12
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E240",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Data and statistics",
+    "text": "The choice of sampling technique is not justified in relation to the investigation.",
+    "tags": [
+      "statistics",
+      "data"
+    ],
+    "sourcePages": [
+      12
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E241",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Data and statistics",
+    "text": "The sample size and representativeness are considered appropriately.",
+    "tags": [
+      "statistics",
+      "data"
+    ],
+    "sourcePages": [
+      12
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E242",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Data and statistics",
+    "text": "A sample is treated as representative without mathematical or methodological justification.",
+    "tags": [
+      "statistics",
+      "data"
+    ],
+    "sourcePages": [
+      12
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E243",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Data and statistics",
+    "text": "The data are explored graphically before a correlation or regression model is chosen.",
+    "tags": [
+      "regression",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E244",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Data and statistics",
+    "text": "A regression model is fitted without first examining the shape and spread of the data.",
+    "tags": [
+      "regression",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E245",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Data and statistics",
+    "text": "The interpretation of correlation is correct and distinguishes association from causation.",
+    "tags": [
+      "regression",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E246",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Data and statistics",
+    "text": "Correlation is incorrectly used as evidence of a causal relationship.",
+    "tags": [
+      "regression",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E247",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Data and statistics",
+    "text": "The chosen correlation coefficient is appropriate to the data and investigated relationship.",
+    "tags": [
+      "regression",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E248",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Data and statistics",
+    "text": "The choice between correlation measures is not justified by the data.",
+    "tags": [
+      "regression",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E249",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Data and statistics",
+    "text": "The meaning of the fitted model or correlation statistic is explained in context.",
+    "tags": [
+      "regression",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E250",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Data and statistics",
+    "text": "A correlation or regression statistic is given without an adequate contextual interpretation.",
+    "tags": [
+      "regression",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E251",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Hypothesis testing",
+    "text": "The chosen hypothesis test addresses a specific question arising from the aim.",
+    "tags": [
+      "hypothesis",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E252",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Hypothesis testing",
+    "text": "Statistical testing is included without a clear connection to the investigation's aim.",
+    "tags": [
+      "hypothesis",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E253",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Hypothesis testing",
+    "text": "The assumptions and conditions of the hypothesis test are identified and considered.",
+    "tags": [
+      "hypothesis",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E254",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Hypothesis testing",
+    "text": "The validity conditions for the selected statistical test are not checked.",
+    "tags": [
+      "hypothesis",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E255",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Hypothesis testing",
+    "text": "The hypotheses, test statistic and result are communicated in mathematically appropriate form.",
+    "tags": [
+      "hypothesis",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E256",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Hypothesis testing",
+    "text": "The hypotheses or test result are presented incorrectly or ambiguously.",
+    "tags": [
+      "hypothesis",
+      "statistics"
+    ],
+    "sourcePages": [
+      13
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E257",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Hypothesis testing",
+    "text": "Statistical conclusions are interpreted accurately without overstating the evidence.",
+    "tags": [
+      "hypothesis",
+      "statistics"
+    ],
+    "sourcePages": [
+      14
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E258",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Hypothesis testing",
+    "text": "The test conclusion overstates what the p-value or significance result establishes.",
+    "tags": [
+      "hypothesis",
+      "statistics"
+    ],
+    "sourcePages": [
+      14
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E259",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Hypothesis testing",
+    "text": "Expected frequencies and degrees of freedom are checked before relying on a chi-squared test.",
+    "tags": [
+      "chi-squared",
+      "statistics"
+    ],
+    "sourcePages": [
+      14
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E260",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Hypothesis testing",
+    "text": "A chi-squared test is used without checking expected frequencies or degrees of freedom.",
+    "tags": [
+      "chi-squared",
+      "statistics"
+    ],
+    "sourcePages": [
+      14
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E261",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Hypothesis testing",
+    "text": "Category grouping or corrections are justified by the actual requirements of the test.",
+    "tags": [
+      "chi-squared",
+      "statistics"
+    ],
+    "sourcePages": [
+      14
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E262",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Hypothesis testing",
+    "text": "Categories or continuity corrections are changed mechanically without justification.",
+    "tags": [
+      "chi-squared",
+      "statistics"
+    ],
+    "sourcePages": [
+      14
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E263",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Modelling",
+    "text": "Candidate model families are chosen for relevant mathematical and contextual reasons.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      14
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E264",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Modelling",
+    "text": "Candidate functions are selected mainly by trial and error without mathematical justification.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      14
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E265",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Modelling",
+    "text": "The interpretation of model parameters is linked to the situation being investigated.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E266",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Modelling",
+    "text": "Model parameters have no clear interpretation in the original context.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E267",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Modelling",
+    "text": "The fitted model is tested against data using suitable graphical or numerical evidence.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E268",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Modelling",
+    "text": "A fitted equation is accepted without assessing the quality of the fit.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E269",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Modelling",
+    "text": "The choice of model is supported by more than a single goodness-of-fit statistic.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E270",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Modelling",
+    "text": "The model is selected exclusively because of a high coefficient of determination.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E271",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Modelling",
+    "text": "Residuals or systematic differences are examined where appropriate.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E272",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Modelling",
+    "text": "Potential patterns in residuals are ignored when comparing models.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E273",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Modelling",
+    "text": "Model domain and range restrictions reflect the context being investigated.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E274",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Modelling",
+    "text": "The model is used outside a meaningful domain without mathematical justification.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E275",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Modelling",
+    "text": "Extrapolated predictions are distinguished from predictions within the observed data range.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E276",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Modelling",
+    "text": "Extrapolation is treated as reliable without considering behaviour beyond the available data.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E277",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Modelling",
+    "text": "Model refinements follow from mathematical limitations or evidence.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E278",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Modelling",
+    "text": "The final model is selected without addressing limitations identified during fitting.",
+    "tags": [
+      "modelling"
+    ],
+    "sourcePages": [
+      15
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E279",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Other methods",
+    "text": "An optimisation process is developed using mathematics appropriate to the problem.",
+    "tags": [
+      "calculus",
+      "optimisation"
+    ],
+    "sourcePages": [
+      16
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E280",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Other methods",
+    "text": "An optimisation problem is treated as a standard calculation without substantial investigation.",
+    "tags": [
+      "calculus",
+      "optimisation"
+    ],
+    "sourcePages": [
+      16
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E281",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Other methods",
+    "text": "A pure mathematics topic is investigated through reasoning or proof rather than historical description.",
+    "tags": [
+      "pure"
+    ],
+    "sourcePages": [
+      16
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E282",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Other methods",
+    "text": "The discussion of a pure topic is descriptive and lacks sufficient mathematical development.",
+    "tags": [
+      "pure"
+    ],
+    "sourcePages": [
+      16
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E283",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Other methods",
+    "text": "The mathematical assumptions of a probability or game model are established clearly.",
+    "tags": [
+      "probability"
+    ],
+    "sourcePages": [
+      16
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E284",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Other methods",
+    "text": "The model's probability rules or assumptions are insufficiently explained.",
+    "tags": [
+      "probability"
+    ],
+    "sourcePages": [
+      16
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E285",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Other methods",
+    "text": "Geometric construction and interpretation are explained, not merely generated by software.",
+    "tags": [
+      "geometry",
+      "voronoi"
+    ],
+    "sourcePages": [
+      16
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E286",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Other methods",
+    "text": "A geometric diagram is generated by software without adequate mathematical interpretation.",
+    "tags": [
+      "geometry",
+      "voronoi"
+    ],
+    "sourcePages": [
+      16
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E287",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Other methods",
+    "text": "The simulation's mathematical assumptions and output are linked coherently.",
+    "tags": [
+      "simulation"
+    ],
+    "sourcePages": [
+      16
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E288",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Other methods",
+    "text": "A simulation is presented mainly as code or procedure without mathematical interpretation.",
+    "tags": [
+      "simulation"
+    ],
+    "sourcePages": [
+      16
+    ],
+    "courses": [
+      "AA SL",
+      "AI SL",
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E289",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Higher level",
+    "text": "The application demonstrates depth or sophistication appropriate to an HL exploration.",
+    "tags": [
+      "hl"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E290",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Higher level",
+    "text": "The mathematical application does not demonstrate sufficient depth for an HL exploration.",
+    "tags": [
+      "hl"
+    ],
+    "sourcePages": [
+      4
+    ],
+    "courses": [
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E291",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Higher level",
+    "text": "Higher-level mathematical work is supported by accurate, clearly demonstrated reasoning.",
+    "tags": [
+      "hl"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E292",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Higher level",
+    "text": "The apparent sophistication of the method is not supported by demonstrated mathematical understanding.",
+    "tags": [
+      "hl"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E293",
+    "criterion": "E",
+    "tone": "strength",
+    "topic": "Higher level",
+    "text": "Advanced modelling is developed rigorously where necessary for the chosen aim.",
+    "tags": [
+      "hl",
+      "modelling"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  },
+  {
+    "id": "E294",
+    "criterion": "E",
+    "tone": "limitation",
+    "topic": "Higher level",
+    "text": "An advanced model is used without addressing important mathematical justification or conditions.",
+    "tags": [
+      "hl",
+      "modelling"
+    ],
+    "sourcePages": [
+      11
+    ],
+    "courses": [
+      "AA HL",
+      "AI HL"
+    ],
+    "origin": "Curated assessment-evidence wording based on 2021-2026 examiner feedback synthesis"
+  }
+]
