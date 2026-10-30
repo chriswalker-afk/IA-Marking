@@ -149,7 +149,13 @@ with tempfile.TemporaryDirectory() as folder:
         second_text=('The numerical limitation of the model is evaluated and its '
                      'consequences are explained in the conclusion. The notation '
                      'π ≤ √16, σ², ∑, ∫ and x² remains mathematical in the export.')
+        # Pass 2: a selected comment opens a dedicated editor instead of
+        # sharing its limited space with the entire search library.
+        expect(page.locator('#workspace')).to_have_attribute('data-bank-view','browse')
         page.locator('#commentList [data-comment-id]').first.click()
+        expect(page.locator('#workspace')).to_have_attribute('data-bank-view','edit')
+        expect(page.locator('#bankBrowseView')).to_be_hidden()
+        expect(page.locator('#selectionEditor')).to_be_visible()
         page.locator('#draftTextEdit').fill(first_text)
         page.locator('#stampLayer').click(position={'x': 120, 'y': 280})
         expect(page.locator('.onpage-stamp')).to_have_count(1)
@@ -219,6 +225,7 @@ with tempfile.TemporaryDirectory() as folder:
         assert 'Auto' in page.locator('#selectedStampHeightValue').inner_text()
         expect(page.locator('#annotationNotice')).to_be_hidden()
 
+        page.locator('#bankBrowseTab').click()
         page.locator('#commentList [data-comment-id]').nth(1).click()
         page.locator('#draftTextEdit').fill(second_text)
         page.locator('#stampLayer').click(position={'x': 350, 'y': 500})
@@ -338,6 +345,23 @@ with tempfile.TemporaryDirectory() as folder:
         # On a narrower display the same complete notes remain inside the PDF
         # page instead of being moved beneath it or to an external margin.
         page.set_viewport_size({'width': 430, 'height': 850})
+        # The PDF remains the primary surface on narrow screens: document
+        # and library are drawers rather than a long stack underneath it.
+        expect(page.locator('#workspace')).to_have_attribute('data-mobile-drawer','')
+        assert page.locator('#pdfCanvas').is_visible()
+        assert page.locator('#bankPane').is_hidden()
+        assert page.locator('#documentPane').is_hidden()
+        page.locator('#toggleCommentPane').click()
+        expect(page.locator('#workspace')).to_have_attribute('data-mobile-drawer','comments')
+        expect(page.locator('#bankPane')).to_be_visible()
+        expect(page.locator('#workspaceBackdrop')).to_be_visible()
+        page.locator('#closeBankPane').click()
+        expect(page.locator('#workspaceBackdrop')).to_be_hidden()
+        expect(page.locator('#bankPane')).to_be_hidden()
+        page.locator('#toggleDocumentPane').click()
+        expect(page.locator('#documentPane')).to_be_visible()
+        page.locator('#workspaceBackdrop').click(position={'x':2,'y':240})
+        expect(page.locator('#documentPane')).to_be_hidden()
         expect(page.locator('.onpage-stamp')).to_have_count(2)
         assert ' '.join(page.locator('.onpage-stamp').first.inner_text().split()).endswith(revised_text)
         mobile_page=page.locator('#pdfCanvas').bounding_box()
@@ -362,6 +386,7 @@ with tempfile.TemporaryDirectory() as folder:
         # Favourites persist outside the PDF project and can be chosen while
         # viewing the actual PDF. Recently used is based on placed stamps.
         page.set_viewport_size({'width':1450,'height':930})
+        page.locator('#bankBrowseTab').click()
         favourite=page.locator('#commentList [data-favourite-comment]').first.get_attribute('data-favourite-comment')
         page.locator('#commentList [data-favourite-comment]').first.click()
         page.locator('[data-bank-quick="favorites"]').click()
@@ -394,6 +419,7 @@ with tempfile.TemporaryDirectory() as folder:
         expect(page.locator('#allPinCount')).to_have_text('4')
 
         # Recent comments and a duplicate can be prepared without searching.
+        page.locator('#bankBrowseTab').click()
         page.locator('[data-bank-quick="recent"]').click()
         assert page.locator('#commentList [data-comment-id="'+favourite+'"]').count()==1
         page.locator('#repeatStamp').click()
@@ -475,6 +501,18 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#openReview').click()
         expect(page.locator('#exportAnnotated')).to_be_disabled()
         page.locator('#closeReview').click()
+        # Focus is reversible and never clears placed stamps or edits.
+        page.locator('#focusPdf').click()
+        expect(page.locator('#focusPdf')).to_have_attribute('aria-pressed','true')
+        assert page.locator('#bankPane').is_hidden()
+        assert page.locator('#documentPane').is_hidden()
+        expect(page.locator('#allPinCount')).to_have_text('4')
+        page.locator('#focusPdf').click()
+        expect(page.locator('#focusPdf')).to_have_attribute('aria-pressed','false')
+        expect(page.locator('#bankPane')).to_be_visible()
+        # A clean reusable editor is one click from any selected PDF stamp.
+        page.locator('#toggleEditorPane').click()
+        expect(page.locator('#workspace')).to_have_attribute('data-bank-view','edit')
         page.screenshot(path=str(ROOT/'qa-pass8-desktop-quick-tools.png'),full_page=True)
 
         # Pass 9: the project vault preserves multiple original PDFs without
@@ -688,6 +726,8 @@ with tempfile.TemporaryDirectory() as folder:
         expect(feedback_page.locator('#feedbackMode')).to_have_attribute('aria-pressed','true')
         assert feedback_page.locator('.score-strip').is_hidden()
         assert 'feedback library' in feedback_page.locator('#referenceLibraryLink').inner_text()
+        # Mobile drawing and desktop focus use the same feedback bank.
+        expect(feedback_page.locator('#bankBrowseTab')).to_have_attribute('aria-selected','true')
         assert feedback_page.locator('#independentLibraryLink').get_attribute('href')=='library.html?mode=feedback'
         assert feedback_page.locator('#toneLimitationLabel').inner_text()=='Improvements'
         assert feedback_page.locator('#legendLimitationLabel').inner_text()=='Improvement'
@@ -707,9 +747,11 @@ with tempfile.TemporaryDirectory() as folder:
         expect(feedback_page.locator('#allPinCount')).to_have_text('1')
         feedback_page.locator('#nextPage').click()
         expect(feedback_page.locator('#pageNumber')).to_have_value('2')
+        feedback_page.locator('#bankBrowseTab').click()
         feedback_page.locator('#commentList [data-comment-id="F021"]').click()
         feedback_page.locator('#draftTextEdit').fill('Check your graph scales and label both quantities with their units.')
         feedback_page.locator('#stampLayer').click(position={'x':120,'y':320})
+        feedback_page.locator('#bankBrowseTab').click()
         feedback_page.locator('#commentList [data-comment-id="F001"]').click()
         feedback_page.locator('#stampLayer').click(position={'x':350,'y':520})
         expect(feedback_page.locator('#allPinCount')).to_have_text('3')
