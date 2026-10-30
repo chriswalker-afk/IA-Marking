@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' blob:; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' blob:; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-src blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>IA Marking Desk | Mathematics</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -45,6 +45,12 @@
 
     <div id="frameworkNotice" class="framework-notice" role="status">A-E assessment framework (final assessment November 2028). The new May 2029 criteria are not supported by this version.</div>
 
+    <nav class="reference-bar" aria-label="Teacher reference tools">
+      <a class="btn subtle reference-link" href="library.html">Browse all 294 stamp comments <span aria-hidden="true">↗</span></a>
+      <button class="btn subtle" id="openCriteria" type="button">View IB criteria &amp; assign marks</button>
+      <span class="reference-help">Reference tools work without uploading an IA.</span>
+    </nav>
+
     <main class="workspace">
       <aside class="document-pane" aria-label="Document and annotations">
         <div class="pane-heading"><div><span class="eyebrow">01 / SOURCE</span><h2>Document</h2></div><span class="pane-help" title="Use a final submitted PDF. Files never leave the browser.">?</span></div>
@@ -55,6 +61,7 @@
           <span class="upload-action">Choose PDF</span>
         </label>
         <input id="pdfInput" class="sr-only" type="file" accept=".pdf,application/pdf">
+        <p id="pdfLibraryStatus" class="pdf-error hidden" role="alert"></p>
         <button id="resumeLast" class="btn subtle hidden" type="button">Resume browser draft</button>
         <div id="documentMeta" class="document-meta hidden"><div class="doc-symbol">PDF</div><div class="doc-info"><strong id="documentName"></strong><small id="documentDetails"></small></div><button class="tiny-icon" id="replacePdf" type="button" title="Choose a different PDF">&#8635;</button></div>
         <div class="pane-divider"></div>
@@ -104,7 +111,7 @@
         <div class="criterion-tabs" id="criterionTabs" role="group" aria-label="Filter comments by criterion"></div>
         <div class="bank-filters"><input id="commentSearch" type="search" placeholder="Search comments or topics..." aria-label="Search the comment bank"><div class="tone-toggle" role="group" aria-label="Filter strengths and limitations"><button class="tone-btn active" data-tone="all" type="button">All</button><button class="tone-btn" data-tone="strength" type="button">Strengths</button><button class="tone-btn" data-tone="limitation" type="button">Limitations</button></div></div>
         <div class="bank-list-heading"><strong id="bankFilteredCount">Comments</strong><button id="newCustom" class="link-button" type="button">+ Write my own</button></div>
-        <button id="openLibrary" class="library-open-button" type="button"><span>Browse the full comment library</span><span>View, edit &amp; copy all &#8599;</span></button>
+        <button id="openLibrary" class="library-open-button" type="button"><span>Browse the full comment library</span><span>View, edit &amp; copy all &#8599;</span></button><a class="library-independent-link" href="library.html">Open independent library page (works without PDF) ↗</a>
         <div class="comment-list" id="commentList"></div>
         <div class="selection-editor" id="selectionEditor"><div class="selection-empty"><span class="small-ring">A</span><span>Choose a comment to prepare a stamp.</span></div></div>
         <div class="bank-caption">Curated from the supplied 2021-2026 examiner-feedback synthesis. These are prompts, not IB descriptors or automatic marks.</div>
@@ -120,6 +127,28 @@
     <div class="library-modal-footer"><span>Edits to library entries affect future stamps, not evidence already stamped on an IA.</span><button id="libraryCloseBottom" type="button" class="btn subtle">Done</button></div>
   </dialog>
 
+  <dialog id="criteriaDialog" class="modal criteria-modal" aria-labelledby="criteriaTitle">
+    <div class="criteria-modal-header">
+      <div><span class="eyebrow">OFFICIAL CRITERIA REFERENCE / TEACHER MARKING</span><h2 id="criteriaTitle">IB Mathematics IA criteria</h2><p>Choose a mark for each criterion. Open the full official descriptors in the relevant IB subject guide; the brief guidance shown here is not an official rubric.</p></div>
+      <button id="closeCriteria" class="icon-button" type="button" aria-label="Close criteria">✕</button>
+    </div>
+    <div class="criteria-modal-body">
+      <div class="criteria-source">
+        <div><strong>Full official assessment descriptors</strong><p>Use the IB guide for your selected course and assessment session. Criterion E differs between standard and higher level.</p></div>
+        <a id="criteriaGuideLink" class="btn primary" href="https://www.ibo.org/" rel="noopener noreferrer" target="_blank">Open official IB guide PDF ↗</a>
+        <label class="criteria-upload-label">Or view your authorised guide PDF here: <input id="criteriaGuideInput" type="file" accept=".pdf,application/pdf"></label>
+        <div id="criteriaGuidePreview" class="criteria-guide-preview hidden">
+          <a id="criteriaGuideLocalLink" rel="noopener noreferrer" target="_blank">Open uploaded guide in a separate tab</a>
+          <iframe id="criteriaGuideFrame" title="Teacher's locally uploaded official assessment guide" loading="lazy"></iframe>
+          <button id="removeCriteriaGuide" type="button" class="btn subtle">Close PDF preview</button>
+        </div>
+      </div>
+      <div id="criteriaCards" class="criteria-cards" aria-live="polite"></div>
+      <p class="criteria-disclaimer">Marks are teacher-assigned, not calculated from the number of annotations. The criteria references are for assessment through November 2028; consult the revised 2029 guide for later sessions.</p>
+    </div>
+    <div class="criteria-modal-footer"><span id="criteriaTotal">Total: -- / 20</span><button type="button" id="criteriaDone" class="btn primary">Done</button></div>
+  </dialog>
+
   <dialog id="customDialog" class="modal custom-modal" aria-labelledby="customTitle">
     <form method="dialog" id="customForm">
       <div class="modal-heading"><div><span class="eyebrow">PERSONAL COMMENT</span><h2 id="customTitle">Add an evidence comment</h2></div><button class="icon-button" value="cancel" type="submit" aria-label="Close dialog">&#10005;</button></div>
@@ -133,7 +162,7 @@
 
   <dialog id="reviewDialog" class="modal review-modal" aria-labelledby="reviewTitle">
     <div class="review-header"><div><span class="eyebrow">MARKING RECORD</span><h2 id="reviewTitle">Review &amp; export</h2><p>Capture criterion-specific reasons for the awarded marks. A stamp count never determines a score.</p></div><button id="closeReview" class="icon-button" type="button" aria-label="Close review">&#10005;</button></div>
-    <div class="review-body"><div id="reviewStatus" class="review-status"></div><div id="reviewScores" class="review-scores"></div><div class="review-note"><strong>Before IB submission</strong><p>Check the current official descriptors and your school procedures. Inspect the exported file, verify anonymity and readable mathematical content, and confirm that comments match the marks awarded.</p></div></div>
+    <div class="review-body"><div id="reviewStatus" class="review-status"></div><div id="reviewScores" class="review-scores"></div><div class="review-note"><strong>Before IB submission</strong><p>Check the current official descriptors and your school procedures. Inspect the exported file, verify anonymity and readable mathematical content, and confirm that comments match the marks awarded.</p><button id="reviewOpenCriteria" type="button" class="btn subtle">View full IB criteria and marks</button></div></div>
     <div class="review-footer"><button id="exportProject" class="btn subtle" type="button">Save editable project</button><button id="exportAnnotated" class="btn primary" type="button">Export annotated PDF <span aria-hidden="true">&#8595;</span></button></div>
   </dialog>
 
