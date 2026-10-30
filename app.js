@@ -1114,6 +1114,7 @@ let pdfRendererLoad = null;
         persistedRevision=Math.max(persistedRevision,revision);
         activeSavedAt=saved.savedAt;
         updateLocalSaveStatus();
+        if(!storageError)$('projectsStorageWarning').classList.add('hidden');
       }
       if($('projectsDialog').open)await refreshProjectDashboard();
       return true;
@@ -1189,7 +1190,7 @@ let pdfRendererLoad = null;
         +(current?'<span class="project-current-pill">Currently open</span>':'')+'</div>'
         +'<div class="project-card-details"><span>'+escapeHtml(row.course)+'</span>'
         +'<span>'+escapeHtml(row.session||'Session not set')+'</span>'
-        +'<span>'+row.pageCount+' pages</span><span>'+niceBytes(row.fileSize)+'</span>'
+        +'<span>'+(row.pageCount?row.pageCount+' pages':'Page count on open')+'</span><span>'+niceBytes(row.fileSize)+'</span>'
         +'<span>'+row.annotations+' evidence stamps</span></div>'
         +'<div class="project-progress-row"><span>'+row.markedCount+'/5 criterion marks</span>'
         +'<span class="project-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="'+row.markedCount+'" aria-label="Number of criterion marks recorded"><span style="width:'+progress+'%"></span></span>'
@@ -1214,6 +1215,8 @@ let pdfRendererLoad = null;
     }
   }
   async function openProjectsDashboard(){
+    $('projectsSearch').value='';
+    $('projectsCourse').value='all';
     if(!projectVault&&storageError){
       $('projectsStorageWarning').textContent='Local project storage is unavailable. You can still export the current editable .iamark.json backup.';
       $('projectsStorageWarning').classList.remove('hidden');
@@ -1400,7 +1403,9 @@ let pdfRendererLoad = null;
     updateLocalSaveStatus();
   }
   async function resetProject(){
-    if(!await preserveActiveProject())return;
+    if(!await preserveActiveProject()){
+      if(!confirm('Browser storage could not save this IA. If you have downloaded its confidential .iamark.json backup, you may discard the current unsaved PDF and start a blank project. Discard it?'))return;
+    }
     emptyMarkingWorkspace();
     await refreshProjectDashboard();
     toast('New blank IA ready. Previously marked explorations remain saved locally.');
