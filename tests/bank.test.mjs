@@ -53,7 +53,7 @@ test('stamp appearance and full-library controls are wired into the UI', () => {
   const app=readFileSync('app.js','utf8');
   for (const id of [
     'defaultStampSize','defaultStampSizeValue','strengthStampColour','limitationStampColour','applyStampStyle',
-    'openLibrary','libraryDialog','librarySearch','libraryCriterion','libraryTone','libraryResults','copyLibraryVisible',
+    'openLibrary','libraryDialog','librarySearch','libraryCourse','libraryCriterion','libraryTone','libraryResults','copyLibraryVisible',
   ]) {
     assert.ok(html.includes(`id="${id}"`), `Missing UI control: ${id}`);
   }
