@@ -133,7 +133,7 @@ h2{margin:4px 0 0;font-weight:750;font-size:18px;letter-spacing:-.035em;color:va
 .library-modal-heading{display:flex;align-items:flex-start;justify-content:space-between;padding:23px 26px 14px;gap:20px;border-bottom:1px solid var(--border)}
 .library-modal-heading h2{font-size:24px;margin-top:5px}
 .library-modal-heading p{color:#7f8fa0;line-height:1.5;margin:7px 0 0;max-width:700px}
-.library-modal-filters{padding:15px 26px 10px;display:grid;grid-template-columns:minmax(180px,1fr) 175px 185px;gap:10px}
+.library-modal-filters{padding:15px 26px 10px;display:grid;grid-template-columns:minmax(180px,1fr) 115px 165px 175px;gap:10px}
 .library-modal-filters input,.library-modal-filters select{width:100%;background:#f9fbfd;font-size:12px;height:39px}
 .library-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 26px 10px;color:#8393a4;font-size:11px}
 .library-summary .btn{padding:8px 10px;white-space:nowrap}
@@ -161,6 +161,7 @@ h2{margin:4px 0 0;font-weight:750;font-size:18px;letter-spacing:-.035em;color:va
  .library-modal-filters{grid-template-columns:1fr 1fr;padding:10px 15px;gap:7px}
  .library-modal-filters input{grid-column:1 / -1}
  .library-modal-filters select{min-width:0}
+ .library-modal-filters select:last-child{grid-column:1 / -1}
  .library-results{grid-template-columns:1fr;padding:0 15px 12px;gap:9px}
  .library-summary{padding:0 15px 10px;align-items:center}
  .library-summary .btn{font-size:10px}
