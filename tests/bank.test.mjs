@@ -35,7 +35,7 @@ test('browser comment bundle matches authoring JSON', () => {
 });
 
 test('application script syntax and dependencies are pinned', () => {
-  for (const filename of ['app.js', 'comments.js', 'rubric.js', 'library.js']) {
+  for (const filename of ['app.js', 'unicode-fonts.js', 'moderation-preflight.js', 'comments.js', 'rubric.js', 'library.js']) {
     execFileSync(process.execPath,['--check',filename]);
   }
   const html=readFileSync('index.html','utf8');
@@ -169,4 +169,25 @@ test('complete A-E teacher rubric includes each mark band and distinct SL and HL
   assert.ok(css.includes('.criteria-level.is-awarded'),'Selected achievement level should be visible');
   const build=readFileSync('scripts/build.mjs','utf8');
   assert.ok(build.includes("'rubric.js'"),'Rubric asset must be packaged by GitHub Pages build');
+});
+
+test('Pass 7 PDF reliability uses embedded Unicode math fonts and a verified original-page preview', () => {
+  const html=readFileSync('index.html','utf8');
+  const app=readFileSync('app.js','utf8');
+  const build=readFileSync('scripts/build.mjs','utf8');
+  for (const name of ['reviewPreviewBox','reviewPreviewCanvas','reviewConfirmed','preflightList','buildReviewPreview','reviewPreviewPrevious','reviewPreviewNext']) {
+    assert.ok(html.includes('id="'+name+'"'),name);
+  }
+  assert.ok(html.includes('vendor/fontkit.umd.min.js'));
+  assert.ok(!app.includes("replace(/\\u03c0/g,'pi')"),'Mathematics must not be downgraded to ASCII words');
+  assert.ok(app.includes('createUnicodeFonts(output,window.fontkit'));
+  assert.ok(app.includes('inspectModerationPages'));
+  assert.ok(app.includes('reviewPreview.bytes'));
+  assert.ok(app.includes("reviewPreview.signature===previewSignature()"));
+  assert.ok(app.includes('reviewPreview.visited.size'));
+  assert.ok(app.includes('reviewPreview.bytes],{type:'));
+  assert.ok(html.includes('type="checkbox" disabled'));
+  for(const asset of ['unicode-fonts.js','moderation-preflight.js','fontkit.umd.min.js','NotoSans-Regular.ttf','NotoSansMath-Regular.ttf']){
+    assert.ok(build.includes(asset),'Missing deployment asset '+asset);
+  }
 });
