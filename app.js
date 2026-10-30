@@ -1853,6 +1853,39 @@ let pdfRendererLoad = null;
     });
   }
   function initEvents() {
+    $('openProjects').addEventListener('click',()=>{
+      void openProjectsDashboard().catch(error=>{console.error(error);toast('Could not load the local project dashboard.');});
+    });
+    $('closeProjects').addEventListener('click',()=>$('projectsDialog').close());
+    $('projectsDone').addEventListener('click',()=>$('projectsDialog').close());
+    $('projectsSearch').addEventListener('input',renderProjectDashboard);
+    $('projectsCourse').addEventListener('change',renderProjectDashboard);
+    $('projectsRows').addEventListener('click',event=>{
+      const button=event.target.closest('button[data-local-open],button[data-local-backup],button[data-local-delete]');
+      if(!button)return;
+      if(button.dataset.localOpen)void openLocalProject(button.dataset.localOpen);
+      else if(button.dataset.localBackup)void downloadLocalBackup(button.dataset.localBackup).catch(error=>{
+        console.error(error);toast('Could not download this backup: '+(error?.message||String(error)));
+      });
+      else if(button.dataset.localDelete)void deleteLocalProject(button.dataset.localDelete);
+    });
+    $('downloadAllProjects').addEventListener('click',()=>{void downloadAllLocalBackups();});
+    $('openClearProjects').addEventListener('click',()=>{
+      $('clearProjectsPhrase').value='';
+      $('clearTeacherPreferences').checked=false;
+      $('clearProjectsNotice').textContent='';
+      updateClearConfirmation();
+      $('clearProjectsDialog').showModal();
+    });
+    $('closeClearProjects').addEventListener('click',closeClearDialog);
+    $('cancelClearProjects').addEventListener('click',closeClearDialog);
+    $('clearProjectsPhrase').addEventListener('input',updateClearConfirmation);
+    $('confirmClearProjects').addEventListener('click',()=>{void clearAllLocalProjects();});
+    $('clearProjectsDialog').addEventListener('close',()=>{
+      $('clearProjectsPhrase').value='';
+      $('clearTeacherPreferences').checked=false;
+      updateClearConfirmation();
+    });
     $('course').addEventListener('change',e=>{state.course=e.target.value;renderBank();if($('criteriaDialog').open)renderCriteria();scheduleSave();});
     $('candidate').addEventListener('input',e=>{state.candidate=e.target.value;scheduleSave();});
     $('session').addEventListener('input',e=>{state.session=e.target.value;updateFrameworkNotice();scheduleSave();});
@@ -2004,6 +2037,17 @@ let pdfRendererLoad = null;
     $('closeReview').addEventListener('click',()=> $('reviewDialog').close());
     $('exportAnnotated').addEventListener('click',exportPdf);
     window.addEventListener('resize',()=>{if(isReady())renderPage();});
+    // Browser-local IndexedDB is not a substitute for a downloaded backup.
+    // Attempt an immediate save on tab hiding; block accidental navigation
+    // only while known changes have not been committed successfully.
+    document.addEventListener('visibilitychange',()=>{
+      if(document.hidden&&isReady()&&projectRevision>persistedRevision)void storeAutosave();
+    });
+    window.addEventListener('beforeunload',event=>{
+      if(isReady()&&projectRevision>persistedRevision){
+        event.preventDefault();event.returnValue='';
+      }
+    });
     document.addEventListener('keydown',e=>{
       const inField=e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||
         e.target instanceof HTMLSelectElement||e.target?.isContentEditable;
@@ -2061,7 +2105,7 @@ let pdfRendererLoad = null;
     try {state.stampStyle=normalStyle(JSON.parse(localStorage.getItem('ia-marking-desk-stamp-style')||'{}'));}catch(e){state.stampStyle=normalStyle();}
     try{quickPicks=sanitizeQuickPicks(JSON.parse(localStorage.getItem(QUICK_PICKS_KEY)||'{}'));}catch(e){quickPicks=sanitizeQuickPicks({});}
     if(pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.mjs';
-    initScores();renderStampStyle();renderTabs();renderTone();renderBank();renderEditor();renderStamps();renderQuickPicker();updateHistoryButtons();setInstruction();updateFrameworkNotice();initEvents();initDatabase();
+    initScores();renderStampStyle();renderTabs();renderTone();renderBank();renderEditor();renderStamps();renderQuickPicker();updateHistoryButtons();setInstruction();updateFrameworkNotice();initEvents();updateLocalSaveStatus();void initDatabase();
     if(!window.PDFLib)console.warn('PDF export library missing from this deployment; evidence reference tools remain available.');
   }
   init();
