@@ -16,6 +16,14 @@
 - Cleans up project action labels: **New IA**, **Import backup** and **Back up IA**. Nothing about annotation geometry, assessment marks, PDF export integrity, or local storage was changed.
 - Adds smoke checks for collapsed controls, keyboard-accessible appearance adjustments, UI terms and both libraries.
 
+## Pass 2 — PDF-first workspace
+
+- **Larger PDF:** on desktop, the document panel automatically shrinks to a compact rail after a PDF is loaded (unless you have chosen a different layout). You can reopen it at any time. The comment panel may also be hidden, or use **Focus PDF** to expand the page and temporarily hide the extra workspace chrome.
+- **Contextual comments:** the right panel now has a **Find a comment / Edit stamp** switch. Selecting a library comment opens its editor; choosing a placed stamp reopens its text, sizing and priority controls. Use **Find another comment** to return to the searchable library.
+- **Tablets and phones:** the PDF occupies the main workspace. **Document**, **Comments** and **Edit** open accessible, dismissible drawers instead of stacking a long library under the paper. Escape, a close button or the backdrop dismisses the drawer. Focus remains within an open drawer.
+- **Unchanged marking data:** these controls affect only the local browser layout; marks, feedback actions, PDF coordinates, on-page exports and project backups remain as before.
+- **Verification:** the existing real-PDF end-to-end suite now tests search-to-editor, panel controls, mobile drawers, focus mode and the complete export path.
+
 ## What you can do
 
 - Upload an IA PDF (rendered within your browser, not uploaded to this repository or a server). The annotated export prints notes directly onto each original PDF page, rather than placing them in a separate right-hand margin.
