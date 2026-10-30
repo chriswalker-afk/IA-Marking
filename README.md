@@ -6,10 +6,10 @@
 
 - Upload a final IA PDF (rendered within your browser, not uploaded to this repository or a server).
 - Select AA SL, AI SL, AA HL or AI HL; add an anonymous assessment ID and exam session.
-- Place **circular A-E evidence stamps** on pages, with an individually editable strength/limitation observation attached. Choose the default **diameter (14–42 PDF points)** and separate strength/limitation colours, customise any placed or prepared stamp individually, or apply the default appearance to all existing stamps. Drag a stamp or move it to another page; use the side panel to revisit it.
+- Place **circular A-E evidence stamps** on pages. The **complete strength/limitation comment is always visible beside a matching A–E circle in the PDF viewer**, with notes automatically arranged to avoid overlapping or covering the student's mathematics. On narrow screens full notes sit beneath the PDF, still beside their identifying circles. Each stamp's text is independently editable. Choose the default **diameter (14–42 PDF points)** and separate strength/limitation colours, customise any placed or prepared stamp individually, or apply the default appearance to all existing stamps. Drag a stamp or move it to another page; use the side panel to revisit it.
 - Search **294 original assessment-evidence comments** from the supplied 2021–2026 examiner-feedback synthesis (147 strengths, 147 limitations), organised by criterion and searchable topic. Open the independent **[full comment library](library.html)** (it works even when the PDF renderer is missing) to see all comments in one searchable view, copy an individual comment, copy all filtered comments, edit an existing library entry or add your own reusable comments. This works even before uploading an IA.
 - Open the optional **IB criteria & marks** panel to consult the applicable complete official AA/AI subject-guide PDF, or view an authorised guide copy locally. Award A /4, B /4, C /3, D /3 and E /6 manually, and add criterion-level rationales. Neither stamps nor comment counts determine marks.
-- Export a new annotated PDF with the original student pages retained, evidence notes in a right-side margin, continuation pages for crowded annotations, and a criterion summary.
+- Export a new annotated PDF with the original student pages retained, **each complete comment visibly next to its own coloured A–E circle in the extended right margin**, continuation pages for crowded annotations, and a criterion summary.
 - Save a portable `.iamark.json` project (includes the uploaded PDF, stamp appearance, custom comments and edited library wording), or resume your own locally autosaved draft through IndexedDB. Existing version-1 projects continue to open, with defaults applied to older stamps.
 
 ### Assessment framework warning
@@ -46,7 +46,7 @@ Open `http://localhost:8000` to use the built app. PDF.js 6.4.299 and pdf-lib 1.
 - Only use a trusted teacher-controlled device/browser. PDF bytes, draft annotations and personal comments are stored **unencrypted locally**. There is no central access control or automatic cleanup.
 - A saved `.iamark.json` embeds the **entire student PDF**; it is confidential. Do not commit projects, annotated student PDFs, actual names or student data to GitHub. `.gitignore` excludes local project and PDF files.
 - This tool does not independently evaluate mathematical work, assign marks, detect originality, perform anonymisation, apply official descriptors or replace faculty standardisation. The teacher remains responsible for assessment.
-- PDF exports widen the pages to place notes beside the original rather than cover mathematics. Check the rendered file, continued notes, legibility, anonymity and any upload size/layout restrictions before moderation submission.
+- PDF exports widen the pages so the **full text and matching criterion circle appear together**, rather than covering the student mathematics. Check the rendered file, continued notes, legibility, anonymity and any upload size/layout restrictions before moderation submission.
 - Exported teacher notes use PDF standard fonts and normalise some mathematical/Greek symbols to ASCII. Check custom maths text carefully. Original student PDF content is preserved.
 - PDFs with rotation, password protection, unusual page boxes or extensive scanning need additional testing. Do not assume exported annotation positions are correct on those files without checking.
 - This comment bank is an **original, paraphrased set of teacher-facing observations**, not a copy of the IB achievement descriptors. It draws from the supplied 21-page *IA examiner feedback actionable checklist* (2021-2026), especially criterion comments (pp. 4-12) and assessment/moderation guidance (pp. 18-19).
@@ -59,7 +59,7 @@ Open `http://localhost:8000` to use the built app. PDF.js 6.4.299 and pdf-lib 1.
 - `comments.json` - structured authoring library (includes source page and course tags)
 - `build_bank.py` - source script for generating comment bank
 - `tests/bank.test.mjs` - consistency, coverage and interface contract checks
-- `tests/smoke_browser.py` - mocked PDF UI smoke test\n- `tests/live_pdf_browser.py` - real Chromium PDF upload, page render, stamp and PDF export test, run by CI
+- `tests/smoke_browser.py` - mocked PDF UI smoke test\n- `tests/live_pdf_browser.py` - real Chromium PDF upload, page render, **complete on-screen/annotated-PDF comment visibility**, mobile callout layout, stamp and PDF export test, run by CI
 - `scripts/build.mjs` - copies version-pinned libraries and source into a deployable static `dist/`
 - `.github/workflows/pages.yml` - verify and publish from a compiled `dist/` site\n- `.github/workflows/verify.yml` - test PRs and run the real PDF end-to-end browser check
 

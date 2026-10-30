@@ -100,9 +100,9 @@
             <p>Upload a final IA, choose a criterion-specific assessment comment, and place a small evidence stamp directly beside the relevant mathematics.</p>
             <label for="pdfInput" class="btn primary file-label">Select an IA PDF <span aria-hidden="true">&#8594;</span></label>
           </div>
-          <div id="pageShell" class="page-shell hidden"><canvas id="pdfCanvas" aria-label="Rendered PDF page"></canvas><div id="stampLayer" class="stamp-layer" role="group" aria-label="Evidence stamps on page"></div></div>
+          <div id="pageShell" class="page-shell hidden" data-notes-layout="beside"><canvas id="pdfCanvas" aria-label="Rendered PDF page"></canvas><div id="stampLayer" class="stamp-layer" role="group" aria-label="Evidence stamps on page"></div><aside id="pageNotes" class="page-notes" aria-label="Full comment text beside criterion stamps"></aside></div>
         </div>
-        <div class="viewer-bottom"><span id="footerDocInfo">Awaiting a PDF</span><span>Stamps stay outside the mathematics in exported margin notes</span></div>
+        <div class="viewer-bottom"><span id="footerDocInfo">Awaiting a PDF</span><span>Complete comments sit beside their A–E circles in the margin</span></div>
       </section>
 
       <aside class="bank-pane" aria-label="Criterion evidence comment bank">
