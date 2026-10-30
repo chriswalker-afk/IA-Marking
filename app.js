@@ -1257,15 +1257,24 @@ let pdfRendererLoad = null;
     if(!file)return;
     try {
       const data=JSON.parse(await file.text());
-      if(data.format!=='ia-marking-desk'||data.version!==1||typeof data.pdfBase64!=='string')throw Error('Not a supported IA Marking Desk project.');
+      if(data.format!=='ia-marking-desk'||data.version!==1||typeof data.pdfBase64!=='string')
+        throw Error('Not a supported IA Marking Desk project.');
       const bytes=bytesFromBase64(data.pdfBase64);
-      const success=await loadPdf(bytes,data.pdfName || 'saved-ia.pdf',true);
-      if(!success)return;
-      restoreMetadata(data);
-      toast('Marking project restored.');
+      if(!await preserveActiveProject())return;
+      projectLoading=true;
+      try{
+        const success=await loadPdf(bytes,data.pdfName || 'saved-ia.pdf',true);
+        if(!success)return;
+        restoreMetadata(data);
+        activeProjectId=createLocalProjectId();projectRevision=0;persistedRevision=-1;activeSavedAt=null;
+      }finally{projectLoading=false;}
+      scheduleSave();
+      const saved=await storeAutosave();
+      toast(saved?'Editable project imported and saved as a separate local IA.':'Project opened, but browser storage failed. Download a backup to preserve it.');
+      await refreshProjectDashboard();
     } catch(e) {console.error(e);toast('Could not open project. Please choose a valid .iamark.json file.');}
   }
-  function restoreMetadata(data) {
+  function restoreMetadata(data,{includePreferences=true}={}) {
     const candidateCourse=['AA SL','AI SL','AA HL','AI HL'].includes(data.course)?data.course:'AA SL';
     state.course=candidateCourse;
     state.candidate=String(data.candidate||'').slice(0,60);
@@ -1278,14 +1287,14 @@ let pdfRendererLoad = null;
     }
     // Library preferences travel with the project, while old v1 projects remain compatible.
     if(data.stampStyle)state.stampStyle=normalStyle(data.stampStyle);
-    if(data.commentEdits && typeof data.commentEdits==='object' && !Array.isArray(data.commentEdits)){
+    if(includePreferences && data.commentEdits && typeof data.commentEdits==='object' && !Array.isArray(data.commentEdits)){
       for(const [id,change] of Object.entries(data.commentEdits)){
         if(!BANK.some(item=>item.id===id)||typeof change?.text!=='string'||!change.text.trim())continue;
         const original=BANK.find(item=>item.id===id);
         state.commentEdits[id]={text:change.text.slice(0,1800),topic:String(change.topic||original.topic).slice(0,90)};
       }
     }
-    if(Array.isArray(data.customComments)){
+    if(includePreferences && Array.isArray(data.customComments)){
       const unique=new Map(state.customComments.map(c=>[c.id,c]));
       for(const item of data.customComments){
         if(typeof item?.id==='string' && item.id.startsWith('custom-') && CRITERIA[item.criterion] && ['strength','limitation'].includes(item.tone) && typeof item.text==='string' && item.text.trim()){
@@ -1308,7 +1317,8 @@ let pdfRendererLoad = null;
     $('course').value=state.course;$('candidate').value=state.candidate;$('session').value=state.session;updateFrameworkNotice();
     tab='all';bankQuickFilter='all';selectedStampId=null;draft=null;movingStampId=null;
     resetHistory();lastPlacedDraft=null;repeatPlacement=false;
-    saveLibrarySettings();renderStampStyle();updateScores();renderTabs();renderBank();renderEditor();renderStamps();renderQuickPicker();setInstruction();scheduleSave();
+    if(includePreferences)saveLibrarySettings();
+    renderStampStyle();updateScores();renderTabs();renderBank();renderEditor();renderStamps();renderQuickPicker();setInstruction();scheduleSave();
   }
   function initDatabase() {
     if(!('indexedDB' in window))return;
