@@ -297,8 +297,12 @@ let pdfRendererLoad = null;
       ?'First draft: select actionable feedback, place it beside relevant work, then share a checklist of requested revisions. No marks are awarded.'
       :'Final assessment: annotate evidence and record teacher marks against criteria A-E.';
     $('openReview').textContent=isFeedback()?'Review feedback & checklist →':'Review & export →';
-    $('stampSectionLabel').textContent=isFeedback()?'Feedback stamps':'Evidence stamps';
-    $('bankEyebrow').textContent=isFeedback()?'03 / DRAFT FEEDBACK':'03 / EVIDENCE';
+    $('stampSectionLabel').textContent=isFeedback()?'Placed feedback':'Placed stamps';
+    $('legendLimitationLabel').textContent=isFeedback()?'Improvement':'Limitation';
+    $('toneLimitationLabel').textContent=isFeedback()?'Improvements':'Limitations';
+    $('libraryToneLimitation').textContent=isFeedback()?'Improvements':'Limitations';
+    $('customToneLimitation').textContent=isFeedback()?'Improvement':'Limitation';
+    $('bankEyebrow').textContent=isFeedback()?'03 / FEEDBACK':'03 / COMMENTS';
     $('bankIntro').textContent=isFeedback()
       ?'Choose a student-facing strength or improvement action. Personalise it for the draft before placing the stamp. Each improvement becomes a checklist item.'
       :'Choose a teacher-facing assessment observation. Edit it to reflect the actual evidence before stamping.';
@@ -319,9 +323,23 @@ let pdfRendererLoad = null;
       ?'Write a student-facing prompt that identifies what to reconsider, without supplying the solution. Improvement stamps become student checklist items.'
       :'Phrase this as evidence for a marking decision, rather than instructions to the student. Saved to this browser\'s personal bank.';
     $('referenceLibraryLink').innerHTML=isFeedback()
-      ?'Browse draft feedback prompts <span aria-hidden="true">↗</span>'
-      :'Browse all 294 stamp comments <span aria-hidden="true">↗</span>';
+      ?'Browse feedback library <span aria-hidden="true">↗</span>'
+      :'Browse marking library <span aria-hidden="true">↗</span>';
     $('referenceLibraryLink').href=isFeedback()?'library.html?mode=feedback':'library.html';
+    $('independentLibraryLink').href=$('referenceLibraryLink').href;
+    $('independentLibraryLink').textContent=isFeedback()?'Open feedback library in a separate page ↗':'Open marking library in a separate page ↗';
+    $('documentHelp').title=isFeedback()?'Choose a first-draft IA PDF. Nothing is uploaded to a server.':'Choose a final IA PDF. Nothing is uploaded to a server.';
+    if(isReady())$('uploadSubtext').textContent=isFeedback()?'Choose a different draft PDF':'Choose a different final IA';
+    $('evidenceTitle').textContent=isFeedback()?'Placed draft feedback':'Criterion evidence navigator';
+    $('evidenceEyebrow').textContent=isFeedback()?'FIRST-DRAFT FEEDBACK':'FINAL ASSESSMENT EVIDENCE';
+    $('libraryTitle').textContent=isFeedback()?'First draft feedback library':'Final assessment comment library';
+    $('libraryEyebrow').textContent=isFeedback()?'STUDENT-FACING PROMPTS':'TEACHER ASSESSMENT EVIDENCE';
+    $('libraryIntro').textContent=isFeedback()
+      ?'Find actionable comments, copy them into a document or adjust the wording for future drafts. Changes are saved only in this browser.'
+      :'Find assessment observations, copy them into a document or adjust the wording for future marking. Changes are saved only in this browser.';
+    $('customTitle').textContent=isFeedback()?'Write a feedback prompt':'Write an assessment comment';
+    $('customText').placeholder=isFeedback()?'Identify an area to revisit and the next action the student should take.':'Describe what the submitted mathematics demonstrates.';
+    $('openLibrary').firstElementChild.textContent=isFeedback()?'Full feedback library':'Full marking library';
     $('openEvidence').childNodes[0].textContent=isFeedback()?'Draft feedback ':'A-E evidence ';
     $('reviewEyebrow').textContent=isFeedback()?'FIRST DRAFT / STUDENT FEEDBACK':'MARKING RECORD';
     $('reviewTitle').textContent=isFeedback()?'Review feedback & checklist':'Review & export';
@@ -602,7 +620,7 @@ let pdfRendererLoad = null;
       const isCustom=item.origin==='Teacher custom comment';
       const isChanged=Boolean(activeCommentEdits()[item.id]);
       const editing=item.id===libraryEditingId;
-      return `<article class="library-entry" data-library-id="${escapeHtml(item.id)}"><div class="library-entry-header"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><strong>${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</strong><small>${escapeHtml(item.id)}${isCustom?' · Personal':isChanged?' · Edited':''}</small></div>${editing?`<div class="library-edit"><label>Category<input id="libraryEditTopic" maxlength="90" value="${escapeHtml(item.topic)}"></label><label>Comment<textarea id="libraryEditText" maxlength="1800" rows="4">${escapeHtml(item.text)}</textarea></label><div class="library-entry-actions"><button type="button" data-save-library="${escapeHtml(item.id)}" class="btn primary">Save changes</button><button type="button" data-cancel-library>Cancel</button>${isChanged?`<button type="button" data-restore-library="${escapeHtml(item.id)}">Restore original</button>`:''}${isCustom?`<button type="button" data-delete-library="${escapeHtml(item.id)}" class="danger-link">Delete personal comment</button>`:''}</div></div>`:`<p>${escapeHtml(item.text)}</p><div class="library-entry-actions"><button type="button" data-copy-library="${escapeHtml(item.id)}">Copy comment</button><button type="button" data-edit-library="${escapeHtml(item.id)}">Edit wording</button><button type="button" data-use-library="${escapeHtml(item.id)}">Use as stamp</button><button type="button" data-favourite-library="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}">${quickPicks.favorites.includes(item.id)?'★ Remove favourite':'☆ Add favourite'}</button></div>`}</article>`;
+      return `<article class="library-entry" data-library-id="${escapeHtml(item.id)}"><div class="library-entry-header"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span><strong>${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</strong><small>${escapeHtml(item.id)}${isCustom?' · Personal':isChanged?' · Edited':''}</small></div>${editing?`<div class="library-edit"><label>Category<input id="libraryEditTopic" maxlength="90" value="${escapeHtml(item.topic)}"></label><label>Comment<textarea id="libraryEditText" maxlength="1800" rows="4">${escapeHtml(item.text)}</textarea></label><div class="library-entry-actions"><button type="button" data-save-library="${escapeHtml(item.id)}" class="btn primary">Save changes</button><button type="button" data-cancel-library>Cancel</button>${isChanged?`<button type="button" data-restore-library="${escapeHtml(item.id)}">Restore original</button>`:''}${isCustom?`<button type="button" data-delete-library="${escapeHtml(item.id)}" class="danger-link">Delete personal comment</button>`:''}</div></div>`:`<p>${escapeHtml(item.text)}</p><div class="library-entry-actions"><button type="button" data-copy-library="${escapeHtml(item.id)}">Copy comment</button><button type="button" data-edit-library="${escapeHtml(item.id)}">Edit wording</button><button type="button" data-use-library="${escapeHtml(item.id)}">Use as stamp</button><button type="button" data-favourite-library="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}">${quickPicks.favorites.includes(item.id)?'★ Remove favourite':'☆ Add favourite'}</button></div>`}</article>`;
     }).join(''):'<p class="bank-empty">No comments match these filters. Try removing the search terms.</p>';
   }
   function openLibrary(editId=null) {
@@ -701,7 +719,7 @@ let pdfRendererLoad = null;
     const natural=noteLayout({...item,noteWidth:width,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
     const manualHeight=normalNoteHeight(item.noteHeight);
     const heightValue=manualHeight??Math.min(750,natural);
-    return `<div class="individual-stamp-style">
+    return `<details class="individual-appearance" id="${prefix}Appearance"><summary class="individual-appearance-summary"><span>Stamp appearance &amp; box size</span><small>Optional · customise</small></summary><div class="individual-stamp-style">
       <span class="comment-style-heading">Criterion circle</span>
       <label for="${prefix}Size">Circle size <output id="${prefix}SizeValue">${size} pt</output><input id="${prefix}Size" type="range" min="14" max="42" step="2" value="${size}"></label>
       <label for="${prefix}Color">Circle colour <input id="${prefix}Color" type="color" value="${color}"></label>
@@ -717,7 +735,7 @@ let pdfRendererLoad = null;
       <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="55" max="750" step="5" value="${heightValue}"></label>
       <button id="${prefix}HeightAuto" type="button" class="text-button note-fit-button">Fit box height to full comment</button>
       <small class="note-format-help">Drag the bottom-right handle on a placed comment to resize both dimensions. Export will stop if text is clipped.</small>
-    </div>`;
+    </div></details>`;
   }
   function bindAppearanceEditor(item,prefix,existing) {
     const refresh=()=>{
@@ -1122,12 +1140,12 @@ let pdfRendererLoad = null;
       pdfDoc=loaded;state.pdfBytes=clone;state.pdfName=name || 'uploaded-ia.pdf';
       currentPage=1;zoom=1;
       $('emptyViewer').classList.add('hidden');$('pageShell').classList.remove('hidden');
-      $('uploadTitle').textContent='Replace PDF';$('uploadSubtext').textContent='Click to choose a new final IA';
+      $('uploadTitle').textContent='Replace PDF';$('uploadSubtext').textContent=isFeedback()?'Choose a different draft PDF':'Choose a different final IA';
       $('documentMeta').classList.remove('hidden');$('documentName').textContent=state.pdfName;
       $('documentDetails').textContent=`${loaded.numPages} pages  /  ${niceBytes(clone.byteLength)}`;
       $('pageTotal').textContent=String(loaded.numPages);$('pageNumber').max=String(loaded.numPages);
       $('footerDocInfo').textContent=`${loaded.numPages} pages  /  ${state.pdfName}`;
-      updateScores();renderEditor();renderStamps();setInstruction();
+      updateModeUI();updateScores();renderEditor();renderStamps();setInstruction();
       try {await ensureUnicodeMetrics();}
       catch(fontError){
         console.warn('Unicode PDF fonts not available yet:',fontError);
@@ -2226,8 +2244,8 @@ let pdfRendererLoad = null;
       $('customTopic').value='';$('customText').value='';$('customDialog').showModal();$('customText').focus();
     });
     $('saveCustom').addEventListener('click',()=>{
-      const txt=$('customText').value.trim();if(!txt){toast('Write an evidence comment first.');return;}
-      const item={id:'custom-'+makeId(),criterion:$('customCriterion').value,tone:$('customTone').value,topic:$('customTopic').value.trim()||'Personal evidence',text:txt,tags:[],courses:allCourses,origin:'Teacher custom comment'};
+      const txt=$('customText').value.trim();if(!txt){toast('Write a comment first.');return;}
+      const item={id:'custom-'+makeId(),criterion:$('customCriterion').value,tone:$('customTone').value,topic:$('customTopic').value.trim()||(isFeedback()?'Personal feedback':'Personal evidence'),text:txt,tags:[],courses:allCourses,origin:'Teacher custom comment'};
       activeCustomComments().unshift(item);
       saveLibrarySettings();
       $('customDialog').close();tab=item.criterion;tone=item.tone;search='';$('commentSearch').value='';renderTabs();renderTone();renderBank();prepareComment(item.id);
@@ -2335,7 +2353,7 @@ let pdfRendererLoad = null;
       toast('Please select a PDF file.');return;
     }
     const wasOpen=isReady();
-    if(wasOpen&&!confirm('Open this PDF as a new IA? The current assessment will remain saved in My IAs and its marks will not be carried into the new project.'))return;
+    if(wasOpen&&!confirm('Open this PDF as a new IA? Your current project will remain in My IAs. Its marks, feedback and annotations will not carry into the new project.'))return;
     if(wasOpen&&!await preserveActiveProject())return;
     const bytes=new Uint8Array(await file.arrayBuffer());
     projectLoading=true;
