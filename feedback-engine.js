@@ -22,7 +22,7 @@ export function studentChecklistItems(stamps=[],completed={}){
     text:String(stamp.text).trim(),priority:feedbackPriority(stamp.priority),
     completed:completed?.[stamp.id]===true,
   })).sort((a,b)=>({high:0,normal:1,low:2}[a.priority]-{high:0,normal:1,low:2}[b.priority]
-    ||a.criterion.localeCompare(b.criterion)||a.page-b.page||a.label.localeCompare(b.label));
+    ||a.criterion.localeCompare(b.criterion)||a.page-b.page||a.label.localeCompare(b.label)));
 }
 export function studentFeedbackStrengths(stamps=[]){
   const counters={A:0,B:0,C:0,D:0,E:0};
