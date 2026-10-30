@@ -106,7 +106,9 @@ export function openLocalIAProjectVault(factory=globalThis.indexedDB){
           if(!value?.pdfBytes?.byteLength||!value?.project)return;
           const id='ia-migrated-'+String(value.date||'legacy').replace(/[^a-z0-9_-]/gi,'').slice(0,45);
           const savedAt=/^\d{4}-\d{2}-\d{2}T/.test(value.date||'')?value.date:new Date().toISOString();
-          const pageCount=Math.max(0,...(value.project.stamps||[]).map(s=>Number(s.page)||0));
+          // The old v1 draft did not store a PDF page count. Never infer it
+          // from the last stamped page: unstamped pages would be omitted.
+          const pageCount=0;
           projects.put({id,project:value.project,pdfBytes:value.pdfBytes,pageCount,savedAt});
           index.put(summariseLocalProject(id,value.project,value.pdfBytes,pageCount,savedAt));
           draft.delete('latest');
