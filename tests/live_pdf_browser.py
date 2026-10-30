@@ -71,6 +71,8 @@ with tempfile.TemporaryDirectory() as folder:
         expect(page.locator('#pageTotal')).to_have_text('2', timeout=30000)
         page.locator('#pdfCanvas').wait_for(state='visible')
         assert page.locator('#documentName').inner_text() == 'example-ia.pdf'
+        assert page.locator('[data-score="A"]').input_value() == '3', 'First PDF upload must preserve previously entered marks.'
+        assert page.locator('[data-score="E"]').input_value() == '5'
         assert page.locator('#pdfLibraryStatus').is_hidden(), page.locator('#pdfLibraryStatus').inner_text()
 
         # Place a stamp, then export using real pdf-lib and parse the exported PDF.
