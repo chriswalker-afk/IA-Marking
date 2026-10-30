@@ -191,3 +191,30 @@ test('Pass 7 PDF reliability uses embedded Unicode math fonts and a verified ori
     assert.ok(build.includes(asset),'Missing deployment asset '+asset);
   }
 });
+
+test('Pass 8 quick tools, criterion navigator and undo history are deployed together', () => {
+  const html=readFileSync('index.html','utf8');
+  const app=readFileSync('app.js','utf8');
+  const css=readFileSync('styles.css','utf8');
+  const library=readFileSync('library.js','utf8');
+  const build=readFileSync('scripts/build.mjs','utf8');
+  for(const id of [
+    'undoMark','redoMark','repeatStamp','quickStampAgain','quickStampPicker',
+    'bankQuickTabs','openEvidence','evidenceDialog','evidenceSummary','evidenceResults',
+  ])assert.ok(html.includes('id="'+id+'"'),'Missing Pass 8 control '+id);
+  for(const code of [
+    'new MarkingHistory(60)','function undoMarking()','function redoMarking()',
+    'function renderEvidenceNavigator()','function jumpToEvidenceStamp(id)',
+    'function recordRecentComment(id)','function toggleFavourite(id)',
+    "recordHistory('place '","recordHistory('delete '","recordHistory('resize '",
+    "recordHistory('drag '","recordHistory('move '","recordHistory('arrange page '",
+    'resetHistory();lastPlacedDraft=null',
+    "e.key.toLowerCase()",
+  ])assert.ok(app.includes(code),'Missing Pass 8 history/quick stamping logic: '+code);
+  assert.ok(css.includes('.efficiency-toolbar'));
+  assert.ok(css.includes('.evidence-modal'));
+  assert.ok(css.includes('.bank-quick-tab'));
+  assert.ok(build.includes("'marking-history.js'"));
+  assert.ok(library.includes("ia-marking-desk-quick-picks-v1"));
+  assert.ok(library.includes('data-action="favourite"'));
+});
