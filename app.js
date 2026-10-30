@@ -12,6 +12,21 @@ window.pdfjsLib = pdfjsLib;
   };
   const CRITERION_KEYS = Object.keys(CRITERIA);
   const BANK = window.IA_COMMENT_BANK || [];
+  const STAMP_DEFAULTS = Object.freeze({size:20,strengthColor:'#477b97',limitationColor:'#b7803c'});
+  const normalSize = value => Number.isFinite(Number(value)) ? Math.max(14,Math.min(42,Math.round(Number(value)))) : STAMP_DEFAULTS.size;
+  const normalColor = (value,fallback) => typeof value==='string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
+  function normalStyle(value={}) {
+    return {size:normalSize(value?.size),strengthColor:normalColor(value?.strengthColor,STAMP_DEFAULTS.strengthColor),limitationColor:normalColor(value?.limitationColor,STAMP_DEFAULTS.limitationColor)};
+  }
+  function stampColor(stamp) {
+    return normalColor(stamp?.color,stamp?.tone==='limitation'?state.stampStyle.limitationColor:state.stampStyle.strengthColor);
+  }
+  function brightColor(hex) {
+    const [r,g,b]=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
+    return (r*299+g*587+b*114)/1000>=158;
+  }
+  function stampTextColor(stamp){return brightColor(stampColor(stamp))?'#17283f':'#ffffff';}
+
   const $ = id => document.getElementById(id);
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const now = () => new Date().toISOString();
@@ -33,7 +48,7 @@ window.pdfjsLib = pdfjsLib;
 
   let state = {
     course:'AA SL', candidate:'', session:'', marks:freshMarks(), justifications:freshJustifications(),
-    stamps:[], customComments:[], pdfName:'', pdfBytes:null,
+    stamps:[], customComments:[], commentEdits:{}, stampStyle:normalStyle(), pdfName:'', pdfBytes:null,
   };
   let pdfDoc = null;
   let currentPage = 1;
@@ -50,6 +65,8 @@ window.pdfjsLib = pdfjsLib;
   let savingTimer = null;
   let toastTimer = null;
   let database = null;
+  let viewScale = 1;
+  let libraryEditingId = null;
   const MAX_BANK_VISIBLE = 42;
 
   function toast(message) {
@@ -78,7 +95,45 @@ window.pdfjsLib = pdfjsLib;
     }
     $('stampLayer').classList.toggle('placing',Boolean(draft || movingStampId));
   }
-  function getComments() { return [...state.customComments, ...BANK]; }
+  function getComments() {
+    return [...state.customComments, ...BANK.map(item=>{
+      const edit=state.commentEdits[item.id];
+      return edit && typeof edit.text==='string' && edit.text.trim() ? {...item,text:edit.text.slice(0,1800),topic:String(edit.topic||item.topic).slice(0,90)} : item;
+    })];
+  }
+  function saveLibrarySettings() {
+    try {
+      localStorage.setItem('ia-marking-desk-comments',JSON.stringify(state.customComments));
+      localStorage.setItem('ia-marking-desk-edits',JSON.stringify(state.commentEdits));
+      localStorage.setItem('ia-marking-desk-stamp-style',JSON.stringify(state.stampStyle));
+    } catch(error) { console.warn('Browser preference storage unavailable',error); }
+    scheduleSave();
+  }
+  async function copyCommentText(value) {
+    try {
+      if(navigator.clipboard?.writeText) await navigator.clipboard.writeText(String(value));
+      else {
+        const input=document.createElement('textarea');input.value=String(value);input.style.position='fixed';input.style.opacity='0';
+        (document.querySelector('dialog[open]')||document.body).appendChild(input);input.focus();input.select();
+        const successful=document.execCommand('copy');input.remove();
+        if(!successful)throw Error('Clipboard permission denied');
+      }
+      toast('Comment copied to clipboard.');
+    } catch(error) {console.warn(error);toast('Copy unavailable. Select and copy the text manually.');}
+  }
+  function renderStampStyle() {
+    const size=state.stampStyle.size;
+    $('defaultStampSize').value=String(size);
+    $('defaultStampSizeValue').textContent=`${size} pt`;
+    $('strengthStampColour').value=state.stampStyle.strengthColor;
+    $('limitationStampColour').value=state.stampStyle.limitationColor;
+    for(const [id,tone,letter] of [['previewStrength','strength','A'],['previewLimitation','limitation','D']]) {
+      const el=$(id),stamp={tone};const color=stampColor(stamp);
+      el.style.cssText=`width:${Math.min(size+4,42)}px;height:${Math.min(size+4,42)}px;background:${color};color:${stampTextColor(stamp)}`;
+      el.textContent=letter;
+    }
+  }
+
   function selectedStamp() { return state.stamps.find(x => x.id === selectedStampId) || null; }
   function isReady() { return Boolean(pdfDoc && state.pdfBytes?.length); }
   function totalScore() {
@@ -116,15 +171,88 @@ window.pdfjsLib = pdfjsLib;
   function renderBank() {
     const all = getComments().filter(item => (item.courses || []).includes(state.course));
     const query = search.toLowerCase().trim();
-    let items = all.filter(item => (tab === 'all'||item.criterion === tab) && (tone === 'all'||item.tone === tone) && (!query || [item.text,item.topic,item.criterion,...(item.tags || [])].join(' ').toLowerCase().includes(query)));
+    const items = all.filter(item => (tab === 'all'||item.criterion === tab) && (tone === 'all'||item.tone === tone) && (!query || [item.text,item.topic,item.criterion,...(item.tags || [])].join(' ').toLowerCase().includes(query)));
     $('bankTotal').textContent = `${all.length} comments`;
     $('bankFilteredCount').textContent = `${items.length} matching ${items.length===1?'comment':'comments'}`;
     const visible = bankShowAll ? items : items.slice(0,MAX_BANK_VISIBLE);
-    $('commentList').innerHTML = visible.map(item => `<button type="button" class="comment-card ${draft?.id===item.id?'is-active':''}" data-comment-id="${escapeHtml(item.id)}"><span class="comment-card-head"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><span class="topic">${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</span>${item.origin==='Teacher custom comment' ? '<span class="custom-tag">CUSTOM</span>' : ''}</span><p>${escapeHtml(item.text)}</p></button>`).join('');
+    $('commentList').innerHTML = visible.map(item => `<div class="comment-card ${draft?.id===item.id?'is-active':''}"><button type="button" class="comment-select" data-comment-id="${escapeHtml(item.id)}" aria-label="Use ${escapeHtml(item.criterion)} ${escapeHtml(item.tone)} comment as stamp"><span class="comment-card-head"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><span class="topic">${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</span>${item.origin==='Teacher custom comment' ? '<span class="custom-tag">CUSTOM</span>' : ''}</span><p>${escapeHtml(item.text)}</p></button><div class="comment-card-actions"><button type="button" data-copy-comment="${escapeHtml(item.id)}">Copy</button><button type="button" data-edit-comment="${escapeHtml(item.id)}">Edit</button></div></div>`).join('');
     if(!visible.length) $('commentList').innerHTML = '<p class="bank-empty">No matching comments. Try another search or write your own.</p>';
     if(!bankShowAll && items.length>MAX_BANK_VISIBLE) $('commentList').insertAdjacentHTML('beforeend',`<button type="button" id="showMoreComments" class="btn subtle" style="width:100%">Show all ${items.length} comments</button>`);
     $('commentList').querySelectorAll('[data-comment-id]').forEach(button => button.addEventListener('click', () => prepareComment(button.dataset.commentId)));
+    $('commentList').querySelectorAll('[data-copy-comment]').forEach(button => button.addEventListener('click',()=>{
+      const item=getComments().find(c=>c.id===button.dataset.copyComment);if(item)copyCommentText(item.text);
+    }));
+    $('commentList').querySelectorAll('[data-edit-comment]').forEach(button => button.addEventListener('click',()=>openLibrary(button.dataset.editComment)));
     $('showMoreComments')?.addEventListener('click', () => {bankShowAll=true;renderBank();});
+  }
+  function filteredLibraryComments() {
+    const query=$('librarySearch').value.toLowerCase().trim();
+    const libraryCourse=$('libraryCourse').value;
+    const criterion=$('libraryCriterion').value;
+    const selectedTone=$('libraryTone').value;
+    return getComments().filter(item => (libraryCourse==='all'||(item.courses||[]).includes(libraryCourse))
+      && (criterion==='all'||item.criterion===criterion)
+      && (selectedTone==='all'||item.tone===selectedTone)
+      && (!query||[item.criterion,item.topic,item.text,...(item.tags||[])].join(' ').toLowerCase().includes(query)));
+  }
+  function renderFullLibrary() {
+    const items=filteredLibraryComments();
+    $('libraryCount').textContent=`Showing ${items.length} of ${getComments().length} library comments`;
+    $('copyLibraryVisible').disabled=!items.length;
+    $('libraryResults').innerHTML=items.length ? items.map(item=>{
+      const isCustom=item.origin==='Teacher custom comment';
+      const isChanged=Boolean(state.commentEdits[item.id]);
+      const editing=item.id===libraryEditingId;
+      return `<article class="library-entry" data-library-id="${escapeHtml(item.id)}"><div class="library-entry-header"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><strong>${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</strong><small>${escapeHtml(item.id)}${isCustom?' · Personal':isChanged?' · Edited':''}</small></div>${editing?`<div class="library-edit"><label>Category<input id="libraryEditTopic" maxlength="90" value="${escapeHtml(item.topic)}"></label><label>Comment<textarea id="libraryEditText" maxlength="1800" rows="4">${escapeHtml(item.text)}</textarea></label><div class="library-entry-actions"><button type="button" data-save-library="${escapeHtml(item.id)}" class="btn primary">Save changes</button><button type="button" data-cancel-library>Cancel</button>${isChanged?`<button type="button" data-restore-library="${escapeHtml(item.id)}">Restore original</button>`:''}${isCustom?`<button type="button" data-delete-library="${escapeHtml(item.id)}" class="danger-link">Delete personal comment</button>`:''}</div></div>`:`<p>${escapeHtml(item.text)}</p><div class="library-entry-actions"><button type="button" data-copy-library="${escapeHtml(item.id)}">Copy comment</button><button type="button" data-edit-library="${escapeHtml(item.id)}">Edit wording</button><button type="button" data-use-library="${escapeHtml(item.id)}">Use as stamp</button></div>`}</article>`;
+    }).join(''):'<p class="bank-empty">No comments match these filters. Try removing the search terms.</p>';
+  }
+  function openLibrary(editId=null) {
+    libraryEditingId=editId;
+    $('libraryCourse').value='all';
+    if(editId){
+      const item=getComments().find(c=>c.id===editId);
+      $('libraryCriterion').value=item?.criterion||'all';$('libraryTone').value=item?.tone||'all';$('librarySearch').value='';
+    } else {
+      $('libraryCriterion').value='all';$('libraryTone').value='all';$('librarySearch').value='';
+    }
+    renderFullLibrary();$('libraryDialog').showModal();
+    if(editId){
+      const entry=Array.from($('libraryResults').querySelectorAll('[data-library-id]')).find(e=>e.dataset.libraryId===editId);
+      entry?.scrollIntoView({block:'center'});$('libraryEditText')?.focus();
+    } else {$('librarySearch').focus();}
+  }
+  function saveLibraryEdit(id) {
+    const item=getComments().find(c=>c.id===id);
+    if(!item)return;
+    const text=$('libraryEditText')?.value.trim();
+    const topic=$('libraryEditTopic')?.value.trim();
+    if(!text){toast('A library comment cannot be empty.');$('libraryEditText')?.focus();return;}
+    if(!topic){toast('Enter a category for this comment.');$('libraryEditTopic')?.focus();return;}
+    const custom=state.customComments.find(c=>c.id===id);
+    if(custom){custom.text=text.slice(0,1800);custom.topic=topic.slice(0,90);}
+    else {
+      const original=BANK.find(c=>c.id===id);if(!original)return;
+      if(text===original.text && topic===original.topic)delete state.commentEdits[id];
+      else state.commentEdits[id]={text:text.slice(0,1800),topic:topic.slice(0,90)};
+    }
+    libraryEditingId=null;saveLibrarySettings();renderBank();renderFullLibrary();toast('Library comment saved for future use.');
+  }
+  function handleLibraryAction(event) {
+    const button=event.target.closest('button[data-copy-library],button[data-edit-library],button[data-use-library],button[data-save-library],button[data-cancel-library],button[data-restore-library],button[data-delete-library]');
+    if(!button)return;
+    const id=button.dataset.copyLibrary||button.dataset.editLibrary||button.dataset.useLibrary||button.dataset.saveLibrary||button.dataset.restoreLibrary||button.dataset.deleteLibrary;
+    const item=getComments().find(c=>c.id===id);
+    if(button.dataset.copyLibrary && item){copyCommentText(item.text);return;}
+    if(button.hasAttribute('data-edit-library')){libraryEditingId=id;renderFullLibrary();$('libraryEditText')?.focus();return;}
+    if(button.hasAttribute('data-cancel-library')){libraryEditingId=null;renderFullLibrary();return;}
+    if(button.hasAttribute('data-save-library')){saveLibraryEdit(id);return;}
+    if(button.hasAttribute('data-use-library')){$('libraryDialog').close();libraryEditingId=null;prepareComment(id);return;}
+    if(button.hasAttribute('data-restore-library')){delete state.commentEdits[id];libraryEditingId=null;saveLibrarySettings();renderBank();renderFullLibrary();toast('Original library wording restored.');return;}
+    if(button.hasAttribute('data-delete-library')){
+      if(!confirm('Delete this personal library comment? Previously placed stamps will not change.'))return;
+      state.customComments=state.customComments.filter(c=>c.id!==id);libraryEditingId=null;
+      saveLibrarySettings();renderBank();renderFullLibrary();toast('Personal comment removed from the library.');
+    }
   }
   function renderTone() {
     document.querySelectorAll('[data-tone]').forEach(btn => {
@@ -136,17 +264,32 @@ window.pdfjsLib = pdfjsLib;
     const item = getComments().find(c=>c.id===id);
     if(!item) return;
     selectedStampId = null; movingStampId = null;
-    draft = {...item};
+    draft = {...item,size:state.stampStyle.size,color:item.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor};
     renderEditor();renderBank();renderStamps();setInstruction();
     if(!isReady()) toast('Comment selected. Upload a PDF to place the stamp.');
+  }
+  function appearanceEditor(item,prefix) {
+    const size=normalSize(item.size),color=stampColor(item);
+    return `<div class="individual-stamp-style"><label for="${prefix}Size">Stamp size <output id="${prefix}SizeValue">${size} pt</output><input id="${prefix}Size" type="range" min="14" max="42" step="2" value="${size}"></label><label for="${prefix}Color">Stamp colour <input id="${prefix}Color" type="color" value="${color}"></label></div>`;
+  }
+  function bindAppearanceEditor(item,prefix,existing) {
+    $(`${prefix}Size`).addEventListener('input',e=>{
+      item.size=normalSize(e.target.value);$(`${prefix}SizeValue`).textContent=`${item.size} pt`;
+      if(existing){renderStamps();scheduleSave();}
+    });
+    $(`${prefix}Color`).addEventListener('input',e=>{
+      item.color=normalColor(e.target.value,stampColor(item));
+      if(existing){renderStamps();scheduleSave();}
+    });
   }
   function renderEditor() {
     const stamp = selectedStamp();
     if(stamp) {
-      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} evidence stamp</strong><small>Page ${stamp.page} / ${stamp.tone}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit the selected stamp comment">${escapeHtml(stamp.text)}</textarea><div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
+      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} evidence stamp</strong><small>Page ${stamp.page} / ${stamp.tone}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
       $('stampTextEdit').addEventListener('input', e => {stamp.text=e.target.value;renderStamps();scheduleSave();});
+      bindAppearanceEditor(stamp,'selectedStamp',true);
       $('moveStamp').addEventListener('click',()=>{movingStampId=stamp.id;draft=null;selectedStampId=null;renderEditor();setInstruction(); if (currentPage!==stamp.page) navigate(stamp.page);});
-      $('copyStamp').addEventListener('click',()=>{navigator.clipboard?.writeText(stamp.text).then(()=>toast('Comment copied.')).catch(()=>toast('Clipboard unavailable in this browser.'));});
+      $('copyStamp').addEventListener('click',()=>copyCommentText(stamp.text));
       $('deleteStamp').addEventListener('click',()=>{state.stamps=state.stamps.filter(s=>s.id!==stamp.id);selectedStampId=null;renderEditor();renderStamps();scheduleSave();toast('Evidence stamp deleted.');});
       return;
     }
@@ -154,8 +297,9 @@ window.pdfjsLib = pdfjsLib;
       $('selectionEditor').innerHTML = '<div class="selection-empty"><span class="small-ring">A</span><span>Choose a comment to prepare a stamp.</span></div>';
       return;
     }
-    $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Ready: criterion ${escapeHtml(draft.criterion)}</strong><span class="polarity ${draft.tone}">${draft.tone==='strength'?'Strength':'Limitation'}</span></div><textarea id="draftTextEdit" maxlength="1800" aria-label="Personalise the stamp comment">${escapeHtml(draft.text)}</textarea><div class="selection-actions"><small>Personalise the observation before placing it on the PDF.</small><button type="button" class="btn primary" id="placeHint">${isReady()?'Click PDF to place':'Add PDF first'} &#8594;</button></div></div>`;
+    $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Ready: criterion ${escapeHtml(draft.criterion)}</strong><span class="polarity ${draft.tone}">${draft.tone==='strength'?'Strength':'Limitation'}</span></div><textarea id="draftTextEdit" maxlength="1800" aria-label="Personalise only this stamp comment">${escapeHtml(draft.text)}</textarea>${appearanceEditor(draft,'draftStamp')}<div class="selection-actions"><small>Personalise this stamp before placing it on the PDF.</small><button type="button" class="btn primary" id="placeHint">${isReady()?'Click PDF to place':'Add PDF first'} &#8594;</button></div></div>`;
     $('draftTextEdit').addEventListener('input',e=>{draft.text=e.target.value;});
+    bindAppearanceEditor(draft,'draftStamp',false);
     $('placeHint').addEventListener('click',()=>{
       if(!isReady()) $('pdfInput').click();
       else {$('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});toast('Click beside the evidence on the PDF to place this stamp.');}
@@ -167,7 +311,10 @@ window.pdfjsLib = pdfjsLib;
   function renderStamps() {
     const stampsOnPage = pageStamps(currentPage);
     $('allPinCount').textContent = state.stamps.length;
-    $('stampLayer').innerHTML = stampsOnPage.map(pin => `<button type="button" class="pin ${pin.tone} ${pin.id===selectedStampId?'active':''}" data-pin-id="${escapeHtml(pin.id)}" style="left:${(pin.x*100).toFixed(4)}%;top:${(pin.y*100).toFixed(4)}%" title="${escapeHtml(stampLabel(pin)+': '+pin.text)}" aria-label="${escapeHtml(stampLabel(pin)+': '+pin.text)}">${pin.criterion}<em>${escapeHtml(stampLabel(pin).slice(1))}</em></button>`).join('');
+    $('stampLayer').innerHTML = stampsOnPage.map(pin => {
+      const diameter=Math.max(12,Math.round(normalSize(pin.size)*viewScale));
+      return `<button type="button" class="pin ${pin.tone} ${pin.id===selectedStampId?'active':''}" data-pin-id="${escapeHtml(pin.id)}" style="left:${(pin.x*100).toFixed(4)}%;top:${(pin.y*100).toFixed(4)}%;width:${diameter}px;height:${diameter}px;font-size:${Math.max(9,Math.round(diameter*.51))}px;background:${stampColor(pin)};color:${stampTextColor(pin)}" title="${escapeHtml(stampLabel(pin)+': '+pin.text)}" aria-label="${escapeHtml(stampLabel(pin)+': '+pin.text)}">${pin.criterion}<em>${escapeHtml(stampLabel(pin).slice(1))}</em></button>`;
+    }).join('');
     $('stampLayer').querySelectorAll('[data-pin-id]').forEach(btn=>{
       let moved = false;
       let pressX = 0, pressY = 0;
@@ -190,7 +337,7 @@ window.pdfjsLib = pdfjsLib;
     });
     const container = $('stampsList');
     const sorted = [...state.stamps].sort((a,b)=>a.page-b.page || a.y-b.y);
-    container.innerHTML = sorted.length ? sorted.map(stamp=>`<button type="button" class="stamp-row ${selectedStampId===stamp.id?'is-selected':''}" data-sidebar-pin="${escapeHtml(stamp.id)}"><span class="mini-circle ${stamp.tone}">${stamp.criterion}</span><span class="stamp-info"><strong>Page ${stamp.page} &middot; ${stamp.tone==='strength'?'Strength':'Limitation'}</strong><span>${escapeHtml(stamp.text)}</span></span></button>`).join('') : '<p class="muted centered">Your evidence annotations will appear here.</p>';
+    container.innerHTML = sorted.length ? sorted.map(stamp=>`<button type="button" class="stamp-row ${selectedStampId===stamp.id?'is-selected':''}" data-sidebar-pin="${escapeHtml(stamp.id)}"><span class="mini-circle ${stamp.tone}" style="background:${stampColor(stamp)};color:${stampTextColor(stamp)}">${stamp.criterion}</span><span class="stamp-info"><strong>Page ${stamp.page} &middot; ${stamp.tone==='strength'?'Strength':'Limitation'}</strong><span>${escapeHtml(stamp.text)}</span></span></button>`).join('') : '<p class="muted centered">Your evidence annotations will appear here.</p>';
     container.querySelectorAll('[data-sidebar-pin]').forEach(button=>button.addEventListener('click',()=>{
       const stamp=state.stamps.find(s=>s.id===button.dataset.sidebarPin);
       if (!stamp)return;
@@ -219,7 +366,7 @@ window.pdfjsLib = pdfjsLib;
     }
     if(!draft)return;
     if(!draft.text.trim()){toast('Write a comment before placing the stamp.');return;}
-    const stamp = {id:makeId(),page:currentPage,x:position.x,y:position.y,criterion:draft.criterion,tone:draft.tone,topic:draft.topic,text:draft.text.trim(),libraryId:draft.id,createdAt:now()};
+    const stamp = {id:makeId(),page:currentPage,x:position.x,y:position.y,criterion:draft.criterion,tone:draft.tone,topic:draft.topic,text:draft.text.trim(),size:normalSize(draft.size),color:stampColor(draft),libraryId:draft.id,createdAt:now()};
     state.stamps.push(stamp);selectedStampId=stamp.id;draft=null;
     renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
     toast(`${stamp.criterion} ${stamp.tone} stamp placed on page ${currentPage}.`);
@@ -257,6 +404,7 @@ window.pdfjsLib = pdfjsLib;
       const baseWidth = Math.max(250,$('pdfScroll').clientWidth-58);
       const scale = Math.min(1.5,baseWidth/original.width) * zoom;
       const viewport = page.getViewport({scale});
+      viewScale=viewport.width/original.width;
       const displayRatio = Math.min(window.devicePixelRatio || 1,2);
       const canvas = $('pdfCanvas');
       canvas.width = Math.floor(viewport.width*displayRatio);
@@ -305,6 +453,7 @@ window.pdfjsLib = pdfjsLib;
       course:state.course,candidate:state.candidate,session:state.session,
       marks:{...state.marks},justifications:{...state.justifications},
       stamps:state.stamps.map(s=>({...s})),pdfName:state.pdfName,
+      stampStyle:{...state.stampStyle},customComments:state.customComments.map(x=>({...x})),commentEdits:{...state.commentEdits},
       ...(includePdf ? {pdfBase64:base64FromBytes(state.pdfBytes || new Uint8Array())} : {}),
     };
   }
@@ -352,13 +501,33 @@ window.pdfjsLib = pdfjsLib;
       if(Number.isInteger(value)&&value>=0&&value<=CRITERIA[key].max) state.marks[key]=value;
       state.justifications[key]=String(data.justifications?.[key]||'').slice(0,5000);
     }
+    // Library preferences travel with the project, while old v1 projects remain compatible.
+    if(data.stampStyle)state.stampStyle=normalStyle(data.stampStyle);
+    if(data.commentEdits && typeof data.commentEdits==='object' && !Array.isArray(data.commentEdits)){
+      for(const [id,change] of Object.entries(data.commentEdits)){
+        if(!BANK.some(item=>item.id===id)||typeof change?.text!=='string'||!change.text.trim())continue;
+        const original=BANK.find(item=>item.id===id);
+        state.commentEdits[id]={text:change.text.slice(0,1800),topic:String(change.topic||original.topic).slice(0,90)};
+      }
+    }
+    if(Array.isArray(data.customComments)){
+      const unique=new Map(state.customComments.map(c=>[c.id,c]));
+      for(const item of data.customComments){
+        if(typeof item?.id==='string' && item.id.startsWith('custom-') && CRITERIA[item.criterion] && ['strength','limitation'].includes(item.tone) && typeof item.text==='string' && item.text.trim()){
+          unique.set(item.id,{...item,text:item.text.slice(0,1800),topic:String(item.topic||'Personal evidence').slice(0,90),courses:['AA SL','AA HL','AI SL','AI HL']});
+        }
+      }
+      state.customComments=[...unique.values()];
+    }
     state.stamps=(Array.isArray(data.stamps)?data.stamps:[]).filter(s=>CRITERIA[s.criterion]&&Number.isInteger(s.page)&&s.page>=1&&s.page<=pdfDoc.numPages&&['strength','limitation'].includes(s.tone)&&Number.isFinite(s.x)&&Number.isFinite(s.y)).map(s=>({
       id:String(s.id||makeId()),page:s.page,x:Math.min(.99,Math.max(.01,s.x)),y:Math.min(.99,Math.max(.01,s.y)),criterion:s.criterion,
-      tone:s.tone,topic:String(s.topic||'Evidence').slice(0,100),text:String(s.text||'').slice(0,1800),libraryId:String(s.libraryId||''),createdAt:String(s.createdAt||now()),
+      tone:s.tone,topic:String(s.topic||'Evidence').slice(0,100),text:String(s.text||'').slice(0,1800),
+      size:normalSize(s.size),color:normalColor(s.color,s.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor),
+      libraryId:String(s.libraryId||''),createdAt:String(s.createdAt||now()),
     }));
     $('course').value=state.course;$('candidate').value=state.candidate;$('session').value=state.session;updateFrameworkNotice();
     tab='all';selectedStampId=null;draft=null;movingStampId=null;
-    updateScores();renderTabs();renderBank();renderEditor();renderStamps();setInstruction();scheduleSave();
+    saveLibrarySettings();renderStampStyle();updateScores();renderTabs();renderBank();renderEditor();renderStamps();setInstruction();scheduleSave();
   }
   function initDatabase() {
     if(!('indexedDB' in window))return;
@@ -388,7 +557,7 @@ window.pdfjsLib = pdfjsLib;
     if((isReady()||state.stamps.length)&&!confirm('Start a new project? Unsaved project changes will be cleared.'))return;
     state={...state,course:'AA SL',candidate:'',session:'',marks:freshMarks(),justifications:freshJustifications(),stamps:[],pdfName:'',pdfBytes:null};
     rendering++;if(activeRenderTask){try{activeRenderTask.cancel();}catch(_){}}
-    pdfDoc=null;currentPage=1;zoom=1;draft=null;selectedStampId=null;movingStampId=null;
+    pdfDoc=null;currentPage=1;zoom=1;viewScale=1;draft=null;selectedStampId=null;movingStampId=null;
     $('course').value='AA SL';$('candidate').value='';$('session').value='';
     $('emptyViewer').classList.remove('hidden');$('pageShell').classList.add('hidden');
     $('documentMeta').classList.add('hidden');$('uploadTitle').textContent='Upload student IA';$('uploadSubtext').textContent='Drop a PDF here or browse files';
@@ -437,7 +606,13 @@ window.pdfjsLib = pdfjsLib;
     if(line)rows.push(line);
     return rows.length?rows:[''];
   }
-  function pdfColor(tone) {return tone==='strength'?window.PDFLib.rgb(.275,.47,.59):window.PDFLib.rgb(.70,.47,.20);}
+  function pdfColor(stamp) {
+    const hex=stampColor(stamp);
+    return window.PDFLib.rgb(...[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255));
+  }
+  function pdfTextColor(stamp){return brightColor(stampColor(stamp))?window.PDFLib.rgb(.09,.16,.25):window.PDFLib.rgb(1,1,1);}
+  function pdfNoteColor(stamp){return brightColor(stampColor(stamp))?window.PDFLib.rgb(.17,.25,.33):pdfColor(stamp);}
+
   function pdfFaint(tone){return tone==='strength'?window.PDFLib.rgb(.94,.97,.98):window.PDFLib.rgb(1,.977,.941);}
   function pdfText(page,text,x,y,size,font,color) {page.drawText(sanitizePdfText(text),{x,y,size,font,color});}
   async function exportPdf() {
@@ -466,14 +641,17 @@ window.pdfjsLib = pdfjsLib;
         const notes=pageStamps(i+1).sort((a,b)=>a.y-b.y);
         let occupiedTop=41;
         for(const stamp of notes){
-          const c=pdfColor(stamp.tone);const label=stampLabel(stamp);
-          const x=Math.min(w-13,Math.max(13,stamp.x*w));const y=Math.min(h-13,Math.max(13,(1-stamp.y)*h));
-          p.drawCircle({x,y,size:10,color:c,borderWidth:1.8,borderColor:rgb(1,1,1)});
-          const tW=bold.widthOfTextAtSize(stamp.criterion,10);
-          pdfText(p,stamp.criterion,x-tW/2,y-3.25,10,bold,rgb(1,1,1));
-          const number=label.slice(1);
-          p.drawCircle({x:x+8,y:y-9,size:5,color:rgb(1,1,1),borderWidth:.6,borderColor:c});
-          pdfText(p,number,x+8-font.widthOfTextAtSize(number,5.7)/2,y-10.7,5.7,bold,c);
+          const c=pdfColor(stamp);const noteColor=pdfNoteColor(stamp);const label=stampLabel(stamp);const radius=normalSize(stamp.size)/2;
+          const x=Math.min(w-radius-2,Math.max(radius+2,stamp.x*w));const y=Math.min(h-radius-2,Math.max(radius+2,(1-stamp.y)*h));
+          p.drawCircle({x,y,size:radius,color:c,borderWidth:Math.max(1.2,radius*.14),borderColor:rgb(1,1,1)});
+          const letterSize=Math.min(21,Math.max(9,radius*.97));
+          const tW=bold.widthOfTextAtSize(stamp.criterion,letterSize);
+          pdfText(p,stamp.criterion,x-tW/2,y-letterSize*.34,letterSize,bold,pdfTextColor(stamp));
+          const number=label.slice(1),smallRadius=Math.max(4,radius*.47);
+          const nx=x+radius*.82,ny=y-radius*.84;
+          p.drawCircle({x:nx,y:ny,size:smallRadius,color:rgb(1,1,1),borderWidth:.65,borderColor:c});
+          const numberSize=Math.max(5,Math.min(8,smallRadius*.98));
+          pdfText(p,number,nx-bold.widthOfTextAtSize(number,numberSize)/2,ny-numberSize*.32,numberSize,bold,noteColor);
           const rows=pdfWrap(stamp.text,font,9.45,COL-45);
           const boxHeight=22+rows.length*13+10;
           const idealTop=Math.max(42,h-y-13);
@@ -482,7 +660,7 @@ window.pdfjsLib = pdfjsLib;
           const bottom=h-top-boxHeight;
           p.drawRectangle({x:w+13,y:bottom,width:COL-27,height:boxHeight,color:pdfFaint(stamp.tone),borderColor:line,borderWidth:.5});
           p.drawRectangle({x:w+13,y:bottom,width:3,height:boxHeight,color:c});
-          pdfText(p,`${label}  ${stamp.tone==='strength'?'STRENGTH':'LIMITATION'}`,w+22,bottom+boxHeight-16,9,bold,c);
+          pdfText(p,`${label}  ${stamp.tone==='strength'?'STRENGTH':'LIMITATION'}`,w+22,bottom+boxHeight-16,9,bold,noteColor);
           rows.forEach((row,idx)=>pdfText(p,row,w+22,bottom+boxHeight-33-idx*13,9.45,font,ink));
           occupiedTop=top+boxHeight+8;
         }
@@ -497,7 +675,7 @@ window.pdfjsLib = pdfjsLib;
           const label=stampLabel(item.stamp),rows=pdfWrap(item.stamp.text,font,10.5,520);
           const height=34+rows.length*14;
           if(!page||y-height<45){page=output.addPage([595,842]);page.drawRectangle({x:0,y:0,width:595,height:842,color:rgb(1,1,1)});pdfText(page,'CONTINUED ASSESSMENT EVIDENCE',35,795,16,bold,ink);y=762;}
-          pdfText(page,`${label} | Original page ${item.page} | ${item.stamp.tone}`,35,y,10.5,bold,pdfColor(item.stamp.tone));
+          pdfText(page,`${label} | Original page ${item.page} | ${item.stamp.tone}`,35,y,10.5,bold,pdfNoteColor(item.stamp));
           rows.forEach((row,index)=>pdfText(page,row,35,y-18-index*14,10.5,font,ink));
           y-=height+9;
         }
@@ -549,6 +727,16 @@ window.pdfjsLib = pdfjsLib;
     finally {button.disabled=false;button.innerHTML='Export annotated PDF <span aria-hidden="true">&#8595;</span>';}
   }
 
+  function initStampStyleEvents() {
+    $('defaultStampSize').addEventListener('input',e=>{state.stampStyle.size=normalSize(e.target.value);renderStampStyle();saveLibrarySettings();});
+    $('strengthStampColour').addEventListener('input',e=>{state.stampStyle.strengthColor=normalColor(e.target.value,STAMP_DEFAULTS.strengthColor);renderStampStyle();saveLibrarySettings();});
+    $('limitationStampColour').addEventListener('input',e=>{state.stampStyle.limitationColor=normalColor(e.target.value,STAMP_DEFAULTS.limitationColor);renderStampStyle();saveLibrarySettings();});
+    $('applyStampStyle').addEventListener('click',()=>{
+      if(!state.stamps.length){toast('No placed stamps yet. These settings will be used for new stamps.');return;}
+      for(const stamp of state.stamps){stamp.size=state.stampStyle.size;stamp.color=stamp.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor;}
+      renderStamps();renderEditor();scheduleSave();toast(`Updated the appearance of all ${state.stamps.length} existing stamps.`);
+    });
+  }
   function initEvents() {
     $('course').addEventListener('change',e=>{state.course=e.target.value;renderBank();scheduleSave();});
     $('candidate').addEventListener('input',e=>{state.candidate=e.target.value;scheduleSave();});
@@ -572,6 +760,19 @@ window.pdfjsLib = pdfjsLib;
     $('cancelPlacement').addEventListener('click',()=>{draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();});
     $('commentSearch').addEventListener('input',e=>{search=e.target.value;bankShowAll=false;renderBank();});
     document.querySelectorAll('[data-tone]').forEach(button=>button.addEventListener('click',()=>{tone=button.dataset.tone;bankShowAll=false;renderTone();renderBank();}));
+    $('openLibrary').addEventListener('click',()=>openLibrary());
+    $('closeLibrary').addEventListener('click',()=>$('libraryDialog').close());
+    $('libraryCloseBottom').addEventListener('click',()=>$('libraryDialog').close());
+    $('librarySearch').addEventListener('input',()=>{libraryEditingId=null;renderFullLibrary();});
+    $('libraryCriterion').addEventListener('change',()=>{libraryEditingId=null;renderFullLibrary();});
+    $('libraryCourse').addEventListener('change',()=>{libraryEditingId=null;renderFullLibrary();});
+    $('libraryTone').addEventListener('change',()=>{libraryEditingId=null;renderFullLibrary();});
+    $('libraryResults').addEventListener('click',handleLibraryAction);
+    $('copyLibraryVisible').addEventListener('click',()=>{
+      const text=filteredLibraryComments().map(item=>`${item.criterion} / ${item.topic} (${item.tone})\n${item.text}`).join('\n\n');
+      if(text)copyCommentText(text);
+    });
+    initStampStyleEvents();
     $('newCustom').addEventListener('click',()=>{
       $('customCriterion').value=CRITERIA[tab]?tab:'A';$('customTone').value=tone==='limitation'?'limitation':'strength';
       $('customTopic').value='';$('customText').value='';$('customDialog').showModal();$('customText').focus();
@@ -580,7 +781,7 @@ window.pdfjsLib = pdfjsLib;
       const txt=$('customText').value.trim();if(!txt){toast('Write an evidence comment first.');return;}
       const item={id:'custom-'+makeId(),criterion:$('customCriterion').value,tone:$('customTone').value,topic:$('customTopic').value.trim()||'Personal evidence',text:txt,tags:[],courses:['AA SL','AA HL','AI SL','AI HL'],origin:'Teacher custom comment'};
       state.customComments.unshift(item);
-      try{localStorage.setItem('ia-marking-desk-comments',JSON.stringify(state.customComments));}catch(e){console.warn(e);}
+      saveLibrarySettings();
       $('customDialog').close();tab=item.criterion;tone=item.tone;search='';$('commentSearch').value='';renderTabs();renderTone();renderBank();prepareComment(item.id);
       toast('Personal comment saved to this browser and selected.');
     });
@@ -589,7 +790,7 @@ window.pdfjsLib = pdfjsLib;
     $('exportAnnotated').addEventListener('click',exportPdf);
     window.addEventListener('resize',()=>{if(isReady())renderPage();});
     document.addEventListener('keydown',e=>{
-      if(e.key==='Escape' && !($('reviewDialog').open||$('customDialog').open)) {draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();}
+      if(e.key==='Escape' && !($('reviewDialog').open||$('customDialog').open||$('libraryDialog').open)) {draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();}
       if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||e.target instanceof HTMLSelectElement||e.ctrlKey||e.metaKey)return;
       if(e.key==='ArrowRight')navigate(currentPage+1);
       if(e.key==='ArrowLeft')navigate(currentPage-1);
@@ -604,8 +805,10 @@ window.pdfjsLib = pdfjsLib;
   }
   function init() {
     try {state.customComments=JSON.parse(localStorage.getItem('ia-marking-desk-comments')||'[]');if(!Array.isArray(state.customComments))state.customComments=[];}catch(e){state.customComments=[];}
+    try {const edits=JSON.parse(localStorage.getItem('ia-marking-desk-edits')||'{}');state.commentEdits=edits && !Array.isArray(edits) && typeof edits==='object' ? edits:{};}catch(e){state.commentEdits={};}
+    try {state.stampStyle=normalStyle(JSON.parse(localStorage.getItem('ia-marking-desk-stamp-style')||'{}'));}catch(e){state.stampStyle=normalStyle();}
     if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.mjs';
-    initScores();renderTabs();renderTone();renderBank();renderEditor();renderStamps();setInstruction();updateFrameworkNotice();initEvents();initDatabase();
+    initScores();renderStampStyle();renderTabs();renderTone();renderBank();renderEditor();renderStamps();setInstruction();updateFrameworkNotice();initEvents();initDatabase();
     if(!window.pdfjsLib||!window.PDFLib)console.warn('Local PDF libraries not loaded. Use the GitHub Pages Actions build or run npm run build to create vendor files.');
   }
   init();

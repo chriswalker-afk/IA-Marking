@@ -60,6 +60,14 @@
         <div class="pane-divider"></div>
         <div class="subhead"><span>Evidence stamps</span><span class="counter" id="allPinCount">0</span></div>
         <div class="legend"><span><i class="legend-dot strength"></i>Strength</span><span><i class="legend-dot limitation"></i>Limitation</span></div>
+        <section class="stamp-style-panel" aria-label="Stamp appearance defaults">
+          <div class="stamp-style-header"><strong>Stamp appearance</strong><span class="stamp-preview" aria-hidden="true"><i id="previewStrength">A</i><i id="previewLimitation">D</i></span></div>
+          <label class="stamp-size-field" for="defaultStampSize">Size <output id="defaultStampSizeValue" for="defaultStampSize">20 pt</output></label>
+          <input id="defaultStampSize" type="range" min="14" max="42" step="2" value="20" aria-label="Default stamp diameter in PDF points">
+          <div class="stamp-colour-fields"><label>Strength colour <input id="strengthStampColour" type="color" value="#477b97" aria-label="Strength stamp colour"></label><label>Limitation colour <input id="limitationStampColour" type="color" value="#b7803c" aria-label="Limitation stamp colour"></label></div>
+          <button id="applyStampStyle" class="text-button" type="button">Apply these colours and size to all existing stamps</button>
+          <p>Defaults apply to new stamps. Selected stamps can be customised separately.</p>
+        </section>
         <div class="stamps-list" id="stampsList"><p class="muted centered">Your evidence annotations will appear here.</p></div>
         <div class="document-footer"><span class="lock-icon">&#9638;</span><span>Local-first. No PDF or comments are uploaded to a server.</span></div>
       </aside>
@@ -96,12 +104,21 @@
         <div class="criterion-tabs" id="criterionTabs" role="group" aria-label="Filter comments by criterion"></div>
         <div class="bank-filters"><input id="commentSearch" type="search" placeholder="Search comments or topics..." aria-label="Search the comment bank"><div class="tone-toggle" role="group" aria-label="Filter strengths and limitations"><button class="tone-btn active" data-tone="all" type="button">All</button><button class="tone-btn" data-tone="strength" type="button">Strengths</button><button class="tone-btn" data-tone="limitation" type="button">Limitations</button></div></div>
         <div class="bank-list-heading"><strong id="bankFilteredCount">Comments</strong><button id="newCustom" class="link-button" type="button">+ Write my own</button></div>
+        <button id="openLibrary" class="library-open-button" type="button"><span>Browse the full comment library</span><span>View, edit &amp; copy all &#8599;</span></button>
         <div class="comment-list" id="commentList"></div>
         <div class="selection-editor" id="selectionEditor"><div class="selection-empty"><span class="small-ring">A</span><span>Choose a comment to prepare a stamp.</span></div></div>
         <div class="bank-caption">Curated from the supplied 2021-2026 examiner-feedback synthesis. These are prompts, not IB descriptors or automatic marks.</div>
       </aside>
     </main>
   </div>
+
+  <dialog id="libraryDialog" class="modal library-modal" aria-labelledby="libraryTitle">
+    <div class="library-modal-heading"><div><span class="eyebrow">TEACHER REFERENCE</span><h2 id="libraryTitle">Full comment library</h2><p>Browse every criterion comment, copy it into another document, or save your own wording. Edits are private to this browser.</p></div><button id="closeLibrary" type="button" class="icon-button" aria-label="Close comment library">&#10005;</button></div>
+    <div class="library-modal-filters"><input id="librarySearch" type="search" placeholder="Search topics and comments..." aria-label="Search the full comment library"><select id="libraryCourse" aria-label="Library course"><option value="all">All courses</option><option value="AA SL">AA SL</option><option value="AI SL">AI SL</option><option value="AA HL">AA HL</option><option value="AI HL">AI HL</option></select><select id="libraryCriterion" aria-label="Library criterion"><option value="all">All criteria</option><option value="A">A - Presentation</option><option value="B">B - Communication</option><option value="C">C - Engagement</option><option value="D">D - Reflection</option><option value="E">E - Mathematics</option></select><select id="libraryTone" aria-label="Library evidence type"><option value="all">Strengths &amp; limitations</option><option value="strength">Strengths</option><option value="limitation">Limitations</option></select></div>
+    <div class="library-summary"><span id="libraryCount" aria-live="polite">All comments</span><button id="copyLibraryVisible" type="button" class="btn subtle">Copy visible comments</button></div>
+    <div id="libraryResults" class="library-results"></div>
+    <div class="library-modal-footer"><span>Edits to library entries affect future stamps, not evidence already stamped on an IA.</span><button id="libraryCloseBottom" type="button" class="btn subtle">Done</button></div>
+  </dialog>
 
   <dialog id="customDialog" class="modal custom-modal" aria-labelledby="customTitle">
     <form method="dialog" id="customForm">

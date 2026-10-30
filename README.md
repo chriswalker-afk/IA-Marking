@@ -6,11 +6,11 @@
 
 - Upload a final IA PDF (rendered within your browser, not uploaded to this repository or a server).
 - Select AA SL, AI SL, AA HL or AI HL; add an anonymous assessment ID and exam session.
-- Place **small circular A-E evidence stamps** on pages, with an individually editable strength/limitation observation attached. Drag a stamp or move it to another page; use the side panel to revisit it.
-- Search **294 original assessment-evidence comments** from the attached 2021-2026 examiner-feedback synthesis (147 strengths, 147 limitations), organised by criterion and searchable topic. Add your own reusable comments locally.
+- Place **circular A-E evidence stamps** on pages, with an individually editable strength/limitation observation attached. Choose the default **diameter (14–42 PDF points)** and separate strength/limitation colours, customise any placed or prepared stamp individually, or apply the default appearance to all existing stamps. Drag a stamp or move it to another page; use the side panel to revisit it.
+- Search **294 original assessment-evidence comments** from the supplied 2021–2026 examiner-feedback synthesis (147 strengths, 147 limitations), organised by criterion and searchable topic. Use **Browse the full comment library** to see all comments in one searchable view, copy an individual comment, copy all filtered comments, edit an existing library entry or add your own reusable comments. This works even before uploading an IA.
 - Award A /4, B /4, C /3, D /3 and E /6 manually, and add criterion-level rationales. Neither stamps nor comment counts determine marks.
 - Export a new annotated PDF with the original student pages retained, evidence notes in a right-side margin, continuation pages for crowded annotations, and a criterion summary.
-- Save a portable `.iamark.json` project (includes the uploaded PDF), or resume your own locally autosaved draft through IndexedDB.
+- Save a portable `.iamark.json` project (includes the uploaded PDF, stamp appearance, custom comments and edited library wording), or resume your own locally autosaved draft through IndexedDB. Existing version-1 projects continue to open, with defaults applied to older stamps.
 
 ### Assessment framework warning
 
@@ -19,6 +19,12 @@ The five criteria above apply to the **IB Mathematics IA framework whose last as
 ### Course notes
 
 The supplied examiner-feedback synthesis covers **AA SL, AI SL and AA HL**. AI HL is included as a course choice and uses the generally applicable bank, but comments have not been independently calibrated against AI HL examiner reports. Criterion E descriptors differ between SL and HL under the pre-2029 framework; always consult the applicable official guide and marked exemplars before awarding marks.
+
+### Comment editing vs stamped evidence
+
+The **Edit** action on a comment updates the reusable local library for future stamps. Built-in comments can be restored to their original wording; personal comments can be edited or deleted. Edits are saved in this browser's local storage and included in newly saved projects. They do not change the repository's shared 294-comment source file or automatically rewrite any stamp already placed on a student's IA. The **Edit stamp** textarea only changes that particular annotation. Use the **Copy** buttons to paste the comment into a separate marking record or moderation document.
+
+Stamp defaults also persist in this browser. A new stamp inherits its size and colour when selected; changes to defaults do not restyle already placed stamps unless **Apply these colours and size to all existing stamps** is chosen. Individual stamp overrides remain in saved projects and the annotated PDF export.
 
 ## Install and publish
 
@@ -52,7 +58,8 @@ For automatic deployment, go to **Settings > Pages > Build and deployment > Sour
 - `comments.js` - browser comment library
 - `comments.json` - structured authoring library (includes source page and course tags)
 - `build_bank.py` - source script for generating comment bank
-- `tests/bank.test.mjs` - consistency and coverage checks
+- `tests/bank.test.mjs` - consistency, coverage and interface contract checks
+- `tests/smoke_browser.py` - optional local Chromium smoke test for library editing/copying, stamp appearance and mocked PDF workflows
 - `scripts/build.mjs` - copies version-pinned libraries and source into a deployable static `dist/`
 - `.github/workflows/pages.yml` - verify and publish
 
