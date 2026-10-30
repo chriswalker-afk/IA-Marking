@@ -595,6 +595,49 @@ with tempfile.TemporaryDirectory() as folder:
         assert errors==[], f'Browser JS errors: {errors}'
         context.close()
 
+        # Migration coverage: a teacher with an earlier one-project IndexedDB
+        # draft must find that original draft automatically in My IAs after
+        # updating, without being asked to re-upload confidential files.
+        legacy_context=browser.new_context(viewport={'width':1280,'height':850})
+        legacy_page=legacy_context.new_page()
+        legacy_page.goto(base_url+'/library.html')  # Standalone library does not open IndexedDB.
+        legacy_project={key:value for key,value in portable.items() if key!='pdfBase64'}
+        legacy_project['candidate']='IA-LEGACY'
+        legacy_page.evaluate("""(value)=>new Promise((resolve,reject)=>{
+          const request=indexedDB.open('ia-marking-desk-local-v1',1);
+          request.onupgradeneeded=()=>request.result.createObjectStore('draft',{keyPath:'id'});
+          request.onerror=()=>reject(request.error?.message||'Could not make legacy DB');
+          request.onsuccess=()=>{
+            const db=request.result,tx=db.transaction('draft','readwrite');
+            const pdfBytes=Uint8Array.from(atob(value.pdfBase64),c=>c.charCodeAt(0));
+            tx.objectStore('draft').put({id:'latest',date:'2026-10-29T12:00:00.000Z',
+              project:value.project,pdfBytes});
+            tx.oncomplete=()=>{db.close();resolve(true);};
+            tx.onerror=()=>reject(tx.error?.message||'Could not write legacy draft');
+          };
+        })""",{'pdfBase64':portable['pdfBase64'],'project':legacy_project})
+        legacy_page.goto(base_url+'/index.html')
+        expect(legacy_page.locator('#projectCountBadge')).to_have_text('1',timeout=20000)
+        expect(legacy_page.locator('#resumeLast')).to_be_visible()
+        legacy_page.locator('#openProjects').click()
+        assert 'IA-LEGACY' in legacy_page.locator('#projectsRows').inner_text()
+        expect(legacy_page.locator('#projectsRows .project-card')).to_have_count(1)
+        legacy_page.locator('#projectsDone').click()
+        legacy_page.locator('#resumeLast').click()
+        expect(legacy_page.locator('#allPinCount')).to_have_text('2',timeout=25000)
+        expect(legacy_page.locator('#candidate')).to_have_value('IA-LEGACY')
+        legacy_remaining=legacy_page.evaluate("""()=>new Promise((resolve,reject)=>{
+          const request=indexedDB.open('ia-marking-desk-local-v1',2);
+          request.onsuccess=()=>{
+            const db=request.result,tx=db.transaction('draft','readonly');
+            const old=tx.objectStore('draft').get('latest');
+            old.onsuccess=()=>{db.close();resolve(Boolean(old.result))};
+          };
+          request.onerror=()=>reject(request.error?.message);
+        })""")
+        assert legacy_remaining is False, 'Migrated legacy latest draft was duplicated rather than moved.'
+        legacy_context.close()
+
         # Degraded mode: missing PDF viewer should display a useful error but
         # still allow browsing all comments and applying criterion marks.
         broken = browser.new_context()
@@ -614,4 +657,4 @@ with tempfile.TemporaryDirectory() as folder:
         broken.close()
         browser.close()
 server.shutdown()
-print('Real PDF upload/render/stamp/export, criteria marks, independent library and missing-vendor recovery: PASS')
+print('Real PDF marking/export, Pass 9 local cohort dashboard, portable ZIP, migration, privacy cleanup and recovery: PASS')
