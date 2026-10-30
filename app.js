@@ -719,7 +719,7 @@ let pdfRendererLoad = null;
     const natural=noteLayout({...item,noteWidth:width,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
     const manualHeight=normalNoteHeight(item.noteHeight);
     const heightValue=manualHeight??Math.min(750,natural);
-    return `<details class="individual-appearance" id="${prefix}Appearance"><summary class="individual-appearance-summary"><span>Stamp appearance &amp; box size</span><small>Optional · customise</small></summary><div class="individual-stamp-style">
+    return `<details class="individual-appearance" id="${prefix}Appearance" data-editor-key="${escapeHtml(prefix+item.id)}"><summary class="individual-appearance-summary"><span>Stamp appearance &amp; box size</span><small>Optional · customise</small></summary><div class="individual-stamp-style">
       <span class="comment-style-heading">Criterion circle</span>
       <label for="${prefix}Size">Circle size <output id="${prefix}SizeValue">${size} pt</output><input id="${prefix}Size" type="range" min="14" max="42" step="2" value="${size}"></label>
       <label for="${prefix}Color">Circle colour <input id="${prefix}Color" type="color" value="${color}"></label>
@@ -781,6 +781,14 @@ let pdfRendererLoad = null;
     }
   }
   function renderEditor() {
+    // Keep advanced settings open through subsequent edits to this same stamp
+    // without expanding them by default for newly chosen comments.
+    const previousAppearance=$('selectionEditor').querySelector('.individual-appearance');
+    const expandedEditorKey=previousAppearance?.open?previousAppearance.dataset.editorKey:null;
+    const restoreAppearance=()=>{
+      const active=$('selectionEditor').querySelector('.individual-appearance');
+      if(active&&active.dataset.editorKey===expandedEditorKey)active.open=true;
+    };
     finishFieldHistory();
     const stamp = selectedStamp();
     const priorityField=item=>isFeedback()&&item.tone==='limitation'
@@ -800,6 +808,7 @@ let pdfRendererLoad = null;
       $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} ${isFeedback()?'feedback':'evidence'} stamp</strong><small>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${priorityField(stamp)}${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
       $('stampTextEdit').addEventListener('input', e => {stamp.text=e.target.value;renderStamps();scheduleSave();});
       watchHistoryField($('stampTextEdit'),'edit '+stamp.criterion+' comment');
+      restoreAppearance();
       bindAppearanceEditor(stamp,'selectedStamp',true);
       bindPriority(stamp,true);
       $('moveStamp').addEventListener('click',()=>{movingStampId=stamp.id;draft=null;selectedStampId=null;renderEditor();setInstruction(); if (currentPage!==stamp.page) navigate(stamp.page);});
@@ -824,6 +833,7 @@ let pdfRendererLoad = null;
     }
     $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Ready: criterion ${escapeHtml(draft.criterion)}</strong><span class="polarity ${draft.tone}">${draft.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span></div><textarea id="draftTextEdit" maxlength="1800" aria-label="Personalise only this stamp comment">${escapeHtml(draft.text)}</textarea>${priorityField(draft)}${appearanceEditor(draft,'draftStamp')}<div class="selection-actions"><small>Personalise this stamp before placing it on the PDF.</small><button type="button" class="btn primary" id="placeHint">${isReady()?'Click PDF to place':'Add PDF first'} &#8594;</button></div></div>`;
     $('draftTextEdit').addEventListener('input',e=>{draft.text=e.target.value;});
+    restoreAppearance();
     bindAppearanceEditor(draft,'draftStamp',false);
     bindPriority(draft,false);
     $('placeHint').addEventListener('click',()=>{
