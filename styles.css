@@ -261,3 +261,34 @@ h2{margin:4px 0 0;font-weight:750;font-size:18px;letter-spacing:-.035em;color:va
 .note-width-field{grid-column:1/-1;display:grid!important;grid-template-columns:1fr auto;align-items:center;gap:4px!important}
 .note-width-field input{grid-column:1/-1;accent-color:var(--navy);padding:0}
 @media(max-width:650px){.arrange-notes{font-size:9px!important;padding:5px!important}.toolbar-left{gap:6px}}
+
+
+/* Full-text comment typography and printable box appearance. */
+.note-defaults{margin-top:4px;padding-top:7px;border-top:1px solid #dce6ee;display:block}
+.note-defaults summary{cursor:pointer;color:#395f7e;font-size:10px;font-weight:750;line-height:1.5;padding:3px 0}
+.note-defaults[open]{display:flex;flex-direction:column;gap:10px}
+.note-defaults .stamp-colour-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.note-defaults .stamp-colour-fields label{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:9px;align-items:flex-start}
+.note-defaults .stamp-colour-fields input{width:100%;max-width:45px}
+.note-defaults .note-dimension-field{display:grid;grid-template-columns:1fr auto;align-items:center;gap:5px;color:#657c90;font-size:10px;font-weight:700}
+.note-defaults .note-dimension-field input{grid-column:1/-1;padding:0;width:100%;height:19px;accent-color:#315c7b}
+.note-defaults .note-dimension-field output{font-variant-numeric:tabular-nums}
+.individual-stamp-style{grid-template-columns:minmax(0,1fr) minmax(0,75px);align-items:stretch}
+.individual-stamp-style .comment-style-heading{grid-column:1/-1;font-size:10px;font-weight:800;color:#304f6a;padding:7px 0 2px;border-bottom:1px solid #e1e9ef}
+.individual-stamp-style .note-dimension-field{grid-column:1/-1;display:grid;grid-template-columns:1fr auto;gap:5px;align-items:center}
+.individual-stamp-style .note-dimension-field input{grid-column:1/-1;width:100%}
+.individual-stamp-style .note-colours{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.individual-stamp-style .note-colours label{align-items:start!important;display:flex!important;flex-direction:column!important;gap:5px!important;font-size:9.5px;line-height:1.3}
+.individual-stamp-style .note-colours input{width:100%;max-width:48px;height:32px}
+.individual-stamp-style .note-fit-button{grid-column:1/-1;text-align:left;white-space:normal;color:#346d92;font-weight:750;font-size:11px;padding:4px 0}
+.individual-stamp-style .note-format-help{grid-column:1/-1;color:#8095a5;font-size:10px;line-height:1.5}
+.selection-editor{max-height:min(70vh,760px);overflow-y:auto;scrollbar-width:thin}
+.onpage-border-accent{position:absolute;top:0;bottom:0;left:0;pointer-events:none}
+.note-resize-handle{position:absolute;right:0;bottom:0;width:20px;height:20px;min-width:20px;background:rgba(227,238,246,.94);border:1px solid #98aec0;border-radius:5px 0 3px 0;color:#376687;cursor:nwse-resize;z-index:6;touch-action:none;padding:0}
+.note-resize-handle::after{content:"";position:absolute;right:4px;bottom:4px;width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor}
+.note-resize-handle:hover,.note-resize-handle:focus-visible{background:#d4e7f5;color:#234e6b;outline:2px solid #719bb8;outline-offset:-2px}
+.onpage-stamp.active .note-resize-handle{background:#d3e9f9}
+@media(max-width:650px){
+ .individual-stamp-style .note-colours{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .note-resize-handle{width:24px;height:24px}
+}
