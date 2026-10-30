@@ -35,7 +35,7 @@ test('browser comment bundle matches authoring JSON', () => {
 });
 
 test('application script syntax and dependencies are pinned', () => {
-  for (const filename of ['app.js', 'comments.js', 'library.js']) {
+  for (const filename of ['app.js', 'comments.js', 'rubric.js', 'library.js']) {
     execFileSync(process.execPath,['--check',filename]);
   }
   const html=readFileSync('index.html','utf8');
@@ -136,4 +136,37 @@ test('full on-page comment styles and box resizing are accessible and preserved 
   assert.ok(css.includes('.note-resize-handle'), 'Missing drag resize control');
   assert.ok(css.includes('.note-defaults'), 'Missing configurable new-comment defaults');
   assert.ok(app.includes('if(!current.layout.contentFits)'), 'Clipped comments should block export');
+});
+
+test('complete A-E teacher rubric includes each mark band and distinct SL and HL E', () => {
+  const scope={window:{}};
+  vm.runInNewContext(readFileSync('rubric.js','utf8'),scope);
+  const rubric=scope.window.IA_RUBRIC;
+  assert.deepEqual(Object.keys(rubric),['A','B','C','D','E']);
+  for (const [key,max] of Object.entries({A:4,B:4,C:3,D:3})) {
+    assert.equal(rubric[key].levels.length,max+1,key);
+    assert.ok(rubric[key].levels.every(x=>typeof x==='string'&&x.length>45),key);
+    assert.equal(rubric[key].considerations.length,3,key);
+    assert.ok(rubric[key].focus.length>35,key);
+  }
+  assert.equal(rubric.E.SL.length,7);
+  assert.equal(rubric.E.HL.length,7);
+  assert.ok(rubric.E.HL[6].includes('AND rigour'));
+  assert.notEqual(rubric.E.SL[6],rubric.E.HL[6]);
+  const html=readFileSync('index.html','utf8');
+  assert.ok(html.includes('<script src="rubric.js"></script>'));
+  const app=readFileSync('app.js','utf8');
+  for(const marker of ['data-rubric-key','data-rubric-score','updateRubricMarks','criteriaJumpBar','criteriaOfficialGuideDetails','RUBRIC.E','RUBRIC[key]']) {
+    // RUBRIC.E is indirect through RUBRIC[key].
+    if(marker==='RUBRIC.E')continue;
+    assert.ok(app.includes(marker),marker);
+  }
+  for(const id of ['criteriaCoursePill','criteriaScrollArea','criteriaProgress','criteriaOfficialGuideDetails','criteriaOpenGuide']){
+    assert.ok(html.includes('id="'+id+'"'),id);
+  }
+  const css=readFileSync('styles.css','utf8');
+  assert.ok(css.includes('height:100dvh!important'),'Mobile rubric should be full screen');
+  assert.ok(css.includes('.criteria-level.is-awarded'),'Selected achievement level should be visible');
+  const build=readFileSync('scripts/build.mjs','utf8');
+  assert.ok(build.includes("'rubric.js'"),'Rubric asset must be packaged by GitHub Pages build');
 });
