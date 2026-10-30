@@ -423,7 +423,7 @@ let pdfRendererLoad = null;
         data:new Uint8Array(clone),isEvalSupported:false,
         cMapUrl:'vendor/cmaps/',cMapPacked:true,standardFontDataUrl:'vendor/standard_fonts/',wasmUrl:'vendor/wasm/'
       }).promise;
-      if(!keepStamps){state.stamps=[];state.marks=freshMarks();state.justifications=freshJustifications();selectedStampId=null;movingStampId=null;draft=null;}
+      if(!keepStamps){const replacingExistingPdf=isReady();state.stamps=[];if(replacingExistingPdf){state.marks=freshMarks();state.justifications=freshJustifications();}selectedStampId=null;movingStampId=null;draft=null;}
       pdfDoc=loaded;state.pdfBytes=clone;state.pdfName=name || 'uploaded-ia.pdf';
       currentPage=1;zoom=1;
       $('emptyViewer').classList.add('hidden');$('pageShell').classList.remove('hidden');
