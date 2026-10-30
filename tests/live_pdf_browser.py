@@ -805,6 +805,7 @@ with tempfile.TemporaryDirectory() as folder:
         assert 'label both quantities' in checklist_text
         feedback_page.locator('#buildReviewPreview').click()
         feedback_page.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=50000)
+        expect(feedback_page.locator('#reviewPreviewPage')).to_contain_text('Page 1 / ',timeout=30000)
         preview_label=feedback_page.locator('#reviewPreviewPage').inner_text()
         assert preview_label.startswith('Page 1 / '),preview_label
         preview_total=int(preview_label.split('/')[-1].strip())
