@@ -1006,6 +1006,7 @@ let pdfRendererLoad = null;
         data:new Uint8Array(clone),isEvalSupported:false,
         cMapUrl:'vendor/cmaps/',cMapPacked:true,standardFontDataUrl:'vendor/standard_fonts/',wasmUrl:'vendor/wasm/'
       }).promise;
+      resetHistory();lastPlacedDraft=null;repeatPlacement=false;
       if(!keepStamps){const replacingExistingPdf=isReady();state.stamps=[];if(replacingExistingPdf){state.marks=freshMarks();state.justifications=freshJustifications();}selectedStampId=null;movingStampId=null;draft=null;}
       pdfDoc=loaded;state.pdfBytes=clone;state.pdfName=name || 'uploaded-ia.pdf';
       currentPage=1;zoom=1;
@@ -1167,8 +1168,9 @@ let pdfRendererLoad = null;
       libraryId:String(s.libraryId||''),createdAt:String(s.createdAt||now()),
     }));
     $('course').value=state.course;$('candidate').value=state.candidate;$('session').value=state.session;updateFrameworkNotice();
-    tab='all';selectedStampId=null;draft=null;movingStampId=null;
-    saveLibrarySettings();renderStampStyle();updateScores();renderTabs();renderBank();renderEditor();renderStamps();setInstruction();scheduleSave();
+    tab='all';bankQuickFilter='all';selectedStampId=null;draft=null;movingStampId=null;
+    resetHistory();lastPlacedDraft=null;repeatPlacement=false;
+    saveLibrarySettings();renderStampStyle();updateScores();renderTabs();renderBank();renderEditor();renderStamps();renderQuickPicker();setInstruction();scheduleSave();
   }
   function initDatabase() {
     if(!('indexedDB' in window))return;
@@ -1199,13 +1201,14 @@ let pdfRendererLoad = null;
     state={...state,course:'AA SL',candidate:'',session:'',marks:freshMarks(),justifications:freshJustifications(),stamps:[],pdfName:'',pdfBytes:null};
     rendering++;if(activeRenderTask){try{activeRenderTask.cancel();}catch(_){}}
     pdfDoc=null;currentPage=1;zoom=1;viewScale=1;pageWidthPt=0;pageHeightPt=0;draft=null;selectedStampId=null;movingStampId=null;
+    resetHistory();lastPlacedDraft=null;repeatPlacement=false;bankQuickFilter='all';
     $('course').value='AA SL';$('candidate').value='';$('session').value='';
     $('emptyViewer').classList.remove('hidden');$('pageShell').classList.add('hidden');
     $('documentMeta').classList.add('hidden');$('uploadTitle').textContent='Upload student IA';$('uploadSubtext').textContent='Drop a PDF here or browse files';
     $('pageTotal').textContent='--';$('pageNumber').value=1;$('footerDocInfo').textContent='Awaiting a PDF';
     $('pdfInput').value='';$('projectOpen').value='';
     if(database){try{database.transaction('draft','readwrite').objectStore('draft').delete('latest');}catch(e){console.warn(e);}}
-    $('resumeLast').classList.add('hidden');updateFrameworkNotice();updateScores();renderTabs();renderBank();renderEditor();renderStamps();setInstruction();toast('New marking project started.');
+    $('resumeLast').classList.add('hidden');updateFrameworkNotice();updateScores();renderTabs();renderBank();renderEditor();renderStamps();renderQuickPicker();setInstruction();toast('New marking project started.');
   }
 
   function renderReview() {
@@ -1514,6 +1517,7 @@ let pdfRendererLoad = null;
     });
     $('applyStampStyle').addEventListener('click',()=>{
       if(!state.stamps.length){toast('No placed comments yet. These styles will apply to new comments.');return;}
+      finishFieldHistory();const before=historySnapshot();
       for(const stamp of state.stamps){
         stamp.size=state.stampStyle.size;
         stamp.color=stamp.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor;
@@ -1521,6 +1525,7 @@ let pdfRendererLoad = null;
         stamp.fillColor=state.stampStyle.fillColor;stamp.borderColor=state.stampStyle.borderColor;
       }
       renderStamps();renderEditor();scheduleSave();
+      recordHistory('apply stamp formatting to all comments',before);
       toast(`Updated circle, font and colours for all ${state.stamps.length} placed comments. Individual box dimensions are preserved.`);
     });
   }
@@ -1546,13 +1551,16 @@ let pdfRendererLoad = null;
     $('stampLayer').addEventListener('click',handlePageClick);
     $('arrangeNotes').addEventListener('click',()=>{
       if(!isReady()||!pageWidthPt)return;
+      finishFieldHistory();const before=historySnapshot();
       const notes=pageStamps(currentPage);let updated=0;
       for(const stamp of notes){
         const oldX=stamp.x,oldY=stamp.y;
         placeNoteInFreeSpace(stamp,notes.filter(x=>x.id!==stamp.id),pageWidthPt,pageHeightPt);
         if(oldX!==stamp.x||oldY!==stamp.y)updated++;
       }
-      renderStamps();scheduleSave();toast(updated?'Moved on-page comments into available positions. Check legibility before export.':'No clear rearrangement was needed.');
+      renderStamps();scheduleSave();
+      recordHistory('arrange page '+currentPage+' comments',before);
+      toast(updated?'Moved on-page comments into available positions. Check legibility before export.':'No clear rearrangement was needed.');
     });
     $('cancelPlacement').addEventListener('click',()=>{draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();});
     $('commentSearch').addEventListener('input',e=>{search=e.target.value;bankShowAll=false;renderBank();});
