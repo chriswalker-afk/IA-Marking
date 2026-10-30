@@ -538,6 +538,11 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#focusPdf').click()
         expect(page.locator('#focusPdf')).to_have_attribute('aria-pressed','false')
         expect(page.locator('#bankPane')).to_be_visible()
+        page.locator('#closeBankPane').click()
+        expect(page.locator('#bankPane')).to_be_hidden()
+        page.locator('#toggleCommentPane').click()
+        expect(page.locator('#bankPane')).to_be_visible()
+        expect(page.locator('#workspace')).to_have_attribute('data-bank-view','browse')
         # A clean reusable editor is one click from any selected PDF stamp.
         page.locator('#toggleEditorPane').click()
         expect(page.locator('#workspace')).to_have_attribute('data-bank-view','edit')
