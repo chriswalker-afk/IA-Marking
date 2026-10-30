@@ -59,6 +59,17 @@ with tempfile.TemporaryDirectory() as folder:
         # All five criterion rubrics, including every mark from zero upwards,
         # must be readable in an actual phone-sized FULL-HEIGHT dialog.
         page.goto(base_url + '/index.html')
+        # Pass 1: polish preserves functionality while reducing default
+        # visual clutter. Advanced appearance settings start collapsed.
+        expect(page.locator('#stampAppearanceDetails')).not_to_have_attribute('open','')
+        assert page.locator('#defaultStampSize').is_hidden()
+        page.locator('#stampAppearanceDetails > summary').click()
+        expect(page.locator('#defaultStampSize')).to_be_visible()
+        page.locator('#stampAppearanceDetails > summary').click()
+        expect(page.locator('#defaultStampSize')).to_be_hidden()
+        assert page.locator('#newProject').inner_text()=='New IA'
+        assert page.locator('#projectSave').inner_text()=='Back up IA'
+        assert 'design-polish.css' in page.locator('link[rel="stylesheet"]').evaluate_all('(els)=>els.map(el=>el.href).join(" ")')
         page.locator('#openCriteria').click()
         page.locator('#criteriaDialog[open]').wait_for()
         assert page.locator('.criteria-card').count() == 5
@@ -155,6 +166,10 @@ with tempfile.TemporaryDirectory() as folder:
 
         # Individual comment formatting is separate from the A-E circle style.
         # A true range input can be operated by keyboard without bypassing CSP.
+        # Every selected stamp retains its appearance controls inside a
+        # clearly labelled, opt-in disclosure.
+        expect(page.locator('#selectedStampAppearance')).not_to_have_attribute('open','')
+        page.locator('#selectedStampAppearance > summary').click()
         font_slider=page.locator('#selectedStampFont')
         font_slider.focus()
         font_slider.press('Home')
@@ -313,6 +328,7 @@ with tempfile.TemporaryDirectory() as folder:
         expect(page.locator('.onpage-stamp')).to_have_count(2,timeout=15000)
         assert revised_text in ' '.join(page.locator('.onpage-stamp').first.inner_text().split())
         page.locator('.onpage-stamp').first.click()
+        page.locator('#selectedStampAppearance > summary').click()
         expect(page.locator('#selectedStampFont')).to_have_value('13')
         expect(page.locator('#selectedStampTextColor')).to_have_value('#b72a29')
         expect(page.locator('#selectedStampFillColor')).to_have_value('#f5e49a')
@@ -664,11 +680,22 @@ with tempfile.TemporaryDirectory() as folder:
         feedback_page.goto(base_url+'/library.html?mode=feedback')
         expect(feedback_page.locator('.ref-comment')).to_have_count(133)
         assert 'Actionable feedback' in feedback_page.locator('h1').inner_text()
+        assert feedback_page.locator('#referenceEditTone option[value="limitation"]').inner_text()=='Improvement'
+        assert feedback_page.locator('#refTone option[value="limitation"]').inner_text()=='Improvements'
         feedback_page.goto(base_url+'/index.html')
         feedback_page.locator('#feedbackMode').click()
         expect(feedback_page.locator('#feedbackMode')).to_have_attribute('aria-pressed','true')
         assert feedback_page.locator('.score-strip').is_hidden()
-        assert 'draft feedback prompts' in feedback_page.locator('#referenceLibraryLink').inner_text()
+        assert 'feedback library' in feedback_page.locator('#referenceLibraryLink').inner_text()
+        assert feedback_page.locator('#independentLibraryLink').get_attribute('href')=='library.html?mode=feedback'
+        assert feedback_page.locator('#toneLimitationLabel').inner_text()=='Improvements'
+        assert feedback_page.locator('#legendLimitationLabel').inner_text()=='Improvement'
+        assert feedback_page.locator('#libraryToneLimitation').inner_text()=='Improvements'
+        assert feedback_page.locator('#documentHelp').get_attribute('title').startswith('Choose a first-draft')
+        feedback_page.locator('#markingMode').click()
+        assert feedback_page.locator('#toneLimitationLabel').inner_text()=='Limitations'
+        assert feedback_page.locator('#independentLibraryLink').get_attribute('href')=='library.html'
+        feedback_page.locator('#feedbackMode').click()
         feedback_page.locator('#pdfInput').set_input_files(str(sample))
         expect(feedback_page.locator('#pageTotal')).to_have_text('2',timeout=30000)
         feedback_page.locator('#commentList [data-comment-id="F002"]').click()
