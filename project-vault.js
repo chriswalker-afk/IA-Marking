@@ -20,6 +20,11 @@ export function summariseLocalProject(id,project,pdfBytes,pageCount,savedAt=new 
   const marks=project?.marks||{};
   const markedCount=KEYS.filter(key=>Number.isInteger(marks[key])&&marks[key]>=0&&marks[key]<={A:4,B:4,C:3,D:3,E:6}[key]).length;
   const annotations=Array.isArray(project?.stamps)?project.stamps.length:0;
+  const feedbackStamps=Array.isArray(project?.feedbackStamps)?project.feedbackStamps:[];
+  const feedbackAnnotations=feedbackStamps.length;
+  const feedbackActions=feedbackStamps.filter(stamp=>stamp.tone==='limitation'&&String(stamp.text||'').trim()).length;
+  const feedbackDone=feedbackStamps.filter(stamp=>stamp.tone==='limitation'&&String(stamp.text||'').trim()&&project?.feedbackCompleted?.[stamp.id]===true).length;
+  const activeMode=project?.activeMode==='feedback'?'feedback':'marking';
   const rationaleCount=KEYS.filter(key=>String(project?.justifications?.[key]||'').trim().length>0).length;
   const completeMarks=markedCount===5;
   const total=completeMarks?KEYS.reduce((sum,key)=>sum+marks[key],0):null;
@@ -32,8 +37,9 @@ export function summariseLocalProject(id,project,pdfBytes,pageCount,savedAt=new 
     pdfName:String(project?.pdfName||'uploaded-ia.pdf').slice(0,240),
     pageCount:Math.max(0,Number.isFinite(pageCount)?Math.trunc(pageCount):0),
     fileSize:pdfBytes?.byteLength||0,
-    markedCount,annotations,rationaleCount,total,
-    status:completeMarks?'All marks recorded':markedCount||annotations?'In progress':'Not started',
+    markedCount,annotations,feedbackAnnotations,feedbackActions,feedbackDone,activeMode,rationaleCount,total,
+    status:activeMode==='feedback'?(feedbackActions||feedbackAnnotations?'Feedback in progress':'No feedback yet')
+      :completeMarks?'All marks recorded':markedCount||annotations?'In progress':'Not started',
   };
 }
 
