@@ -20,7 +20,7 @@
 
 - **Larger PDF:** on desktop, the document panel automatically shrinks to a compact rail after a PDF is loaded (unless you have chosen a different layout). You can reopen it at any time. The comment panel may also be hidden, or use **Focus PDF** to expand the page and temporarily hide the extra workspace chrome.
 - **Contextual comments:** the right panel now has a **Find a comment / Edit stamp** switch. Selecting a library comment opens its editor; choosing a placed stamp reopens its text, sizing and priority controls. Use **Find another comment** to return to the searchable library.
-- **Tablets and phones:** the PDF occupies the main workspace. **Document**, **Comments** and **Edit** open accessible, dismissible drawers instead of stacking a long library under the paper. Escape, a close button or the backdrop dismisses the drawer. Focus remains within an open drawer.
+- **Tablets and phones:** the PDF occupies the main workspace. **Document**, **Comments** and **Edit** open accessible, dismissible drawers instead of stacking a long library under the paper. Escape, a close button or the backdrop dismisses the drawer. Focus remains within an open drawer. On phones the less-frequent **Projects & backups** and **IA details, criteria & marks** tools are collapsed until requested; a 2029-framework warning remains visible.
 - **Unchanged marking data:** these controls affect only the local browser layout; marks, feedback actions, PDF coordinates, on-page exports and project backups remain as before.
 - **Verification:** the existing real-PDF end-to-end suite now tests search-to-editor, panel controls, mobile drawers, focus mode and the complete export path.
 
