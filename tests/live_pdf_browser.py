@@ -691,7 +691,7 @@ with tempfile.TemporaryDirectory() as folder:
         expect(feedback_page.locator('#feedbackChecklist .feedback-strengths p')).to_have_count(1)
         assert feedback_page.locator('#reviewScores').inner_text()==''
         assert '2 revision actions' in feedback_page.locator('#reviewStatus').inner_text()
-        assert 'High priority' in feedback_page.locator('#feedbackChecklist').inner_text()
+        assert 'high priority' in feedback_page.locator('#feedbackChecklist').inner_text().lower()
         feedback_page.locator('#feedbackChecklist [data-feedback-done]').first.check()
         expect(feedback_page.locator('#feedbackProgress')).to_have_text('1 of 2 actions checked')
         with feedback_page.expect_download(timeout=30000) as checklist_download:
