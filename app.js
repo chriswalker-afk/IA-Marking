@@ -311,7 +311,11 @@ let pdfRendererLoad = null;
     const item = getComments().find(c=>c.id===id);
     if(!item) return;
     selectedStampId = null; movingStampId = null;
-    draft = {...item,size:state.stampStyle.size,noteWidth:250,color:item.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor};
+    draft = {...item,
+      size:state.stampStyle.size,noteWidth:state.stampStyle.noteWidth,noteHeight:null,
+      fontSize:state.stampStyle.fontSize,textColor:state.stampStyle.textColor,
+      fillColor:state.stampStyle.fillColor,borderColor:state.stampStyle.borderColor,
+      color:item.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor};
     renderEditor();renderBank();renderStamps();setInstruction();
     if(!isReady()) toast('Comment selected. Upload a PDF to place the stamp.');
   }
@@ -548,7 +552,13 @@ let pdfRendererLoad = null;
     }
     if(!draft)return;
     if(!draft.text.trim()){toast('Write a comment before placing the stamp.');return;}
-    const stamp = {id:makeId(),page:currentPage,x:position.x,y:position.y,criterion:draft.criterion,tone:draft.tone,topic:draft.topic,text:draft.text.trim(),size:normalSize(draft.size),noteWidth:normalNoteWidth(draft.noteWidth),color:stampColor(draft),libraryId:draft.id,createdAt:now()};
+    const stamp = {
+      id:makeId(),page:currentPage,x:position.x,y:position.y,criterion:draft.criterion,tone:draft.tone,
+      topic:draft.topic,text:draft.text.trim(),size:normalSize(draft.size),color:stampColor(draft),
+      noteWidth:normalNoteWidth(draft.noteWidth),noteHeight:normalNoteHeight(draft.noteHeight),
+      fontSize:noteFontSize(draft),textColor:noteTextColor(draft),fillColor:noteFillColor(draft),
+      borderColor:noteBorderColor(draft),libraryId:draft.id,createdAt:now(),
+    };
     if(pageWidthPt&&pageHeightPt)placeNoteInFreeSpace(stamp,pageStamps(currentPage),pageWidthPt,pageHeightPt);
     state.stamps.push(stamp);selectedStampId=stamp.id;draft=null;
     renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
@@ -729,6 +739,11 @@ let pdfRendererLoad = null;
       id:String(s.id||makeId()),page:s.page,x:Math.min(.99,Math.max(.01,s.x)),y:Math.min(.99,Math.max(.01,s.y)),criterion:s.criterion,
       tone:s.tone,topic:String(s.topic||'Evidence').slice(0,100),text:String(s.text||'').slice(0,1800),
       size:normalSize(s.size),color:normalColor(s.color,s.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor),
+      noteWidth:normalNoteWidth(s.noteWidth ?? state.stampStyle.noteWidth),noteHeight:normalNoteHeight(s.noteHeight),
+      fontSize:normalFontSize(s.fontSize ?? state.stampStyle.fontSize),
+      textColor:normalColor(s.textColor,state.stampStyle.textColor),
+      fillColor:normalColor(s.fillColor,state.stampStyle.fillColor),
+      borderColor:normalColor(s.borderColor,state.stampStyle.borderColor),
       libraryId:String(s.libraryId||''),createdAt:String(s.createdAt||now()),
     }));
     $('course').value=state.course;$('candidate').value=state.candidate;$('session').value=state.session;updateFrameworkNotice();
