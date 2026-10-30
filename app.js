@@ -296,6 +296,22 @@ let pdfRendererLoad = null;
   const mobileWorkspace=()=>window.matchMedia('(max-width: 1000px)').matches;
   let documentCollapsed=false,commentCollapsed=false,workspaceView='browse';
   let focusedPdf=false,mobileDrawer=null,layoutOverride=false,wasMobile=null;
+  const compactPhone=()=>window.matchMedia('(max-width:650px)').matches;
+  let mobileDetailsExpanded=false,mobileProjectsExpanded=false,wasPhone=null;
+  function updateMobileChrome(){
+    const phone=compactPhone();
+    if(wasPhone!==null&&phone!==wasPhone){
+      mobileDetailsExpanded=false;mobileProjectsExpanded=false;
+    }
+    wasPhone=phone;
+    document.body.classList.toggle('mobile-details-open',phone&&mobileDetailsExpanded);
+    document.querySelector('.masthead').classList.toggle('mobile-projects-open',phone&&mobileProjectsExpanded);
+    $('mobileDetailsToggle').setAttribute('aria-expanded',String(phone&&mobileDetailsExpanded));
+    $('mobileProjectToolsToggle').setAttribute('aria-expanded',String(phone&&mobileProjectsExpanded));
+    const count=state.stamps.length;
+    $('mobileDetailsSummary').textContent=state.course+' · '+(isFeedback()?'First draft':'Final assessment')+
+      (count?' · '+count+' stamp'+(count===1?'':'s'):'');
+  }
   function readWorkspacePreferences(){
     try{
       const saved=JSON.parse(localStorage.getItem(WORKSPACE_LAYOUT_KEY)||'{}');
@@ -359,6 +375,7 @@ let pdfRendererLoad = null;
     $('bankBrowseView').inert=bankHidden||workspaceView!=='browse';
     $('selectionEditor').inert=bankHidden||workspaceView!=='edit';
     $('findAnotherComment').inert=bankHidden||workspaceView!=='edit';
+    updateMobileChrome();
     if(rerender&&isReady())requestAnimationFrame(()=>{if(isReady())void renderPage();});
   }
   function closeMobileDrawer({restoreFocus=false}={}){
@@ -1065,6 +1082,7 @@ let pdfRendererLoad = null;
   function renderStamps() {
     const stampsOnPage=pageStamps(currentPage);
     $('allPinCount').textContent=state.stamps.length;
+    updateMobileChrome();
     renderEvidenceIfOpen();
     renderQuickPicker();
     const pageWidth=pageWidthPt||595,pageHeight=pageHeightPt||842;
@@ -2253,6 +2271,12 @@ let pdfRendererLoad = null;
     });
   }
   function initEvents() {
+    $('mobileDetailsToggle').addEventListener('click',()=>{
+      mobileDetailsExpanded=!mobileDetailsExpanded;updateMobileChrome();
+    });
+    $('mobileProjectToolsToggle').addEventListener('click',()=>{
+      mobileProjectsExpanded=!mobileProjectsExpanded;updateMobileChrome();
+    });
     $('toggleDocumentPane').addEventListener('click',openDocumentPanel);
     $('documentRailToggle').addEventListener('click',openDocumentPanel);
     $('closeDocumentPane').addEventListener('click',()=>{
@@ -2309,7 +2333,7 @@ let pdfRendererLoad = null;
       $('clearTeacherPreferences').checked=false;
       updateClearConfirmation();
     });
-    $('course').addEventListener('change',e=>{state.course=e.target.value;renderBank();if($('criteriaDialog').open)renderCriteria();scheduleSave();});
+    $('course').addEventListener('change',e=>{state.course=e.target.value;updateMobileChrome();renderBank();if($('criteriaDialog').open)renderCriteria();scheduleSave();});
     $('candidate').addEventListener('input',e=>{state.candidate=e.target.value;scheduleSave();});
     $('session').addEventListener('input',e=>{state.session=e.target.value;updateFrameworkNotice();scheduleSave();});
     $('pdfInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(file)handlePdfFile(file);e.target.value='';});
