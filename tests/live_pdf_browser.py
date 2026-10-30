@@ -328,6 +328,137 @@ with tempfile.TemporaryDirectory() as folder:
         assert mobile_note['x']>=mobile_page['x']-1 and mobile_note['x']+mobile_note['width']<=mobile_page['x']+mobile_page['width']+2
         page.screenshot(path=str(ROOT/'qa-inline-mobile.png'),full_page=True)
 
+        # Pass 8: the evidence navigator must remain usable on an iPhone.
+        expect(page.locator('#undoMark')).to_be_disabled()  # history is reset when project is reopened
+        page.locator('#openEvidence').click()
+        expect(page.locator('#evidenceDialog[open]')).to_be_visible()
+        assert page.locator('#evidenceResults .evidence-result').count()==2
+        assert revised_text in page.locator('#evidenceResults').inner_text()
+        dialog=page.locator('#evidenceDialog').bounding_box()
+        assert dialog and dialog['width']>=429 and dialog['height']>=849
+        page.screenshot(path=str(ROOT/'qa-pass8-mobile-evidence.png'))
+        page.locator('#evidenceResults [data-evidence-pin]').first.click()
+        expect(page.locator('#evidenceDialog')).not_to_be_visible()
+        assert revised_text in page.locator('#stampTextEdit').input_value()
+
+        # Favourites persist outside the PDF project and can be chosen while
+        # viewing the actual PDF. Recently used is based on placed stamps.
+        page.set_viewport_size({'width':1450,'height':930})
+        favourite=page.locator('#commentList [data-favourite-comment]').first.get_attribute('data-favourite-comment')
+        page.locator('#commentList [data-favourite-comment]').first.click()
+        page.locator('[data-bank-quick="favorites"]').click()
+        expect(page.locator('#commentList [data-comment-id]')).to_have_count(1)
+        assert page.locator('#commentList [data-comment-id]').first.get_attribute('data-comment-id')==favourite
+        assert page.locator('#quickStampPicker option[value="'+favourite+'"]').count()>0
+        page.locator('#nextPage').click()
+        expect(page.locator('#pageNumber')).to_have_value('2')
+        page.locator('#quickStampPicker').select_option(favourite)
+        expect(page.locator('#draftTextEdit')).to_be_visible()
+
+        # Repeat mode retains the customised wording and format for each
+        # additional placement, while every action is reversible.
+        page.locator('#draftTextEdit').fill('Evidence of appropriate mathematical notation in the conclusion.')
+        page.locator('#repeatStamp').click()
+        expect(page.locator('#repeatStamp')).to_have_attribute('aria-pressed','true')
+        page.locator('#stampLayer').click(position={'x':130,'y':230})
+        expect(page.locator('#allPinCount')).to_have_text('3')
+        expect(page.locator('#draftTextEdit')).to_be_visible()
+        page.locator('#stampLayer').click(position={'x':360,'y':450})
+        expect(page.locator('#allPinCount')).to_have_text('4')
+        expect(page.locator('#undoMark')).to_be_enabled()
+        page.locator('#undoMark').click()
+        expect(page.locator('#allPinCount')).to_have_text('3')
+        page.locator('#redoMark').click()
+        expect(page.locator('#allPinCount')).to_have_text('4')
+        page.keyboard.press('Control+z')
+        expect(page.locator('#allPinCount')).to_have_text('3')
+        page.keyboard.press('Control+Shift+z')
+        expect(page.locator('#allPinCount')).to_have_text('4')
+
+        # Recent comments and a duplicate can be prepared without searching.
+        page.locator('[data-bank-quick="recent"]').click()
+        assert page.locator('#commentList [data-comment-id="'+favourite+'"]').count()==1
+        page.locator('#repeatStamp').click()
+        expect(page.locator('#repeatStamp')).to_have_attribute('aria-pressed','false')
+        page.locator('.onpage-stamp').last.click()
+        page.locator('#duplicateStamp').click()
+        expect(page.locator('#draftTextEdit')).to_have_value('Evidence of appropriate mathematical notation in the conclusion.')
+        page.locator('#cancelPlacement').click()
+
+        # A–E navigator covers both pages and jumps directly to the selected
+        # annotation, where the complete text can be edited.
+        page.locator('#openEvidence').click()
+        expect(page.locator('#evidenceResults .evidence-result')).to_have_count(4)
+        page.locator('#evidenceResults [data-evidence-pin]').first.click()
+        expect(page.locator('#pageNumber')).to_have_value('1')
+        expect(page.locator('#stampTextEdit')).to_be_visible()
+        assert revised_text in page.locator('#stampTextEdit').input_value()
+        page.locator('#openEvidence').click()
+        page.locator('#evidenceResults [data-evidence-pin]').last.click()
+        expect(page.locator('#pageNumber')).to_have_value('2')
+
+        # Delete -> Undo restores original comment. Text editing is grouped into
+        # one undo step rather than a separate step per character typed.
+        page.locator('.onpage-stamp').last.click()
+        old_text=page.locator('#stampTextEdit').input_value()
+        page.locator('#stampTextEdit').fill('Temporarily revised moderator evidence.')
+        page.locator('#stampTextEdit').evaluate('(el)=>el.blur()')
+        expect(page.locator('#undoMark')).to_be_enabled()
+        page.locator('#undoMark').click()
+        page.locator('.onpage-stamp').last.click()
+        assert page.locator('#stampTextEdit').input_value()==old_text
+        page.locator('#deleteStamp').click()
+        expect(page.locator('#allPinCount')).to_have_text('3')
+        page.locator('#undoMark').click()
+        expect(page.locator('#allPinCount')).to_have_text('4')
+
+        # Dragging and resizing existing comments each create a single, fully
+        # reversible history step on the real PDF canvas.
+        marker=page.locator('.onpage-stamp').first
+        marker.scroll_into_view_if_needed()
+        initial_bounds=marker.bounding_box()
+        pdf_area=page.locator('#pdfCanvas').bounding_box()
+        # Move inwards rather than insisting on dragging past the PDF edge.
+        dx=(-32 if initial_bounds['x']+initial_bounds['width']/2 >
+                 pdf_area['x']+pdf_area['width']/2 else 32)
+        dy=(-33 if initial_bounds['y']+initial_bounds['height']/2 >
+                 pdf_area['y']+pdf_area['height']/2 else 33)
+        start_x=initial_bounds['x']+55
+        start_y=initial_bounds['y']+12
+        assert page.evaluate(
+            "(point)=>Boolean(document.elementFromPoint(point.x,point.y)?.closest('.onpage-stamp'))",
+            {'x':start_x,'y':start_y}), 'Drag target must be visible inside the PDF viewport.'
+        page.mouse.move(start_x,start_y)
+        page.mouse.down()
+        page.mouse.move(start_x+dx,start_y+dy,steps=6)
+        page.mouse.up()
+        moved_bounds=page.locator('.onpage-stamp').first.bounding_box()
+        assert abs(moved_bounds['x']-initial_bounds['x'])>8 and abs(moved_bounds['y']-initial_bounds['y'])>8, (
+            f'Stamp did not move inside the PDF: before={initial_bounds}, after={moved_bounds}, drag=({dx},{dy})')
+        page.locator('#undoMark').click()
+        returned_bounds=page.locator('.onpage-stamp').first.bounding_box()
+        assert abs(returned_bounds['x']-initial_bounds['x'])<3 and abs(returned_bounds['y']-initial_bounds['y'])<3
+        page.locator('#redoMark').click()
+        marker=page.locator('.onpage-stamp').first
+        marker.scroll_into_view_if_needed()
+        resized_from=marker.bounding_box()
+        grip=marker.locator('.note-resize-handle').bounding_box()
+        page.mouse.move(grip['x']+grip['width']/2,grip['y']+grip['height']/2)
+        page.mouse.down()
+        page.mouse.move(grip['x']+grip['width']/2+26,grip['y']+grip['height']/2+33,steps=5)
+        page.mouse.up()
+        resized_to=page.locator('.onpage-stamp').first.bounding_box()
+        assert resized_to['width']>resized_from['width']+8
+        page.locator('#undoMark').click()
+        undone_resize=page.locator('.onpage-stamp').first.bounding_box()
+        assert abs(undone_resize['width']-resized_from['width'])<3
+
+        # No previously approved export is reused after these modifications.
+        page.locator('#openReview').click()
+        expect(page.locator('#exportAnnotated')).to_be_disabled()
+        page.locator('#closeReview').click()
+        page.screenshot(path=str(ROOT/'qa-pass8-desktop-quick-tools.png'),full_page=True)
+
         assert errors==[], f'Browser JS errors: {errors}'
         context.close()
 

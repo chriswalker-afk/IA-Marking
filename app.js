@@ -1,4 +1,5 @@
 import {createUnicodeFonts,normaliseAnnotationText,pdfFontError} from './unicode-fonts.js';
+import {MarkingHistory,sanitizeQuickPicks} from './marking-history.js';
 import {inspectModerationPages} from './moderation-preflight.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
@@ -101,6 +102,162 @@ let pdfRendererLoad = null;
   let pageWidthPt = 0, pageHeightPt = 0;
   let libraryEditingId = null;
   const MAX_BANK_VISIBLE = 42;
+  const QUICK_PICKS_KEY='ia-marking-desk-quick-picks-v1';
+  let quickPicks=sanitizeQuickPicks({});
+  let bankQuickFilter='all';
+  let repeatPlacement=false;
+  let lastPlacedDraft=null;
+  const markingHistory=new MarkingHistory(60);
+  let activeHistoryField=null;
+  let applyingHistory=false;
+
+  function historySnapshot(){return markingHistory.snapshot(state);}
+  function updateHistoryButtons(){
+    $('undoMark').disabled=!markingHistory.canUndo;
+    $('redoMark').disabled=!markingHistory.canRedo;
+    $('undoMark').title=markingHistory.canUndo?'Undo '+markingHistory.undoLabel+' (Ctrl/Cmd + Z)':'Nothing to undo';
+    $('redoMark').title=markingHistory.canRedo?'Redo '+markingHistory.redoLabel+' (Ctrl/Cmd + Shift + Z)':'Nothing to redo';
+  }
+  function recordHistory(label,before){
+    if(!before||applyingHistory)return false;
+    const changed=markingHistory.push(label,before,historySnapshot());
+    if(changed){updateHistoryButtons();renderEvidenceIfOpen();}
+    return changed;
+  }
+  function beginFieldHistory(label){
+    if(applyingHistory)return;
+    if(!activeHistoryField)activeHistoryField={before:historySnapshot(),label};
+  }
+  function finishFieldHistory(){
+    if(!activeHistoryField)return;
+    const {before,label}=activeHistoryField;activeHistoryField=null;
+    recordHistory(label,before);
+  }
+  function watchHistoryField(element,label,commitOnChange=false){
+    if(!element)return;
+    const begin=()=>beginFieldHistory(label);
+    element.addEventListener('focus',begin);
+    if(commitOnChange){
+      element.addEventListener('pointerdown',begin);
+      element.addEventListener('keydown',event=>{
+        if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown','Home','End'].includes(event.key))begin();
+      });
+      element.addEventListener('change',finishFieldHistory);
+    }
+    element.addEventListener('blur',finishFieldHistory);
+  }
+  function applyMarkSnapshot(snapshot,label){
+    if(!snapshot)return;
+    activeHistoryField=null;
+    applyingHistory=true;
+    try{
+      state.stamps=snapshot.stamps;
+      state.marks=snapshot.marks;
+      state.justifications=snapshot.justifications;
+      if(!state.stamps.some(stamp=>stamp.id===selectedStampId))selectedStampId=null;
+      draft=null;movingStampId=null;
+      updateScores();renderStamps();renderEditor();renderBank();setInstruction();
+      if($('reviewDialog').open)renderReview();
+      if($('criteriaDialog').open)renderCriteria();
+      renderEvidenceIfOpen();
+      scheduleSave();
+      toast(label);
+    } finally {
+      applyingHistory=false;updateHistoryButtons();
+    }
+  }
+  function undoMarking(){
+    finishFieldHistory();
+    const result=markingHistory.undo();
+    if(result)applyMarkSnapshot(result.snapshot,'Undid '+result.label);
+  }
+  function redoMarking(){
+    finishFieldHistory();
+    const result=markingHistory.redo();
+    if(result)applyMarkSnapshot(result.snapshot,'Redid '+result.label);
+  }
+  function resetHistory(){
+    activeHistoryField=null;
+    markingHistory.clear();updateHistoryButtons();
+  }
+  function storeQuickPicks(){
+    try{localStorage.setItem(QUICK_PICKS_KEY,JSON.stringify(quickPicks));}
+    catch(error){console.warn('Could not save favourite and recent comments',error);}
+  }
+  function recordRecentComment(id){
+    if(!id || !getComments().some(item=>item.id===id))return;
+    quickPicks.recent=[id,...quickPicks.recent.filter(v=>v!==id)].slice(0,24);
+    storeQuickPicks();renderQuickPicker();renderBank();
+  }
+  function toggleFavourite(id){
+    if(!getComments().some(item=>item.id===id))return;
+    quickPicks.favorites=quickPicks.favorites.includes(id)
+      ?quickPicks.favorites.filter(v=>v!==id)
+      :[id,...quickPicks.favorites].slice(0,100);
+    storeQuickPicks();renderQuickPicker();renderBank();
+    if($('libraryDialog').open)renderFullLibrary();
+  }
+  function renderQuickPicker(){
+    const courseItems=getComments().filter(item=>(item.courses||[]).includes(state.course));
+    const lookup=new Map(courseItems.map(item=>[item.id,item]));
+    const group=(ids,label)=>{
+      const entries=ids.map(id=>lookup.get(id)).filter(Boolean).slice(0,10);
+      return entries.length?'<optgroup label="'+label+'">'+entries.map(item=>
+        '<option value="'+escapeHtml(item.id)+'">'+escapeHtml(item.criterion+' · '+item.topic+' — '+item.text.slice(0,54))+'</option>'
+      ).join('')+'</optgroup>':'';
+    };
+    $('quickStampPicker').innerHTML='<option value="">Choose saved comment…</option>'
+      +group(quickPicks.favorites,'★ Favourite comments')
+      +group(quickPicks.recent,'Recently stamped');
+    $('quickStampPicker').value='';
+    $('quickStampAgain').disabled=!lastPlacedDraft;
+    $('repeatStamp').classList.toggle('is-active',repeatPlacement);
+    $('repeatStamp').setAttribute('aria-pressed',String(repeatPlacement));
+    $('repeatStamp').textContent=repeatPlacement?'Repeat: On':'Repeat: Off';
+  }
+  function renderEvidenceIfOpen(){
+    $('evidenceCount').textContent=String(state.stamps.length);
+    if($('evidenceDialog').open)renderEvidenceNavigator();
+  }
+  function renderEvidenceNavigator(){
+    const all=state.stamps;
+    $('evidenceSummary').innerHTML=CRITERION_KEYS.map(key=>{
+      const count=all.filter(x=>x.criterion===key).length;
+      const mark=state.marks[key];
+      return '<button type="button" data-evidence-jump="'+key+'" class="evidence-summary-chip"><strong>'+key+'</strong><small>'
+        +(mark===null?'—':mark)+'/'+CRITERIA[key].max+'</small><span>'+count+' stamp'+(count===1?'':'s')+'</span></button>';
+    }).join('');
+    $('evidenceResults').innerHTML=CRITERION_KEYS.map(key=>{
+      const comments=all.filter(x=>x.criterion===key).sort((a,b)=>a.page-b.page||a.y-b.y);
+      const strengths=comments.filter(x=>x.tone==='strength').length;
+      const limitations=comments.length-strengths;
+      return '<section class="evidence-group" id="evidenceGroup_'+key+'"><div class="evidence-group-head"><span class="mini-circle">'+key+'</span>'
+        +'<div><h3>Criterion '+key+': '+escapeHtml(CRITERIA[key].name)+'</h3><small>'+strengths+' strengths · '+limitations+' limitations · '+comments.length+' total</small></div>'
+        +'<strong>'+ (state.marks[key]===null?'Not marked':state.marks[key]+' / '+CRITERIA[key].max)+'</strong></div>'
+        +(comments.length?comments.map(stamp=>
+          '<button type="button" class="evidence-result" data-evidence-pin="'+escapeHtml(stamp.id)+'">'
+          +'<span class="evidence-result-meta"><span class="polarity '+stamp.tone+'">'+(stamp.tone==='strength'?'Strength':'Limitation')+'</span>'
+          +'<strong>'+escapeHtml(stampLabel(stamp))+'</strong><span>Page '+stamp.page+'</span></span>'
+          +'<span class="evidence-result-text">'+escapeHtml(stamp.text)+'</span>'
+          +'<span class="evidence-result-visit">Go to page '+stamp.page+' →</span></button>'
+        ).join(''):'<p class="evidence-no-comments">No comments placed for this criterion yet.</p>')+'</section>';
+    }).join('');
+    $('evidenceFooterCount').textContent=all.length+' annotation'+(all.length===1?'':'s')+' across '+(pdfDoc?.numPages||0)+' pages';
+  }
+  async function jumpToEvidenceStamp(id){
+    const stamp=state.stamps.find(item=>item.id===id);
+    if(!stamp)return;
+    $('evidenceDialog').close();
+    finishFieldHistory();selectedStampId=stamp.id;draft=null;movingStampId=null;
+    if(currentPage!==stamp.page)await navigate(stamp.page);
+    else renderStamps();
+    renderEditor();renderBank();setInstruction();
+    $('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});
+    const marker=Array.from($('stampLayer').querySelectorAll('[data-pin-id]')).find(item=>item.dataset.pinId===stamp.id);
+    marker?.scrollIntoView({behavior:'smooth',block:'center'});
+    marker?.focus({preventScroll:true});
+  }
+
 
   function toast(message) {
     const el = $('toast');
@@ -193,8 +350,11 @@ let pdfRendererLoad = null;
     if (!CRITERIA[key]) return;
     const score = raw === '' ? null : Number(raw);
     if (score !== null && (!Number.isInteger(score) || score < 0 || score > CRITERIA[key].max)) return;
+    finishFieldHistory();
+    const before=historySnapshot();
     state.marks[key] = score;
     updateScores(); scheduleSave();
+    recordHistory('criterion '+key+' mark',before);
     if ($('reviewDialog').open) renderReview();
     if ($('criteriaDialog').open) updateRubricMarks();
   }
@@ -282,6 +442,7 @@ let pdfRendererLoad = null;
       button.addEventListener('click',()=>setScore(button.dataset.rubricKey,button.dataset.rubricScore));
     });
     $('criteriaCards').querySelectorAll('[data-criteria-rationale]').forEach(area=>{
+      watchHistoryField(area,'criterion '+area.dataset.criteriaRationale+' rationale');
       area.addEventListener('input',e=>{
         state.justifications[e.target.dataset.criteriaRationale]=e.target.value;
         scheduleSave();
@@ -310,14 +471,25 @@ let pdfRendererLoad = null;
   function renderBank() {
     const all = getComments().filter(item => (item.courses || []).includes(state.course));
     const query = search.toLowerCase().trim();
-    const items = all.filter(item => (tab === 'all'||item.criterion === tab) && (tone === 'all'||item.tone === tone) && (!query || [item.text,item.topic,item.criterion,...(item.tags || [])].join(' ').toLowerCase().includes(query)));
+    const quickIds=bankQuickFilter==='favorites'?quickPicks.favorites:bankQuickFilter==='recent'?quickPicks.recent:null;
+    let items = all.filter(item => (tab === 'all'||item.criterion === tab) && (tone === 'all'||item.tone === tone) && (!quickIds||quickIds.includes(item.id))
+      && (!query || [item.text,item.topic,item.criterion,...(item.tags || [])].join(' ').toLowerCase().includes(query)));
+    if(quickIds)items=items.sort((a,b)=>quickIds.indexOf(a.id)-quickIds.indexOf(b.id));
+    document.querySelectorAll('[data-bank-quick]').forEach(button=>{
+      const active=button.dataset.bankQuick===bankQuickFilter;
+      button.classList.toggle('is-active',active);
+      button.setAttribute('aria-pressed',String(active));
+    });
     $('bankTotal').textContent = `${all.length} comments`;
     $('bankFilteredCount').textContent = `${items.length} matching ${items.length===1?'comment':'comments'}`;
     const visible = bankShowAll ? items : items.slice(0,MAX_BANK_VISIBLE);
-    $('commentList').innerHTML = visible.map(item => `<div class="comment-card ${draft?.id===item.id?'is-active':''}"><button type="button" class="comment-select" data-comment-id="${escapeHtml(item.id)}" aria-label="Use ${escapeHtml(item.criterion)} ${escapeHtml(item.tone)} comment as stamp"><span class="comment-card-head"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><span class="topic">${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</span>${item.origin==='Teacher custom comment' ? '<span class="custom-tag">CUSTOM</span>' : ''}</span><p>${escapeHtml(item.text)}</p></button><div class="comment-card-actions"><button type="button" data-copy-comment="${escapeHtml(item.id)}">Copy</button><button type="button" data-edit-comment="${escapeHtml(item.id)}">Edit</button></div></div>`).join('');
-    if(!visible.length) $('commentList').innerHTML = '<p class="bank-empty">No matching comments. Try another search or write your own.</p>';
+    $('commentList').innerHTML = visible.map(item => `<div class="comment-card ${draft?.id===item.id?'is-active':''}"><button type="button" class="comment-select" data-comment-id="${escapeHtml(item.id)}" aria-label="Use ${escapeHtml(item.criterion)} ${escapeHtml(item.tone)} comment as stamp"><span class="comment-card-head"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><span class="topic">${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</span>${item.origin==='Teacher custom comment' ? '<span class="custom-tag">CUSTOM</span>' : ''}</span><p>${escapeHtml(item.text)}</p></button><div class="comment-card-actions"><button type="button" class="favourite-button ${quickPicks.favorites.includes(item.id)?'is-favourite':''}" data-favourite-comment="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}" aria-label="${quickPicks.favorites.includes(item.id)?'Remove from':'Add to'} favourite comments">${quickPicks.favorites.includes(item.id)?'★':'☆'} <span>Favourite</span></button><button type="button" data-copy-comment="${escapeHtml(item.id)}">Copy</button><button type="button" data-edit-comment="${escapeHtml(item.id)}">Edit</button></div></div>`).join('');
+    if(!visible.length) $('commentList').innerHTML = '<p class="bank-empty">'+(bankQuickFilter==='favorites'?'No favourites yet. Star a comment in All to save it for quick stamping.':bankQuickFilter==='recent'?'No recent stamps yet. Placed comments will appear here.':'No matching comments. Try another search or write your own.')+'</p>';
     if(!bankShowAll && items.length>MAX_BANK_VISIBLE) $('commentList').insertAdjacentHTML('beforeend',`<button type="button" id="showMoreComments" class="btn subtle" style="width:100%">Show all ${items.length} comments</button>`);
     $('commentList').querySelectorAll('[data-comment-id]').forEach(button => button.addEventListener('click', () => prepareComment(button.dataset.commentId)));
+    $('commentList').querySelectorAll('[data-favourite-comment]').forEach(button => button.addEventListener('click',()=>{
+      toggleFavourite(button.dataset.favouriteComment);
+    }));
     $('commentList').querySelectorAll('[data-copy-comment]').forEach(button => button.addEventListener('click',()=>{
       const item=getComments().find(c=>c.id===button.dataset.copyComment);if(item)copyCommentText(item.text);
     }));
@@ -342,7 +514,7 @@ let pdfRendererLoad = null;
       const isCustom=item.origin==='Teacher custom comment';
       const isChanged=Boolean(state.commentEdits[item.id]);
       const editing=item.id===libraryEditingId;
-      return `<article class="library-entry" data-library-id="${escapeHtml(item.id)}"><div class="library-entry-header"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><strong>${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</strong><small>${escapeHtml(item.id)}${isCustom?' · Personal':isChanged?' · Edited':''}</small></div>${editing?`<div class="library-edit"><label>Category<input id="libraryEditTopic" maxlength="90" value="${escapeHtml(item.topic)}"></label><label>Comment<textarea id="libraryEditText" maxlength="1800" rows="4">${escapeHtml(item.text)}</textarea></label><div class="library-entry-actions"><button type="button" data-save-library="${escapeHtml(item.id)}" class="btn primary">Save changes</button><button type="button" data-cancel-library>Cancel</button>${isChanged?`<button type="button" data-restore-library="${escapeHtml(item.id)}">Restore original</button>`:''}${isCustom?`<button type="button" data-delete-library="${escapeHtml(item.id)}" class="danger-link">Delete personal comment</button>`:''}</div></div>`:`<p>${escapeHtml(item.text)}</p><div class="library-entry-actions"><button type="button" data-copy-library="${escapeHtml(item.id)}">Copy comment</button><button type="button" data-edit-library="${escapeHtml(item.id)}">Edit wording</button><button type="button" data-use-library="${escapeHtml(item.id)}">Use as stamp</button></div>`}</article>`;
+      return `<article class="library-entry" data-library-id="${escapeHtml(item.id)}"><div class="library-entry-header"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':'Limitation'}</span><strong>${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</strong><small>${escapeHtml(item.id)}${isCustom?' · Personal':isChanged?' · Edited':''}</small></div>${editing?`<div class="library-edit"><label>Category<input id="libraryEditTopic" maxlength="90" value="${escapeHtml(item.topic)}"></label><label>Comment<textarea id="libraryEditText" maxlength="1800" rows="4">${escapeHtml(item.text)}</textarea></label><div class="library-entry-actions"><button type="button" data-save-library="${escapeHtml(item.id)}" class="btn primary">Save changes</button><button type="button" data-cancel-library>Cancel</button>${isChanged?`<button type="button" data-restore-library="${escapeHtml(item.id)}">Restore original</button>`:''}${isCustom?`<button type="button" data-delete-library="${escapeHtml(item.id)}" class="danger-link">Delete personal comment</button>`:''}</div></div>`:`<p>${escapeHtml(item.text)}</p><div class="library-entry-actions"><button type="button" data-copy-library="${escapeHtml(item.id)}">Copy comment</button><button type="button" data-edit-library="${escapeHtml(item.id)}">Edit wording</button><button type="button" data-use-library="${escapeHtml(item.id)}">Use as stamp</button><button type="button" data-favourite-library="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}">${quickPicks.favorites.includes(item.id)?'★ Remove favourite':'☆ Add favourite'}</button></div>`}</article>`;
     }).join(''):'<p class="bank-empty">No comments match these filters. Try removing the search terms.</p>';
   }
   function openLibrary(editId=null) {
@@ -377,11 +549,12 @@ let pdfRendererLoad = null;
     libraryEditingId=null;saveLibrarySettings();renderBank();renderFullLibrary();toast('Library comment saved for future use.');
   }
   function handleLibraryAction(event) {
-    const button=event.target.closest('button[data-copy-library],button[data-edit-library],button[data-use-library],button[data-save-library],button[data-cancel-library],button[data-restore-library],button[data-delete-library]');
+    const button=event.target.closest('button[data-copy-library],button[data-edit-library],button[data-use-library],button[data-save-library],button[data-cancel-library],button[data-restore-library],button[data-delete-library],button[data-favourite-library]');
     if(!button)return;
-    const id=button.dataset.copyLibrary||button.dataset.editLibrary||button.dataset.useLibrary||button.dataset.saveLibrary||button.dataset.restoreLibrary||button.dataset.deleteLibrary;
+    const id=button.dataset.copyLibrary||button.dataset.editLibrary||button.dataset.useLibrary||button.dataset.saveLibrary||button.dataset.restoreLibrary||button.dataset.deleteLibrary||button.dataset.favouriteLibrary;
     const item=getComments().find(c=>c.id===id);
     if(button.dataset.copyLibrary && item){copyCommentText(item.text);return;}
+    if(button.hasAttribute('data-favourite-library')){toggleFavourite(id);return;}
     if(button.hasAttribute('data-edit-library')){libraryEditingId=id;renderFullLibrary();$('libraryEditText')?.focus();return;}
     if(button.hasAttribute('data-cancel-library')){libraryEditingId=null;renderFullLibrary();return;}
     if(button.hasAttribute('data-save-library')){saveLibraryEdit(id);return;}
@@ -400,6 +573,7 @@ let pdfRendererLoad = null;
     });
   }
   function prepareComment(id) {
+    finishFieldHistory();
     const item = getComments().find(c=>c.id===id);
     if(!item) return;
     selectedStampId = null; movingStampId = null;
@@ -410,6 +584,20 @@ let pdfRendererLoad = null;
       color:item.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor};
     renderEditor();renderBank();renderStamps();setInstruction();
     if(!isReady()) toast('Comment selected. Upload a PDF to place the stamp.');
+  }
+  function prepareFromExistingStamp(stamp){
+    if(!stamp)return;
+    draft={
+      id:stamp.libraryId||'repeat-'+stamp.id,
+      libraryId:stamp.libraryId||'',
+      criterion:stamp.criterion,tone:stamp.tone,topic:stamp.topic,text:stamp.text,
+      size:stamp.size,color:stamp.color,noteWidth:stamp.noteWidth,noteHeight:stamp.noteHeight,
+      fontSize:stamp.fontSize,textColor:stamp.textColor,
+      fillColor:stamp.fillColor,borderColor:stamp.borderColor,
+    };
+    selectedStampId=null;movingStampId=null;
+    renderEditor();renderBank();renderStamps();setInstruction();
+    if(isReady())$('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
   function appearanceEditor(item,prefix) {
     const size=normalSize(item.size),color=stampColor(item);
@@ -469,18 +657,37 @@ let pdfRendererLoad = null;
       item.noteHeight=normalNoteHeight(e.target.value);refresh();
     });
     $(`${prefix}HeightAuto`).addEventListener('click',()=>{
+      const before=existing?historySnapshot():null;
       item.noteHeight=null;refresh();
+      if(existing)recordHistory('fit '+item.criterion+' comment box',before);
     });
+    if(existing){
+      for(const field of ['Size','Color','Width','Font','TextColor','FillColor','BorderColor','Height']){
+        watchHistoryField($(`${prefix}${field}`),'format '+item.criterion+' comment',true);
+      }
+    }
   }
   function renderEditor() {
+    finishFieldHistory();
     const stamp = selectedStamp();
     if(stamp) {
-      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} evidence stamp</strong><small>Page ${stamp.page} / ${stamp.tone}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
+      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} evidence stamp</strong><small>Page ${stamp.page} / ${stamp.tone}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
       $('stampTextEdit').addEventListener('input', e => {stamp.text=e.target.value;renderStamps();scheduleSave();});
+      watchHistoryField($('stampTextEdit'),'edit '+stamp.criterion+' comment');
       bindAppearanceEditor(stamp,'selectedStamp',true);
       $('moveStamp').addEventListener('click',()=>{movingStampId=stamp.id;draft=null;selectedStampId=null;renderEditor();setInstruction(); if (currentPage!==stamp.page) navigate(stamp.page);});
       $('copyStamp').addEventListener('click',()=>copyCommentText(stamp.text));
-      $('deleteStamp').addEventListener('click',()=>{state.stamps=state.stamps.filter(s=>s.id!==stamp.id);selectedStampId=null;renderEditor();renderStamps();scheduleSave();toast('Evidence stamp deleted.');});
+      $('duplicateStamp').addEventListener('click',()=>{
+        finishFieldHistory();prepareFromExistingStamp(stamp);
+        toast('Duplicate comment ready. Click clear space on the PDF to place it.');
+      });
+      $('deleteStamp').addEventListener('click',()=>{
+        finishFieldHistory();const before=historySnapshot();
+        state.stamps=state.stamps.filter(s=>s.id!==stamp.id);selectedStampId=null;
+        renderEditor();renderStamps();renderBank();scheduleSave();
+        recordHistory('delete '+stamp.criterion+' comment',before);
+        toast('Evidence stamp deleted. Use Undo to restore it.');
+      });
       return;
     }
     if(!draft) {
@@ -597,6 +804,8 @@ let pdfRendererLoad = null;
   function renderStamps() {
     const stampsOnPage=pageStamps(currentPage);
     $('allPinCount').textContent=state.stamps.length;
+    renderEvidenceIfOpen();
+    renderQuickPicker();
     const pageWidth=pageWidthPt||595,pageHeight=pageHeightPt||842;
     const preview=pageLayoutProblems(stampsOnPage,pageWidth,pageHeight);
     renderStampWarnings(preview.problems);
@@ -619,11 +828,12 @@ let pdfRendererLoad = null;
         selectedStampId=stamp.id;draft=null;movingStampId=null;
         renderStamps();renderEditor();renderBank();setInstruction();
       };
-      let moved=false,startX=0,startY=0,originX=0,originY=0;
+      let moved=false,startX=0,startY=0,originX=0,originY=0,dragBefore=null;
       btn.addEventListener('pointerdown',e=>{
         if(e.button!==0 || e.target.closest('.note-resize-handle'))return;
         const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
         const layout=noteLayout(stamp,pageWidth,pageHeight);
+        finishFieldHistory();dragBefore=historySnapshot();
         moved=false;startX=e.clientX;startY=e.clientY;originX=layout.x;originY=layout.y;
         btn.setPointerCapture?.(e.pointerId);
       });
@@ -643,6 +853,7 @@ let pdfRendererLoad = null;
           const y=(originY+(e.clientY-startY)/(viewScale||1))/pageHeight;
           const layout=noteLayout({...stamp,x,y},pageWidth,pageHeight);
           stamp.x=layout.x/pageWidth;stamp.y=layout.y/pageHeight;
+          recordHistory('drag '+stamp.criterion+' comment',dragBefore);
           scheduleSave();toast('On-page comment moved; the exported PDF uses this position.');
         }
         select();e.stopPropagation();
@@ -652,7 +863,7 @@ let pdfRendererLoad = null;
       });
       btn.addEventListener('click',e=>e.stopPropagation());
       const handle=btn.querySelector('.note-resize-handle');
-      let resizing=false,fromX=0,fromY=0,originalWidth=0,originalHeight=0,anchorX=0,anchorY=0;
+      let resizing=false,fromX=0,fromY=0,originalWidth=0,originalHeight=0,anchorX=0,anchorY=0,resizeBefore=null;
       const resizeTo=(event)=>{
         const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return null;
         const scale=viewScale||1;
@@ -672,6 +883,7 @@ let pdfRendererLoad = null;
         if(e.button!==0)return;
         const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
         const layout=noteLayout(stamp,pageWidth,pageHeight);
+        finishFieldHistory();resizeBefore=historySnapshot();
         resizing=true;fromX=e.clientX;fromY=e.clientY;originalWidth=layout.width;originalHeight=layout.height;
         anchorX=layout.x;anchorY=layout.y;
         handle.setPointerCapture?.(e.pointerId);e.stopPropagation();e.preventDefault();
@@ -689,6 +901,7 @@ let pdfRendererLoad = null;
           stamp.noteWidth=normalNoteWidth(next.width);stamp.noteHeight=normalNoteHeight(next.height);
           selectedStampId=stamp.id;draft=null;movingStampId=null;
           renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
+          recordHistory('resize '+stamp.criterion+' comment',resizeBefore);
           toast('Comment box resized. Check that all text fits before export.');
         }
         e.stopPropagation();e.preventDefault();
@@ -699,11 +912,13 @@ let pdfRendererLoad = null;
         if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;
         e.preventDefault();e.stopPropagation();
         const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
+        const before=historySnapshot();
         const l=noteLayout(stamp,pageWidth,pageHeight);
         const nextWidth=l.width+(e.key==='ArrowLeft'?-5:e.key==='ArrowRight'?5:0);
         const nextHeight=l.height+(e.key==='ArrowUp'?-5:e.key==='ArrowDown'?5:0);
         stamp.noteWidth=normalNoteWidth(nextWidth);stamp.noteHeight=normalNoteHeight(nextHeight);
         selectedStampId=stamp.id;renderStamps();renderEditor();scheduleSave();
+        recordHistory('resize '+stamp.criterion+' comment',before);
       });
     });
     const container=$('stampsList');
@@ -725,17 +940,22 @@ let pdfRendererLoad = null;
   }
   function handlePageClick(event) {
     if(!isReady()||event.target.closest('.onpage-stamp'))return;
+    finishFieldHistory();
     const position = positionOnPage(event);
     if(movingStampId) {
       const stamp = state.stamps.find(s=>s.id===movingStampId);
       if(!stamp)return;
+      const before=historySnapshot();
       stamp.x=position.x;stamp.y=position.y;stamp.page=currentPage;
       if(pageWidthPt&&pageHeightPt)placeNoteInFreeSpace(stamp,pageStamps(currentPage),pageWidthPt,pageHeightPt);
-      selectedStampId=stamp.id;movingStampId=null;renderStamps();renderEditor();setInstruction();scheduleSave();toast('Stamp moved.');
+      selectedStampId=stamp.id;movingStampId=null;renderStamps();renderEditor();setInstruction();scheduleSave();
+      recordHistory('move '+stamp.criterion+' comment',before);
+      toast('Stamp moved.');
       return;
     }
     if(!draft)return;
     if(!draft.text.trim()){toast('Write a comment before placing the stamp.');return;}
+    const before=historySnapshot();
     const stamp = {
       id:makeId(),page:currentPage,x:position.x,y:position.y,criterion:draft.criterion,tone:draft.tone,
       topic:draft.topic,text:draft.text.trim(),size:normalSize(draft.size),color:stampColor(draft),
@@ -744,9 +964,18 @@ let pdfRendererLoad = null;
       borderColor:noteBorderColor(draft),libraryId:draft.id,createdAt:now(),
     };
     if(pageWidthPt&&pageHeightPt)placeNoteInFreeSpace(stamp,pageStamps(currentPage),pageWidthPt,pageHeightPt);
-    state.stamps.push(stamp);selectedStampId=stamp.id;draft=null;
+    state.stamps.push(stamp);
+    lastPlacedDraft={...stamp};
+    const sourceId=stamp.libraryId;
+    if(repeatPlacement){
+      draft={...draft};
+      selectedStampId=null;
+    }else{selectedStampId=stamp.id;draft=null;}
+    recordHistory('place '+stamp.criterion+' comment',before);
     renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
-    toast(`${stamp.criterion} ${stamp.tone} stamp placed on page ${currentPage}.`);
+    recordRecentComment(sourceId);
+    toast(`${stamp.criterion} ${stamp.tone} stamp placed on page ${currentPage}.`
+      +(repeatPlacement?' Repeat is on: click another clear area to stamp again.':''));
   }
   async function ensurePdfRenderer() {
     if (pdfjsLib) return pdfjsLib;
@@ -777,6 +1006,7 @@ let pdfRendererLoad = null;
         data:new Uint8Array(clone),isEvalSupported:false,
         cMapUrl:'vendor/cmaps/',cMapPacked:true,standardFontDataUrl:'vendor/standard_fonts/',wasmUrl:'vendor/wasm/'
       }).promise;
+      resetHistory();lastPlacedDraft=null;repeatPlacement=false;
       if(!keepStamps){const replacingExistingPdf=isReady();state.stamps=[];if(replacingExistingPdf){state.marks=freshMarks();state.justifications=freshJustifications();}selectedStampId=null;movingStampId=null;draft=null;}
       pdfDoc=loaded;state.pdfBytes=clone;state.pdfName=name || 'uploaded-ia.pdf';
       currentPage=1;zoom=1;
@@ -839,7 +1069,7 @@ let pdfRendererLoad = null;
     currentPage=next;
     $('pdfScroll').scrollTop=0;
     $('pdfScroll').scrollLeft=0;
-    renderPage();
+    return renderPage();
   }
 
   async function storeAutosave() {
@@ -938,8 +1168,9 @@ let pdfRendererLoad = null;
       libraryId:String(s.libraryId||''),createdAt:String(s.createdAt||now()),
     }));
     $('course').value=state.course;$('candidate').value=state.candidate;$('session').value=state.session;updateFrameworkNotice();
-    tab='all';selectedStampId=null;draft=null;movingStampId=null;
-    saveLibrarySettings();renderStampStyle();updateScores();renderTabs();renderBank();renderEditor();renderStamps();setInstruction();scheduleSave();
+    tab='all';bankQuickFilter='all';selectedStampId=null;draft=null;movingStampId=null;
+    resetHistory();lastPlacedDraft=null;repeatPlacement=false;
+    saveLibrarySettings();renderStampStyle();updateScores();renderTabs();renderBank();renderEditor();renderStamps();renderQuickPicker();setInstruction();scheduleSave();
   }
   function initDatabase() {
     if(!('indexedDB' in window))return;
@@ -970,13 +1201,14 @@ let pdfRendererLoad = null;
     state={...state,course:'AA SL',candidate:'',session:'',marks:freshMarks(),justifications:freshJustifications(),stamps:[],pdfName:'',pdfBytes:null};
     rendering++;if(activeRenderTask){try{activeRenderTask.cancel();}catch(_){}}
     pdfDoc=null;currentPage=1;zoom=1;viewScale=1;pageWidthPt=0;pageHeightPt=0;draft=null;selectedStampId=null;movingStampId=null;
+    resetHistory();lastPlacedDraft=null;repeatPlacement=false;bankQuickFilter='all';
     $('course').value='AA SL';$('candidate').value='';$('session').value='';
     $('emptyViewer').classList.remove('hidden');$('pageShell').classList.add('hidden');
     $('documentMeta').classList.add('hidden');$('uploadTitle').textContent='Upload student IA';$('uploadSubtext').textContent='Drop a PDF here or browse files';
     $('pageTotal').textContent='--';$('pageNumber').value=1;$('footerDocInfo').textContent='Awaiting a PDF';
     $('pdfInput').value='';$('projectOpen').value='';
     if(database){try{database.transaction('draft','readwrite').objectStore('draft').delete('latest');}catch(e){console.warn(e);}}
-    $('resumeLast').classList.add('hidden');updateFrameworkNotice();updateScores();renderTabs();renderBank();renderEditor();renderStamps();setInstruction();toast('New marking project started.');
+    $('resumeLast').classList.add('hidden');updateFrameworkNotice();updateScores();renderTabs();renderBank();renderEditor();renderStamps();renderQuickPicker();setInstruction();toast('New marking project started.');
   }
 
   function renderReview() {
@@ -989,7 +1221,10 @@ let pdfRendererLoad = null;
       return `<section class="review-score"><div class="review-score-header"><span class="mini-circle">${key}</span><strong>${escapeHtml(meta.name)}</strong><span class="evidence-count">${count} ${count===1?'stamp':'stamps'}</span><select data-review-score="${key}" aria-label="Criterion ${key} final mark"><option value="">-- / ${meta.max}</option>${Array.from({length:meta.max+1},(_,n)=>`<option value="${n}" ${state.marks[key]===n?'selected':''}>${n} / ${meta.max}</option>`).join('')}</select></div><small>Briefly justify this mark, referring to the annotated evidence on the pages.</small><textarea data-review-justification="${key}" aria-label="Criterion ${key} assessment rationale" maxlength="5000" rows="2" placeholder="Assessment rationale for criterion ${key}...">${escapeHtml(state.justifications[key])}</textarea></section>`;
     }).join('');
     $('reviewScores').querySelectorAll('[data-review-score]').forEach(sel=>sel.addEventListener('change',()=>setScore(sel.dataset.reviewScore,sel.value)));
-    $('reviewScores').querySelectorAll('[data-review-justification]').forEach(ta=>ta.addEventListener('input',e=>{state.justifications[ta.dataset.reviewJustification]=e.target.value;scheduleSave();}));
+    $('reviewScores').querySelectorAll('[data-review-justification]').forEach(ta=>{
+      watchHistoryField(ta,'criterion '+ta.dataset.reviewJustification+' rationale');
+      ta.addEventListener('input',e=>{state.justifications[ta.dataset.reviewJustification]=e.target.value;scheduleSave();});
+    });
     if(noEvidence.length) $('reviewStatus').textContent += ` No page evidence is stamped yet for: ${noEvidence.join(', ')}.`;
     if(usesNewFramework()) {
       $('reviewStatus').classList.add('warning');
@@ -1282,6 +1517,7 @@ let pdfRendererLoad = null;
     });
     $('applyStampStyle').addEventListener('click',()=>{
       if(!state.stamps.length){toast('No placed comments yet. These styles will apply to new comments.');return;}
+      finishFieldHistory();const before=historySnapshot();
       for(const stamp of state.stamps){
         stamp.size=state.stampStyle.size;
         stamp.color=stamp.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor;
@@ -1289,6 +1525,7 @@ let pdfRendererLoad = null;
         stamp.fillColor=state.stampStyle.fillColor;stamp.borderColor=state.stampStyle.borderColor;
       }
       renderStamps();renderEditor();scheduleSave();
+      recordHistory('apply stamp formatting to all comments',before);
       toast(`Updated circle, font and colours for all ${state.stamps.length} placed comments. Individual box dimensions are preserved.`);
     });
   }
@@ -1312,15 +1549,59 @@ let pdfRendererLoad = null;
     $('zoomOut').addEventListener('click',()=>{zoom=Math.max(.65,Math.round((zoom-.15)*100)/100);renderPage();});
     $('zoomIn').addEventListener('click',()=>{zoom=Math.min(2.2,Math.round((zoom+.15)*100)/100);renderPage();});
     $('stampLayer').addEventListener('click',handlePageClick);
+    $('undoMark').addEventListener('click',undoMarking);
+    $('redoMark').addEventListener('click',redoMarking);
+    $('repeatStamp').addEventListener('click',()=>{
+      repeatPlacement=!repeatPlacement;renderQuickPicker();
+      toast(repeatPlacement?'Repeat stamping is on. Place as many copies as needed.':'Repeat stamping is off.');
+    });
+    $('quickStampAgain').addEventListener('click',()=>{
+      if(!lastPlacedDraft)return;
+      prepareFromExistingStamp(lastPlacedDraft);
+      toast('Last stamped comment is ready to place again.');
+    });
+    $('quickStampPicker').addEventListener('change',event=>{
+      const id=event.target.value;
+      if(!id)return;
+      prepareComment(id);
+      event.target.value='';
+      if(isReady())$('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+    document.querySelectorAll('[data-bank-quick]').forEach(button=>{
+      button.addEventListener('click',()=>{
+        bankQuickFilter=button.dataset.bankQuick;
+        tab='all';tone='all';search='';bankShowAll=false;
+        $('commentSearch').value='';renderTabs();renderTone();renderBank();
+      });
+    });
+    $('openEvidence').addEventListener('click',()=>{
+      renderEvidenceNavigator();$('evidenceDialog').showModal();
+    });
+    $('closeEvidence').addEventListener('click',()=>$('evidenceDialog').close());
+    $('evidenceDone').addEventListener('click',()=>$('evidenceDialog').close());
+    $('evidenceSummary').addEventListener('click',event=>{
+      const target=event.target.closest('[data-evidence-jump]');
+      if(!target)return;
+      $('evidenceGroup_'+target.dataset.evidenceJump)?.scrollIntoView({block:'start',behavior:'smooth'});
+    });
+    $('evidenceResults').addEventListener('click',event=>{
+      const target=event.target.closest('[data-evidence-pin]');
+      if(target)jumpToEvidenceStamp(target.dataset.evidencePin).catch(error=>{
+        console.error(error);toast('Could not navigate to the selected evidence stamp.');
+      });
+    });
     $('arrangeNotes').addEventListener('click',()=>{
       if(!isReady()||!pageWidthPt)return;
+      finishFieldHistory();const before=historySnapshot();
       const notes=pageStamps(currentPage);let updated=0;
       for(const stamp of notes){
         const oldX=stamp.x,oldY=stamp.y;
         placeNoteInFreeSpace(stamp,notes.filter(x=>x.id!==stamp.id),pageWidthPt,pageHeightPt);
         if(oldX!==stamp.x||oldY!==stamp.y)updated++;
       }
-      renderStamps();scheduleSave();toast(updated?'Moved on-page comments into available positions. Check legibility before export.':'No clear rearrangement was needed.');
+      renderStamps();scheduleSave();
+      recordHistory('arrange page '+currentPage+' comments',before);
+      toast(updated?'Moved on-page comments into available positions. Check legibility before export.':'No clear rearrangement was needed.');
     });
     $('cancelPlacement').addEventListener('click',()=>{draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();});
     $('commentSearch').addEventListener('input',e=>{search=e.target.value;bankShowAll=false;renderBank();});
@@ -1401,8 +1682,21 @@ let pdfRendererLoad = null;
     $('exportAnnotated').addEventListener('click',exportPdf);
     window.addEventListener('resize',()=>{if(isReady())renderPage();});
     document.addEventListener('keydown',e=>{
-      if(e.key==='Escape' && !($('reviewDialog').open||$('customDialog').open||$('libraryDialog').open)) {draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();}
-      if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||e.target instanceof HTMLSelectElement||e.ctrlKey||e.metaKey)return;
+      const inField=e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||
+        e.target instanceof HTMLSelectElement||e.target?.isContentEditable;
+      const modifier=e.ctrlKey||e.metaKey;
+      const modalOpen=Boolean(document.querySelector('dialog[open]'));
+      if(modifier&&!e.altKey&&!inField&&!modalOpen){
+        const key=e.key.toLowerCase();
+        if(key==='z'){
+          e.preventDefault();if(e.shiftKey)redoMarking();else undoMarking();return;
+        }
+        if(key==='y'){e.preventDefault();redoMarking();return;}
+      }
+      if(e.key==='Escape'&&!modalOpen){
+        draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();
+      }
+      if(inField||modifier||modalOpen)return;
       if(e.key==='ArrowRight')navigate(currentPage+1);
       if(e.key==='ArrowLeft')navigate(currentPage-1);
     });
@@ -1418,8 +1712,9 @@ let pdfRendererLoad = null;
     try {state.customComments=JSON.parse(localStorage.getItem('ia-marking-desk-comments')||'[]');if(!Array.isArray(state.customComments))state.customComments=[];}catch(e){state.customComments=[];}
     try {const edits=JSON.parse(localStorage.getItem('ia-marking-desk-edits')||'{}');state.commentEdits=edits && !Array.isArray(edits) && typeof edits==='object' ? edits:{};}catch(e){state.commentEdits={};}
     try {state.stampStyle=normalStyle(JSON.parse(localStorage.getItem('ia-marking-desk-stamp-style')||'{}'));}catch(e){state.stampStyle=normalStyle();}
+    try{quickPicks=sanitizeQuickPicks(JSON.parse(localStorage.getItem(QUICK_PICKS_KEY)||'{}'));}catch(e){quickPicks=sanitizeQuickPicks({});}
     if(pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.mjs';
-    initScores();renderStampStyle();renderTabs();renderTone();renderBank();renderEditor();renderStamps();setInstruction();updateFrameworkNotice();initEvents();initDatabase();
+    initScores();renderStampStyle();renderTabs();renderTone();renderBank();renderEditor();renderStamps();renderQuickPicker();updateHistoryButtons();setInstruction();updateFrameworkNotice();initEvents();initDatabase();
     if(!window.PDFLib)console.warn('PDF export library missing from this deployment; evidence reference tools remain available.');
   }
   init();
