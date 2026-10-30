@@ -485,19 +485,26 @@ let pdfRendererLoad = null;
       const label=stampLabel(stamp),color=stampColor(stamp);
       const lines=layout.rows.map(line=>`<span class="onpage-note-line">${escapeHtml(line)}</span>`).join('');
       const mismatch=preview.problems.some(issue=>issue.includes(label));
-      return `<button type="button" class="onpage-stamp ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};border-width:${Math.max(.7,1*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag to reposition this complete on-page comment">
+      return `<div role="button" tabindex="0" class="onpage-stamp ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};background:${layout.fillColor};border-color:${layout.borderColor};color:${layout.textColor};border-width:${Math.max(.7,1.25*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag comment to move; drag bottom-right corner to resize">
+        <span class="onpage-border-accent" style="background:${layout.borderColor};width:${Math.max(2,3*scale)}px"></span>
         <span class="onpage-circle" style="left:${8*scale}px;top:${11*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
-        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${10*scale}px;font-size:${8.5*scale}px;line-height:${12*scale}px">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':'Limitation'}</span>
-        <span class="onpage-note-body" style="left:${layout.textX*scale}px;top:${25*scale}px;font-size:${NOTE_FONT*scale}px;line-height:${NOTE_LINE*scale}px">${lines}</span>
-      </button>`;
+        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${10*scale}px;font-size:${8.5*scale}px;line-height:${12*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':'Limitation'}</span>
+        <span class="onpage-note-body" style="left:${layout.textX*scale}px;top:${25*scale}px;font-size:${layout.fontSize*scale}px;line-height:${layout.lineHeight*scale}px;color:${layout.textColor}">${lines}</span>
+        <button type="button" class="note-resize-handle" data-resize-pin="${escapeHtml(stamp.id)}" aria-label="Resize width and height of ${escapeHtml(label)} comment" title="Drag to resize comment width and height"></button>
+      </div>`;
     }).join('');
     $('stampLayer').querySelectorAll('[data-pin-id]').forEach(btn=>{
+      const select=()=>{
+        const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
+        selectedStampId=stamp.id;draft=null;movingStampId=null;
+        renderStamps();renderEditor();renderBank();setInstruction();
+      };
       let moved=false,startX=0,startY=0,originX=0,originY=0;
       btn.addEventListener('pointerdown',e=>{
-        if(e.button!==0)return;
+        if(e.button!==0 || e.target.closest('.note-resize-handle'))return;
         const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
         const layout=noteLayout(stamp,pageWidth,pageHeight);
-        startX=e.clientX;startY=e.clientY;originX=layout.x;originY=layout.y;
+        moved=false;startX=e.clientX;startY=e.clientY;originX=layout.x;originY=layout.y;
         btn.setPointerCapture?.(e.pointerId);
       });
       btn.addEventListener('pointermove',e=>{
@@ -505,7 +512,8 @@ let pdfRendererLoad = null;
         const dx=e.clientX-startX,dy=e.clientY-startY;
         if(Math.hypot(dx,dy)<4&&!moved)return;
         moved=true;
-        const l=noteLayout({...state.stamps.find(x=>x.id===btn.dataset.pinId),x:(originX+dx/(viewScale||1))/pageWidth,y:(originY+dy/(viewScale||1))/pageHeight},pageWidth,pageHeight);
+        const l=noteLayout({...state.stamps.find(x=>x.id===btn.dataset.pinId),
+          x:(originX+dx/(viewScale||1))/pageWidth,y:(originY+dy/(viewScale||1))/pageHeight},pageWidth,pageHeight);
         btn.style.left=`${l.x*(viewScale||1)}px`;btn.style.top=`${l.y*(viewScale||1)}px`;
       });
       btn.addEventListener('pointerup',e=>{
@@ -515,12 +523,68 @@ let pdfRendererLoad = null;
           const y=(originY+(e.clientY-startY)/(viewScale||1))/pageHeight;
           const layout=noteLayout({...stamp,x,y},pageWidth,pageHeight);
           stamp.x=layout.x/pageWidth;stamp.y=layout.y/pageHeight;
-          scheduleSave();toast('On-page comment moved. Its position will be preserved in the exported PDF.');
+          scheduleSave();toast('On-page comment moved; the exported PDF uses this position.');
         }
-        selectedStampId=stamp.id;draft=null;movingStampId=null;
-        renderStamps();renderEditor();renderBank();setInstruction();e.stopPropagation();
+        select();e.stopPropagation();
+      });
+      btn.addEventListener('keydown',e=>{
+        if(e.target===btn && (e.key==='Enter'||e.key===' ')){e.preventDefault();select();}
       });
       btn.addEventListener('click',e=>e.stopPropagation());
+      const handle=btn.querySelector('.note-resize-handle');
+      let resizing=false,fromX=0,fromY=0,originalWidth=0,originalHeight=0,anchorX=0,anchorY=0;
+      const resizeTo=(event)=>{
+        const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return null;
+        const scale=viewScale||1;
+        const maxWidth=Math.min(450,pageWidth-NOTE_PAD-anchorX);
+        const maxHeight=Math.min(750,pageHeight-NOTE_PAD-anchorY);
+        const desiredWidth=Math.max(170,Math.min(maxWidth,originalWidth+(event.clientX-fromX)/scale));
+        const desiredHeight=Math.max(55,Math.min(maxHeight,originalHeight+(event.clientY-fromY)/scale));
+        const mock={...stamp,noteWidth:desiredWidth,noteHeight:desiredHeight};
+        const layout=noteLayout(mock,pageWidth,pageHeight);
+        btn.style.width=`${layout.width*scale}px`;
+        btn.style.height=`${layout.height*scale}px`;
+        btn.classList.toggle('note-conflict',!layout.contentFits||!layout.fits);
+        btn.querySelector('.onpage-note-body').innerHTML=layout.rows.map(row=>`<span class="onpage-note-line">${escapeHtml(row)}</span>`).join('');
+        return {width:layout.width,height:layout.height};
+      };
+      handle.addEventListener('pointerdown',e=>{
+        if(e.button!==0)return;
+        const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
+        const layout=noteLayout(stamp,pageWidth,pageHeight);
+        resizing=true;fromX=e.clientX;fromY=e.clientY;originalWidth=layout.width;originalHeight=layout.height;
+        anchorX=layout.x;anchorY=layout.y;
+        handle.setPointerCapture?.(e.pointerId);e.stopPropagation();e.preventDefault();
+      });
+      handle.addEventListener('pointermove',e=>{
+        if(resizing && handle.hasPointerCapture?.(e.pointerId))resizeTo(e);
+        e.stopPropagation();
+      });
+      handle.addEventListener('pointerup',e=>{
+        if(!resizing)return;
+        const next=resizeTo(e);
+        resizing=false;
+        const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);
+        if(stamp&&next){
+          stamp.noteWidth=normalNoteWidth(next.width);stamp.noteHeight=normalNoteHeight(next.height);
+          selectedStampId=stamp.id;draft=null;movingStampId=null;
+          renderStamps();renderEditor();renderBank();setInstruction();scheduleSave();
+          toast('Comment box resized. Check that all text fits before export.');
+        }
+        e.stopPropagation();e.preventDefault();
+      });
+      handle.addEventListener('pointercancel',e=>{resizing=false;renderStamps();e.stopPropagation();});
+      handle.addEventListener('click',e=>e.stopPropagation());
+      handle.addEventListener('keydown',e=>{
+        if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;
+        e.preventDefault();e.stopPropagation();
+        const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
+        const l=noteLayout(stamp,pageWidth,pageHeight);
+        const nextWidth=l.width+(e.key==='ArrowLeft'?-5:e.key==='ArrowRight'?5:0);
+        const nextHeight=l.height+(e.key==='ArrowUp'?-5:e.key==='ArrowDown'?5:0);
+        stamp.noteWidth=normalNoteWidth(nextWidth);stamp.noteHeight=normalNoteHeight(nextHeight);
+        selectedStampId=stamp.id;renderStamps();renderEditor();scheduleSave();
+      });
     });
     const container=$('stampsList');
     const sorted=[...state.stamps].sort((a,b)=>a.page-b.page||a.y-b.y);
