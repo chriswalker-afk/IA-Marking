@@ -1549,6 +1549,47 @@ let pdfRendererLoad = null;
     $('zoomOut').addEventListener('click',()=>{zoom=Math.max(.65,Math.round((zoom-.15)*100)/100);renderPage();});
     $('zoomIn').addEventListener('click',()=>{zoom=Math.min(2.2,Math.round((zoom+.15)*100)/100);renderPage();});
     $('stampLayer').addEventListener('click',handlePageClick);
+    $('undoMark').addEventListener('click',undoMarking);
+    $('redoMark').addEventListener('click',redoMarking);
+    $('repeatStamp').addEventListener('click',()=>{
+      repeatPlacement=!repeatPlacement;renderQuickPicker();
+      toast(repeatPlacement?'Repeat stamping is on. Place as many copies as needed.':'Repeat stamping is off.');
+    });
+    $('quickStampAgain').addEventListener('click',()=>{
+      if(!lastPlacedDraft)return;
+      prepareFromExistingStamp(lastPlacedDraft);
+      toast('Last stamped comment is ready to place again.');
+    });
+    $('quickStampPicker').addEventListener('change',event=>{
+      const id=event.target.value;
+      if(!id)return;
+      prepareComment(id);
+      event.target.value='';
+      if(isReady())$('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+    document.querySelectorAll('[data-bank-quick]').forEach(button=>{
+      button.addEventListener('click',()=>{
+        bankQuickFilter=button.dataset.bankQuick;
+        tab='all';tone='all';search='';bankShowAll=false;
+        $('commentSearch').value='';renderTabs();renderTone();renderBank();
+      });
+    });
+    $('openEvidence').addEventListener('click',()=>{
+      renderEvidenceNavigator();$('evidenceDialog').showModal();
+    });
+    $('closeEvidence').addEventListener('click',()=>$('evidenceDialog').close());
+    $('evidenceDone').addEventListener('click',()=>$('evidenceDialog').close());
+    $('evidenceSummary').addEventListener('click',event=>{
+      const target=event.target.closest('[data-evidence-jump]');
+      if(!target)return;
+      $('evidenceGroup_'+target.dataset.evidenceJump)?.scrollIntoView({block:'start',behavior:'smooth'});
+    });
+    $('evidenceResults').addEventListener('click',event=>{
+      const target=event.target.closest('[data-evidence-pin]');
+      if(target)jumpToEvidenceStamp(target.dataset.evidencePin).catch(error=>{
+        console.error(error);toast('Could not navigate to the selected evidence stamp.');
+      });
+    });
     $('arrangeNotes').addEventListener('click',()=>{
       if(!isReady()||!pageWidthPt)return;
       finishFieldHistory();const before=historySnapshot();
@@ -1641,8 +1682,21 @@ let pdfRendererLoad = null;
     $('exportAnnotated').addEventListener('click',exportPdf);
     window.addEventListener('resize',()=>{if(isReady())renderPage();});
     document.addEventListener('keydown',e=>{
-      if(e.key==='Escape' && !($('reviewDialog').open||$('customDialog').open||$('libraryDialog').open)) {draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();}
-      if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||e.target instanceof HTMLSelectElement||e.ctrlKey||e.metaKey)return;
+      const inField=e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||
+        e.target instanceof HTMLSelectElement||e.target?.isContentEditable;
+      const modifier=e.ctrlKey||e.metaKey;
+      const modalOpen=Boolean(document.querySelector('dialog[open]'));
+      if(modifier&&!e.altKey&&!inField&&!modalOpen){
+        const key=e.key.toLowerCase();
+        if(key==='z'){
+          e.preventDefault();if(e.shiftKey)redoMarking();else undoMarking();return;
+        }
+        if(key==='y'){e.preventDefault();redoMarking();return;}
+      }
+      if(e.key==='Escape'&&!modalOpen){
+        draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();
+      }
+      if(inField||modifier||modalOpen)return;
       if(e.key==='ArrowRight')navigate(currentPage+1);
       if(e.key==='ArrowLeft')navigate(currentPage-1);
     });
@@ -1658,8 +1712,9 @@ let pdfRendererLoad = null;
     try {state.customComments=JSON.parse(localStorage.getItem('ia-marking-desk-comments')||'[]');if(!Array.isArray(state.customComments))state.customComments=[];}catch(e){state.customComments=[];}
     try {const edits=JSON.parse(localStorage.getItem('ia-marking-desk-edits')||'{}');state.commentEdits=edits && !Array.isArray(edits) && typeof edits==='object' ? edits:{};}catch(e){state.commentEdits={};}
     try {state.stampStyle=normalStyle(JSON.parse(localStorage.getItem('ia-marking-desk-stamp-style')||'{}'));}catch(e){state.stampStyle=normalStyle();}
+    try{quickPicks=sanitizeQuickPicks(JSON.parse(localStorage.getItem(QUICK_PICKS_KEY)||'{}'));}catch(e){quickPicks=sanitizeQuickPicks({});}
     if(pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.mjs';
-    initScores();renderStampStyle();renderTabs();renderTone();renderBank();renderEditor();renderStamps();setInstruction();updateFrameworkNotice();initEvents();initDatabase();
+    initScores();renderStampStyle();renderTabs();renderTone();renderBank();renderEditor();renderStamps();renderQuickPicker();updateHistoryButtons();setInstruction();updateFrameworkNotice();initEvents();initDatabase();
     if(!window.PDFLib)console.warn('PDF export library missing from this deployment; evidence reference tools remain available.');
   }
   init();
