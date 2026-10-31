@@ -4,6 +4,7 @@ import {openLocalIAProjectVault,createLocalProjectId} from './project-vault.js';
 import {inspectModerationPages} from './moderation-preflight.js';
 import {studentChecklistItems,studentFeedbackStrengths,studentChecklistText,feedbackPriority} from './feedback-engine.js';
 import {rankStampComments,clampResultIndex,placementFeedback} from './fast-stamp.js';
+import {appendStudentChecklistPages,makeStudentChecklistModel} from './student-checklist-pdf.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
 (() => {
@@ -500,7 +501,7 @@ let pdfRendererLoad = null;
     $('reviewConfirmText').textContent=isFeedback()
       ?'I have checked the student-facing feedback and checklist, and confirmed that all PDF comments are legible and do not obscure important mathematics.'
       :'I have inspected the exported preview, confirmed that the full comments are legible and that no important student mathematics is obscured.';
-    $('exportAnnotated').textContent=isFeedback()?'Export student feedback PDF ↓':'Export annotated PDF ↓';
+    $('exportAnnotated').textContent=isFeedback()?'Download checked draft feedback PDF ↓':'Download checked marking PDF ↓';
     $('feedbackReviewContent').classList.toggle('hidden',!isFeedback());
     $('reviewMarkingNote').classList.toggle('hidden',isFeedback());
     updateFrameworkNotice();
@@ -1956,6 +1957,7 @@ let pdfRendererLoad = null;
     const tasks=studentChecklistItems(state.stamps,state.feedbackCompleted);
     const strengths=studentFeedbackStrengths(state.stamps);
     const complete=tasks.filter(item=>item.completed).length;
+    $('downloadFeedbackPdf').disabled=!isReady()||usesNewFramework()||!tasks.length;
     $('feedbackProgress').textContent=complete+' of '+tasks.length+' actions checked';
     const strengthsHtml=strengths.length
       ?'<section class="feedback-strengths"><h4>What is working well ('+strengths.length+')</h4>'
@@ -2072,8 +2074,37 @@ let pdfRendererLoad = null;
     $('reviewPreviewBox').classList.add('hidden');
     $('exportAnnotated').disabled=true;
     $('reviewExportNotice').textContent='Generate the current PDF preview and inspect every page before exporting.';
+    updateReviewGate();
     if(reviewPreviewTask){try{reviewPreviewTask.cancel();}catch(error){}reviewPreviewTask=null;}
     if(reviewPreview.pdf){if(typeof reviewPreview.pdf.cleanup==='function')Promise.resolve(reviewPreview.pdf.cleanup()).catch(()=>{});reviewPreview.pdf=null;}
+  }
+  function updateReviewJourney(){
+    const valid=Boolean(reviewPreview.bytes&&reviewPreview.signature===previewSignature());
+    const count=reviewPreview.pdf?.numPages||0;
+    const seen=valid?reviewPreview.visited.size:0;
+    const inspected=valid&&count>0&&seen===count;
+    const approved=inspected&&$('reviewConfirmed').checked;
+    const contentReady=isFeedback()?Boolean(studentChecklistItems(state.stamps,state.feedbackCompleted).length+
+      studentFeedbackStrengths(state.stamps).length)
+      :Boolean(state.stamps.length);
+    const stages={
+      content:contentReady?'done':'current',
+      preview:inspected?'done':valid?'current':'waiting',
+      export:approved?'done':inspected?'current':'waiting',
+    };
+    for(const element of $('reviewJourney').querySelectorAll('[data-review-step]')){
+      element.dataset.state=stages[element.dataset.reviewStep]||'waiting';
+    }
+    const percent=count?Math.round(seen/count*100):0;
+    $('reviewInspectionProgress').textContent=seen+' of '+count+' pages inspected';
+    $('reviewInspectionPercent').textContent=percent+'%';
+    $('reviewPageProgress').setAttribute('aria-valuenow',String(percent));
+    $('reviewPageProgressFill').style.width=percent+'%';
+    $('reviewNextUnseen').disabled=!valid||!count||inspected;
+    $('reviewFooterGuidance').textContent=!valid?'Generate the exact PDF preview to begin.'
+      :!inspected?'Inspect all '+count+' pages ('+seen+' viewed).'
+      :!approved?'Confirm legibility and unobscured mathematics above.'
+      :'Reviewed PDF is ready for download.';
   }
   function renderPreflightIssues(issues){
     reviewPreview.issues=issues;
@@ -2083,7 +2114,10 @@ let pdfRendererLoad = null;
     badge.className='preflight-badge'+(errors?' has-errors':warnings?' has-issues':'');
     badge.textContent=errors?errors+' blocking':warnings?warnings+' to review':'No automatic warnings';
     $('preflightList').innerHTML=issues.map(item=>
-      '<li class="preflight-'+escapeHtml(item.severity)+'">'+escapeHtml(item.message)+'</li>'
+      '<li class="preflight-'+escapeHtml(item.severity)+'">'
+      +'<span>'+escapeHtml(item.message)+'</span>'
+      +(Number.isInteger(item.page)?'<button type="button" class="preflight-page-jump" data-preflight-page="'+item.page+'" aria-label="Open original PDF page '+item.page+' to check this issue">Open page '+item.page+' →</button>':'')
+      +'</li>'
     ).join('');
     return errors;
   }
@@ -2096,6 +2130,7 @@ let pdfRendererLoad = null;
     if(!complete)$('reviewConfirmed').checked=false;
     const approved=complete && $('reviewConfirmed').checked;
     $('exportAnnotated').disabled=!approved;
+    updateReviewJourney();
     $('reviewExportNotice').textContent=!valid?'Generate the current PDF preview first.'
       :!complete?'Pages inspected: '+visited+' / '+numPages+'. View each page, including the marking summary, then confirm.'
       :approved?'Preview approved. This exact PDF is ready for download.'
@@ -2178,64 +2213,18 @@ let pdfRendererLoad = null;
         }
       }
       if(isFeedback()){
-        // The original draft pages come first. A checklist is appended in its
-        // own pages, keeping every student calculation and teacher action intact.
-        // No criterion scores or teacher mark rationales enter this PDF.
-        const tasks=studentChecklistItems(state.stamps,state.feedbackCompleted);
-        const strengths=studentFeedbackStrengths(state.stamps);
-        let sheet=null,cursor=0,pageIndex=0;
-        function newFeedbackSheet(){
-          sheet=output.addPage([595,842]);pageIndex++;
-          sheet.drawRectangle({x:0,y:0,width:595,height:842,color:rgb(1,1,1)});
-          pdfText(sheet,'FIRST DRAFT - STUDENT FEEDBACK',37,808,17,bold,ink);
-          pdfText(sheet,'IB Mathematics IA | Teacher feedback, not a final assessment',37,788,9,font,muted);
-          sheet.drawLine({start:{x:37,y:777},end:{x:558,y:777},thickness:.8,color:line});
-          pdfText(sheet,'Revision checklist / page '+pageIndex,37,34,8.5,font,muted);
-          cursor=751;
-        }
-        const ensureHeight=height=>{if(!sheet||cursor-height<55)newFeedbackSheet();};
-        function addHeading(title){
-          ensureHeight(43);
-          pdfText(sheet,title,37,cursor,12,bold,ink);cursor-=24;
-        }
-        function addWrapped(text,x=51,size=10){
-          const rows=pdfWrap(text,font,size,548-x);
-          for(const row of rows){
-            ensureHeight(16);
-            pdfText(sheet,row,x,cursor,size,font,ink);
-            cursor-=15;
-          }
-        }
-        function addEntry(header,text){
-          ensureHeight(30);
-          pdfText(sheet,header,43,cursor,10.3,bold,ink);cursor-=17;
-          addWrapped(text,56,10);
-          cursor-=10;
-        }
-        newFeedbackSheet();
-        addWrapped('Course: '+state.course+'   Assessment ID: '+(state.candidate||'Not entered')+'   Session: '+(state.session||'Not entered'),37,10);
-        cursor-=7;
-        addWrapped('Use these prompts to revise your own mathematical reasoning. Your teacher has not provided replacement solutions or a final mark.',37,9.5);
-        cursor-=16;
-        addHeading('What is working well ('+strengths.length+')');
-        if(!strengths.length)addWrapped('No strengths recorded yet.');
-        strengths.forEach(stamp=>addEntry(stamp.label+' | Page '+stamp.page,stamp.text));
-        cursor-=8;
-        addHeading('Your revision checklist ('+tasks.length+' actions)');
-        if(!tasks.length)addWrapped('No changes have been requested yet.');
-        let previousPriority='';
-        for(const item of tasks){
-          if(previousPriority!==item.priority){
-            previousPriority=item.priority;
-            addHeading(({high:'HIGH PRIORITY',normal:'STANDARD REVISIONS',low:'LOWER PRIORITY - POLISH'})[item.priority]);
-          }
-          const mark=item.completed?'[x]':'[ ]';
-          addEntry(mark+'  '+item.label+' | Page '+item.page+' | '+item.topic,item.text);
-        }
-        cursor-=8;
-        addWrapped('Tick each task as you revise. Check the corresponding stamp on the draft page for context. Make the mathematical decisions and revisions yourself.',37,9.5);
+        // One renderer powers the standalone printable checklist AND the pages
+        // appended to the original IA. It reads only draft-feedback stamps;
+        // no teacher score, rationale or final assessment text is included.
+        appendStudentChecklistPages({
+          document:output,rgb,fonts:{regular:font,bold},
+          model:makeStudentChecklistModel({
+            stamps:state.stamps,completed:state.feedbackCompleted,
+            course:state.course,candidate:state.candidate,session:state.session,
+          }),
+        });
         output.setTitle('Mathematics IA first draft feedback - '+(state.candidate||'exploration'));
-        output.setSubject('Teacher-annotated first draft with student revision checklist; no marks');
+        output.setSubject('Teacher-annotated first draft and student revision checklist; no marks');
         output.setProducer('IA Marking Desk - browser-local student feedback');
         return await output.save();
       }
@@ -2282,6 +2271,46 @@ let pdfRendererLoad = null;
       const data=await output.save();
       return data;
   }
+  async function exportStandaloneChecklistPdf(){
+    if(!isFeedback())return;
+    if(!isReady()){toast('Upload and annotate a first-draft PDF first.');return;}
+    if(usesNewFramework()){toast('The 2029 criteria need a different feedback framework.');return;}
+    if(!studentChecklistItems(state.stamps,state.feedbackCompleted).length){
+      toast('Add at least one improvement action before downloading a student checklist.');
+      return;
+    }
+    const button=$('downloadFeedbackPdf');
+    if(button.disabled)return;
+    button.disabled=true;
+    const label=button.textContent;
+    button.textContent='Preparing checklist PDF…';
+    try{
+      if(!window.PDFLib||!window.fontkit)throw Error('The PDF export library is not available.');
+      const {PDFDocument,rgb}=window.PDFLib;
+      const standalone=await PDFDocument.create();
+      const fonts=await createUnicodeFonts(standalone,window.fontkit,await getUnicodeFontBytes());
+      const result=appendStudentChecklistPages({
+        document:standalone,rgb,fonts,
+        model:makeStudentChecklistModel({
+          stamps:feedbackStamps(),completed:state.feedbackCompleted,
+          course:state.course,candidate:state.candidate,session:state.session,
+        }),
+      });
+      standalone.setTitle('Mathematics IA student revision checklist - '+(state.candidate||'exploration'));
+      standalone.setSubject('First draft revision actions; no teacher marks or student mathematics');
+      standalone.setProducer('IA Marking Desk - local student checklist PDF');
+      const bytes=await standalone.save();
+      download(new Blob([bytes],{type:'application/pdf'}),saveSafeName()+'-student-checklist.pdf');
+      toast('Student checklist PDF download started ('+result.actionCount+' actions, '+result.pagesAdded+' pages).');
+    }catch(error){
+      console.error('Could not export student checklist PDF',error);
+      toast('Checklist PDF unavailable: '+pdfFontError(error));
+    }finally{
+      button.textContent=label;
+      button.disabled=usesNewFramework()||!studentChecklistItems(state.stamps,state.feedbackCompleted).length;
+    }
+  }
+
   async function prepareModeratorPreview(){
     if(reviewPreviewLoading)return;
     reviewPreviewLoading=true;
@@ -2593,6 +2622,34 @@ let pdfRendererLoad = null;
       renderModeratorPreviewPage().catch(console.error);
     });
     $('reviewConfirmed').addEventListener('change',updateReviewGate);
+    $('downloadFeedbackPdf').addEventListener('click',()=>{void exportStandaloneChecklistPdf();});
+    $('reviewJumpToPreview').addEventListener('click',()=>{
+      $('moderationPreflight').scrollIntoView({behavior:'smooth',block:'start'});
+      $('buildReviewPreview').focus({preventScroll:true});
+    });
+    $('preflightList').addEventListener('click',event=>{
+      const target=event.target.closest('[data-preflight-page]');
+      if(!target)return;
+      const page=Number(target.dataset.preflightPage);
+      if(!Number.isInteger(page)||page<1||page>(pdfDoc?.numPages||0))return;
+      $('reviewDialog').close();
+      void Promise.resolve(navigate(page)).then(()=>{
+        $('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});
+        $('pdfScroll').focus?.({preventScroll:true});
+      }).catch(error=>console.error('Could not jump to issue page',error));
+    });
+    $('reviewNextUnseen').addEventListener('click',()=>{
+      const total=reviewPreview.pdf?.numPages||0;
+      if(!total)return;
+      for(let offset=1;offset<=total;offset++){
+        const next=((reviewPreview.page-1+offset)%total)+1;
+        if(!reviewPreview.visited.has(next)){
+          reviewPreview.page=next;
+          renderModeratorPreviewPage().catch(console.error);
+          return;
+        }
+      }
+    });
     $('feedbackChecklist').addEventListener('change',event=>{
       const checkbox=event.target.closest('[data-feedback-done]');if(!checkbox||!isFeedback())return;
       if(checkbox.checked)state.feedbackCompleted[checkbox.dataset.feedbackDone]=true;

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 const out = 'dist';
 const vendor = join(out, 'vendor');
 mkdirSync(vendor, { recursive: true });
-for (const file of ['index.html', 'app.js', 'fast-stamp.js', 'comments.js', 'feedback-comments.js', 'feedback-engine.js', 'rubric.js', 'unicode-fonts.js', 'moderation-preflight.js', 'marking-history.js', 'project-vault.js', 'styles.css', 'design-polish.css', 'workspace.css', 'fast-stamp.css', 'library.html', 'library.css', 'library.js']) {
+for (const file of ['index.html', 'app.js', 'fast-stamp.js', 'student-checklist-pdf.js', 'comments.js', 'feedback-comments.js', 'feedback-engine.js', 'rubric.js', 'unicode-fonts.js', 'moderation-preflight.js', 'marking-history.js', 'project-vault.js', 'styles.css', 'design-polish.css', 'workspace.css', 'fast-stamp.css', 'review-polish.css', 'library.html', 'library.css', 'library.js']) {
   copyFileSync(file, join(out, file));
 }
 const deps = [
@@ -36,5 +36,5 @@ for (const directory of ['cmaps','standard_fonts','wasm']) {
   if (existsSync(source)) cpSync(source,join(vendor,directory),{recursive:true});
 }
 writeFileSync(join(out, '.nojekyll'), '');
-for (const file of ['vendor/pdf.mjs','vendor/pdf.worker.mjs','vendor/pdf-lib.min.js','vendor/fontkit.umd.min.js','vendor/jszip.min.js','project-vault.js','vendor/fonts/NotoSans-Regular.ttf','vendor/fonts/NotoSans-Bold.ttf','vendor/fonts/NotoSansMath-Regular.ttf','rubric.js','feedback-comments.js','feedback-engine.js','design-polish.css','workspace.css','fast-stamp.css','fast-stamp.js','library.html','library.js']) { if (!existsSync(join(out,file))) throw new Error('Deployment missing required asset: '+file); }
+for (const file of ['vendor/pdf.mjs','vendor/pdf.worker.mjs','vendor/pdf-lib.min.js','vendor/fontkit.umd.min.js','vendor/jszip.min.js','project-vault.js','vendor/fonts/NotoSans-Regular.ttf','vendor/fonts/NotoSans-Bold.ttf','vendor/fonts/NotoSansMath-Regular.ttf','rubric.js','feedback-comments.js','feedback-engine.js','design-polish.css','workspace.css','fast-stamp.css','fast-stamp.js','student-checklist-pdf.js','review-polish.css','library.html','library.js']) { if (!existsSync(join(out,file))) throw new Error('Deployment missing required asset: '+file); }
 console.log('Built self-hosted, static IA Marking Desk and independent library in dist/');

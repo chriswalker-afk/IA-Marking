@@ -73,7 +73,7 @@ test('feedback is a separate mode, not a repurposing of teacher final marks',()=
   for(const part of ['markingStamps()','feedbackStamps()','activeMode:mode','state.feedbackCompleted','function switchMode(next)','studentChecklistItems','studentFeedbackStrengths','if(isFeedback())','feedbackComments','feedbackEdits']){
     assert.ok(app.includes(part),part);
   }
-  assert.ok(app.includes('output.addPage([595,842])'),'Feedback checklist must appear in exported PDF');
+  assert.ok(app.includes('appendStudentChecklistPages'), 'Feedback checklist must be appended with the shared PDF renderer');
   assert.ok(app.includes("criterionKeys:isFeedback()?[]:CRITERION_KEYS"),'Feedback preflight must not request final marks');
   assert.ok(build.includes("'feedback-comments.js'")&&build.includes("'feedback-engine.js'"));
   assert.ok(html.includes('<script src="feedback-comments.js"></script>'));
