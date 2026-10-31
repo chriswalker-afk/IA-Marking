@@ -874,6 +874,7 @@ with tempfile.TemporaryDirectory() as folder:
         assert feedback_page.locator('#reviewScores').inner_text()==''
         assert '2 revision actions' in feedback_page.locator('#reviewStatus').inner_text()
         assert 'high priority' in feedback_page.locator('#feedbackChecklist').inner_text().lower()
+        feedback_page.screenshot(path=str(ROOT/'qa-pass4-feedback-review.png'))
         feedback_page.locator('#feedbackChecklist [data-feedback-done]').first.check()
         expect(feedback_page.locator('#feedbackProgress')).to_have_text('1 of 2 actions checked')
         expect(feedback_page.locator('#downloadFeedbackPdf')).to_be_enabled()
@@ -882,7 +883,9 @@ with tempfile.TemporaryDirectory() as folder:
         # pages or criterion marks. It is separate from the combined PDF.
         with feedback_page.expect_download(timeout=45000) as checklist_pdf_download:
             feedback_page.locator('#downloadFeedbackPdf').click()
-        checklist_pdf=fitz.open(stream=Path(checklist_pdf_download.value.path()).read_bytes(),filetype='pdf')
+        checklist_pdf_bytes=Path(checklist_pdf_download.value.path()).read_bytes()
+        (ROOT/'qa-pass4-student-checklist.pdf').write_bytes(checklist_pdf_bytes)
+        checklist_pdf=fitz.open(stream=checklist_pdf_bytes,filetype='pdf')
         assert len(checklist_pdf)>=1
         checklist_pdf_text=' '.join(page.get_text() for page in checklist_pdf)
         assert 'Student revision checklist' in checklist_pdf_text
