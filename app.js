@@ -511,6 +511,7 @@ let pdfRendererLoad = null;
     state.stamps=isFeedback()?state.feedbackStamps:state.markingStamps;
     draft=null;selectedStampId=null;movingStampId=null;tab='all';tone='all';search='';
     bankShowAll=false;bankQuickFilter='all';libraryEditingId=null;
+    searchKeyboardActive=false;searchKeyboardSelectionId=null;
     $('commentSearch').value='';
     resetHistory();lastPlacedDraft=null;repeatPlacement=false;
     workspaceView='browse';closeMobileDrawer();updateWorkspaceLayout({rerender:false});
@@ -759,7 +760,7 @@ let pdfRendererLoad = null;
     const cards=Array.from($('commentList').querySelectorAll('[data-comment-id]'));
     const current=cards.findIndex(button=>button.dataset.commentId===searchKeyboardSelectionId);
     $('searchKeyboardStatus').textContent=!cards.length?'No matching comments. Try fewer keywords.'
-      :(current+1)+' of '+total+' results · Enter to use · ↑ ↓ to choose';
+      :(current+1)+' of '+cards.length+' shown'+(total>cards.length?' ('+total+' matching)':'')+' · Enter to use · ↑ ↓ to choose';
   }
   function highlightSearchResult(id,{scroll=true}={}){
     searchKeyboardSelectionId=id;
