@@ -224,8 +224,13 @@ with tempfile.TemporaryDirectory() as folder:
         assert first_box['x'] >= pdf_box['x'] and first_box['x'] + first_box['width'] <= pdf_box['x'] + pdf_box['width'] + 2
         # The new compact header is ABOVE the full-width comment; no
         # permanent left gutter is wasted beneath the criterion badge.
-        assert note_text['y'] >= circle['y']+circle['height']-2, 'Comment body should start below the badge'
-        assert note_text['x'] < circle['x']+circle['width'], 'Comment should reclaim the left gutter'
+        lines=page.locator('.onpage-note-line').all()
+        assert len(lines)>=1
+        first_line=lines[0].bounding_box()
+        assert first_line['x'] >= circle['x']+circle['width']+1, 'The first text line must sit beside the circle'
+        if len(lines)>1:
+            later=lines[-1].bounding_box()
+            assert later['x']<first_line['x'], 'Lower lines must reclaim the left gutter once the circle ends'
         assert first_box['width']/page.locator('#pdfCanvas').bounding_box()['width'] < .45
         # One-click compacting must never increase the printed footprint.
         page.locator('#compactStamp').click()
