@@ -3,6 +3,7 @@ import {MarkingHistory,sanitizeQuickPicks} from './marking-history.js';
 import {openLocalIAProjectVault,createLocalProjectId} from './project-vault.js';
 import {inspectModerationPages} from './moderation-preflight.js';
 import {studentChecklistItems,studentFeedbackStrengths,studentChecklistText,feedbackPriority} from './feedback-engine.js';
+import {rankStampComments,clampResultIndex,placementFeedback} from './fast-stamp.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
 (() => {
@@ -98,6 +99,7 @@ let pdfRendererLoad = null;
   let tab = 'all';
   let tone = 'all';
   let search = '';
+  let searchKeyboardSelectionId=null,searchKeyboardActive=false;
   let bankShowAll = false;
   let draft = null;
   let selectedStampId = null;
@@ -718,11 +720,11 @@ let pdfRendererLoad = null;
   }
   function renderBank() {
     const all = getComments().filter(item => (item.courses || []).includes(state.course));
-    const query = search.toLowerCase().trim();
+    const query = search.trim();
     const quickIds=bankQuickFilter==='favorites'?quickPicks.favorites:bankQuickFilter==='recent'?quickPicks.recent:null;
-    let items = all.filter(item => (tab === 'all'||item.criterion === tab) && (tone === 'all'||item.tone === tone) && (!quickIds||quickIds.includes(item.id))
-      && (!query || [item.text,item.topic,item.criterion,...(item.tags || [])].join(' ').toLowerCase().includes(query)));
-    if(quickIds)items=items.sort((a,b)=>quickIds.indexOf(a.id)-quickIds.indexOf(b.id));
+    let items = all.filter(item => (tab === 'all'||item.criterion === tab) && (tone === 'all'||item.tone === tone) && (!quickIds||quickIds.includes(item.id)));
+    if(query)items=rankStampComments(items,query,{favorites:quickPicks.favorites,recent:quickPicks.recent});
+    else if(quickIds)items=items.sort((a,b)=>quickIds.indexOf(a.id)-quickIds.indexOf(b.id));
     document.querySelectorAll('[data-bank-quick]').forEach(button=>{
       const active=button.dataset.bankQuick===bankQuickFilter;
       button.classList.toggle('is-active',active);
@@ -731,7 +733,9 @@ let pdfRendererLoad = null;
     $('bankTotal').textContent = `${all.length} comments`;
     $('bankFilteredCount').textContent = `${items.length} matching ${items.length===1?'comment':'comments'}`;
     const visible = bankShowAll ? items : items.slice(0,MAX_BANK_VISIBLE);
-    $('commentList').innerHTML = visible.map(item => `<div class="comment-card ${draft?.id===item.id?'is-active':''}"><button type="button" class="comment-select" data-comment-id="${escapeHtml(item.id)}" aria-label="Use ${escapeHtml(item.criterion)} ${escapeHtml(item.tone)} comment as stamp"><span class="comment-card-head"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span><span class="topic">${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</span>${item.origin==='Teacher custom comment' ? '<span class="custom-tag">CUSTOM</span>' : ''}</span><p>${escapeHtml(item.text)}</p></button><div class="comment-card-actions"><button type="button" class="favourite-button ${quickPicks.favorites.includes(item.id)?'is-favourite':''}" data-favourite-comment="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}" aria-label="${quickPicks.favorites.includes(item.id)?'Remove from':'Add to'} favourite comments">${quickPicks.favorites.includes(item.id)?'★':'☆'} <span>Favourite</span></button><button type="button" data-copy-comment="${escapeHtml(item.id)}">Copy</button><button type="button" data-edit-comment="${escapeHtml(item.id)}">Edit</button></div></div>`).join('');
+    if(searchKeyboardActive && !visible.some(item=>item.id===searchKeyboardSelectionId))searchKeyboardSelectionId=visible[0]?.id||null;
+    if(!visible.length)searchKeyboardSelectionId=null;
+    $('commentList').innerHTML = visible.map(item => `<div class="comment-card ${draft?.id===item.id?'is-active':''} ${searchKeyboardActive&&searchKeyboardSelectionId===item.id?'is-keyboard-active':''}"><button type="button" class="comment-select" data-comment-id="${escapeHtml(item.id)}" aria-label="Use ${escapeHtml(item.criterion)} ${escapeHtml(item.tone)} comment as stamp"><span class="comment-card-head"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span><span class="topic">${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</span>${item.origin==='Teacher custom comment' ? '<span class="custom-tag">CUSTOM</span>' : ''}</span><p>${escapeHtml(item.text)}</p></button><div class="comment-card-actions"><button type="button" class="favourite-button ${quickPicks.favorites.includes(item.id)?'is-favourite':''}" data-favourite-comment="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}" aria-label="${quickPicks.favorites.includes(item.id)?'Remove from':'Add to'} favourite comments">${quickPicks.favorites.includes(item.id)?'★':'☆'} <span>Favourite</span></button><button type="button" data-copy-comment="${escapeHtml(item.id)}">Copy</button><button type="button" data-edit-comment="${escapeHtml(item.id)}">Edit</button></div></div>`).join('');
     if(!visible.length) $('commentList').innerHTML = '<p class="bank-empty">'+(bankQuickFilter==='favorites'?'No favourites yet. Star a comment in All to save it for quick stamping.':bankQuickFilter==='recent'?'No recent stamps yet. Placed comments will appear here.':'No matching comments. Try another search or write your own.')+'</p>';
     if(!bankShowAll && items.length>MAX_BANK_VISIBLE) $('commentList').insertAdjacentHTML('beforeend',`<button type="button" id="showMoreComments" class="btn subtle" style="width:100%">Show all ${items.length} comments</button>`);
     $('commentList').querySelectorAll('[data-comment-id]').forEach(button => button.addEventListener('click', () => prepareComment(button.dataset.commentId)));
@@ -743,6 +747,38 @@ let pdfRendererLoad = null;
     }));
     $('commentList').querySelectorAll('[data-edit-comment]').forEach(button => button.addEventListener('click',()=>openLibrary(button.dataset.editComment)));
     $('showMoreComments')?.addEventListener('click', () => {bankShowAll=true;renderBank();});
+    updateSearchSelectionStatus(items.length);
+  }
+  function updateSearchSelectionStatus(total){
+    if(!searchKeyboardActive){
+      $('searchKeyboardStatus').textContent='Tip: / or Ctrl/⌘ K to find; ↑ ↓ then Enter to use.';
+      return;
+    }
+    const cards=Array.from($('commentList').querySelectorAll('[data-comment-id]'));
+    const current=cards.findIndex(button=>button.dataset.commentId===searchKeyboardSelectionId);
+    $('searchKeyboardStatus').textContent=!cards.length?'No matching comments. Try fewer keywords.'
+      :(current+1)+' of '+total+' results · Enter to use · ↑ ↓ to choose';
+  }
+  function highlightSearchResult(id,{scroll=true}={}){
+    searchKeyboardSelectionId=id;
+    searchKeyboardActive=Boolean(id);
+    const buttons=Array.from($('commentList').querySelectorAll('[data-comment-id]'));
+    for(const button of buttons){
+      const active=button.dataset.commentId===id;
+      button.closest('.comment-card')?.classList.toggle('is-keyboard-active',active);
+      if(active&&scroll)button.scrollIntoView({block:'nearest'});
+    }
+    const all=getComments().filter(item=>(item.courses||[]).includes(state.course));
+    const total=$('bankFilteredCount').textContent.match(/^\\d+/)?.[0];
+    updateSearchSelectionStatus(total?Number(total):all.length);
+  }
+  function focusFastSearch(){
+    // Open the searchable bank even from the PDF-only focused view or drawer.
+    tab='all';tone='all';bankQuickFilter='all';bankShowAll=false;
+    searchKeyboardActive=true;searchKeyboardSelectionId=null;
+    renderTabs();renderTone();renderBank();
+    setWorkspaceView('browse',{openOnMobile:true,focusControl:true});
+    requestAnimationFrame(()=>{$('commentSearch').focus({preventScroll:true});$('commentSearch').select();});
   }
   function filteredLibraryComments() {
     const query=$('librarySearch').value.toLowerCase().trim();
