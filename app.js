@@ -4,6 +4,7 @@ import {openLocalIAProjectVault,createLocalProjectId} from './project-vault.js';
 import {inspectModerationPages} from './moderation-preflight.js';
 import {studentChecklistItems,studentFeedbackStrengths,studentChecklistText,feedbackPriority} from './feedback-engine.js';
 import {rankStampComments,clampResultIndex,placementFeedback} from './fast-stamp.js';
+import {selectableTextRectangles,textCoverage,compactWidth,wrapStampText} from './stamp-geometry.js';
 import {appendStudentChecklistPages,makeStudentChecklistModel} from './student-checklist-pdf.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
@@ -32,16 +33,17 @@ let pdfRendererLoad = null;
   const isFeedback=()=>mode==='feedback';
   const activeBank=()=>isFeedback()?FEEDBACK_BANK:BANK;
   const STAMP_DEFAULTS = Object.freeze({
-    size:20,strengthColor:'#477b97',limitationColor:'#b7803c',
-    fontSize:9.5,textColor:'#263d4f',fillColor:'#fbfdff',borderColor:'#477b97',noteWidth:250,
+    size:18,strengthColor:'#477b97',limitationColor:'#b7803c',
+    fontSize:9.5,textColor:'#263d4f',fillColor:'#fbfdff',borderColor:'#477b97',noteWidth:230,
   });
-  const NOTE_PAD=6;
-  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(170,Math.min(450,Math.round(Number(value)/5)*5)) : 250;
+  const NOTE_PAD=4;
+  const NOTE_INSET=9;
+  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(150,Math.min(450,Math.round(Number(value)/5)*5)) : 230;
   const normalNoteHeight = value => value===null || value===undefined || value==='' ? null :
-    Number.isFinite(Number(value)) ? Math.max(55,Math.min(750,Math.round(Number(value)))) : null;
+    Number.isFinite(Number(value)) ? Math.max(40,Math.min(750,Math.round(Number(value)))) : null;
   const normalFontSize = value => value!==null && value!==undefined && value!=='' && Number.isFinite(Number(value)) ?
     Math.max(7,Math.min(18,Math.round(Number(value)*2)/2)) : STAMP_DEFAULTS.fontSize;
-  const noteLineHeight = size => Math.round(normalFontSize(size)*1.35*10)/10;
+  const noteLineHeight = size => Math.round(normalFontSize(size)*1.23*10)/10;
   const normalSize = value => Number.isFinite(Number(value)) ? Math.max(14,Math.min(42,Math.round(Number(value)))) : STAMP_DEFAULTS.size;
   const normalColor = (value,fallback) => typeof value==='string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
   function normalStyle(value={}) {
@@ -118,6 +120,10 @@ let pdfRendererLoad = null;
   let cachedProjectSummaries=[];
   let viewScale = 1;
   let pageWidthPt = 0, pageHeightPt = 0;
+  // Ephemeral PDF.js text obstacles used to guide new stamps away from
+  // selectable student writing. Diagrams/scans are never considered safe.
+  const selectableTextByPage=new Map();
+  const selectableTextFor=page=>selectableTextByPage.get(page)||[];
   let libraryEditingId = null;
   const MAX_BANK_VISIBLE = 42;
   const QUICK_PICKS_KEY='ia-marking-desk-quick-picks-v1';
@@ -915,10 +921,11 @@ let pdfRendererLoad = null;
         <label for="${prefix}BorderColor">Box border <input id="${prefix}BorderColor" type="color" value="${noteBorderColor(item)}"></label>
       </div>
       <span class="comment-style-heading">Text box dimensions</span>
-      <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="170" max="450" step="5" value="${width}"></label>
-      <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="55" max="750" step="5" value="${heightValue}"></label>
+      <small class="note-format-help">Compact layout: the circle stays above the comment, so the wording can use the full box width. Full text remains visible in the exported PDF.</small>
+      <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="150" max="450" step="5" value="${width}"></label>
+      <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="40" max="750" step="5" value="${heightValue}"></label>
       <button id="${prefix}HeightAuto" type="button" class="text-button note-fit-button">Fit box height to full comment</button>
-      <small class="note-format-help">Drag the bottom-right handle on a placed comment to resize both dimensions. Export will stop if text is clipped.</small>
+      <small class="note-format-help">Resize from the lower-right corner, or choose Auto to fit all lines. The box cannot be dragged smaller than its full comment.</small>
     </div></details>`;
   }
   function bindAppearanceEditor(item,prefix,existing) {
@@ -935,10 +942,16 @@ let pdfRendererLoad = null;
     $(`${prefix}Color`).addEventListener('input',e=>{item.color=normalColor(e.target.value,stampColor(item));refresh();});
     $(`${prefix}Width`).addEventListener('input',e=>{
       item.noteWidth=normalNoteWidth(e.target.value);
+      // A new narrower width can increase the wrapped line count. An older
+      // fixed height must never silently cut off the remainder.
+      const required=noteLayout({...item,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+      if(item.noteHeight!==null&&Number(item.noteHeight)<required)item.noteHeight=null;
       $(`${prefix}WidthValue`).textContent=`${item.noteWidth} pt`;refresh();
     });
     $(`${prefix}Font`).addEventListener('input',e=>{
       item.fontSize=normalFontSize(e.target.value);
+      const required=noteLayout({...item,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+      if(item.noteHeight!==null&&Number(item.noteHeight)<required)item.noteHeight=null;
       $(`${prefix}FontValue`).textContent=`${item.fontSize} pt`;refresh();
     });
     for(const [suffix,key,fallback] of [
@@ -951,7 +964,11 @@ let pdfRendererLoad = null;
       });
     }
     $(`${prefix}Height`).addEventListener('input',e=>{
-      item.noteHeight=normalNoteHeight(e.target.value);refresh();
+      const requested=normalNoteHeight(e.target.value);
+      const minimum=noteLayout({...item,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+      item.noteHeight=Math.max(requested??minimum,minimum);
+      e.target.value=String(Math.min(750,item.noteHeight));
+      refresh();
     });
     $(`${prefix}HeightAuto`).addEventListener('click',()=>{
       const before=existing?historySnapshot():null;
@@ -963,6 +980,40 @@ let pdfRendererLoad = null;
         watchHistoryField($(`${prefix}${field}`),'format '+item.criterion+' comment',true);
       }
     }
+  }
+  function makeStampCompact(item,{existing=false}={}){
+    const before=existing?historySnapshot():null;
+    const pageW=pageWidthPt||595,pageH=pageHeightPt||842;
+    const baseWidth=normalNoteWidth(item.noteWidth??state.stampStyle.noteWidth);
+    // Compact is an explicit opt-in, so respect larger teacher-chosen circles
+    // until this button is pressed. A 22 pt badge remains comfortably legible.
+    if(normalSize(item.size)>22)item.size=22;
+    const best=compactWidth({
+      currentWidth:baseWidth,
+      measure:width=>noteLayout({...item,noteWidth:width,noteHeight:null},pageW,pageH),
+    });
+    item.noteWidth=normalNoteWidth(best.width);
+    item.noteHeight=null;
+    if(existing){
+      renderStamps();scheduleSave();recordHistory('compact '+item.criterion+' comment',before);
+      toast('Box width reduced and all comment lines fitted. Check it against the student work.');
+    }else toast('Compact stamp ready to place. Check the suggested position on the PDF.');
+    renderEditor();
+  }
+  function findStampClearSpace(stamp){
+    if(!isReady())return;
+    if(currentPage!==stamp.page){toast('Open the stamped PDF page before finding space.');return;}
+    finishFieldHistory();const before=historySnapshot();
+    const x=stamp.x,y=stamp.y;
+    const sourceCount=selectableTextFor(stamp.page).length;
+    stamp.preferExtendedClearance=true;
+    try{placeNoteInFreeSpace(stamp,pageStamps(stamp.page),pageWidthPt,pageHeightPt);}
+    finally{delete stamp.preferExtendedClearance;}
+    renderStamps();renderEditor();scheduleSave();
+    if(stamp.x!==x||stamp.y!==y)recordHistory('reposition '+stamp.criterion+' comment',before);
+    toast(sourceCount?
+      'Searched nearby clear space using selectable PDF text. Check diagrams and scans manually.'
+      :'No selectable text was detected. Checked for space between existing stamps only.');
   }
   function renderEditor() {
     // Keep advanced settings open through subsequent edits to this same stamp
@@ -989,12 +1040,23 @@ let pdfRendererLoad = null;
       });
     };
     if(stamp) {
-      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} ${isFeedback()?'feedback':'evidence'} stamp</strong><small>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${priorityField(stamp)}${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
-      $('stampTextEdit').addEventListener('input', e => {stamp.text=e.target.value;renderStamps();scheduleSave();});
+      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} ${isFeedback()?'feedback':'evidence'} stamp</strong><small>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${priorityField(stamp)}<div class="note-quick-actions"><button id="compactStamp" class="btn subtle" type="button" title="Find the smallest readable box and fit every line of text">Compact &amp; fit</button><button id="findClearSpace" class="btn subtle" type="button" title="Find a nearby position avoiding selectable PDF text where possible">Find clear space</button></div>${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
+      $('stampTextEdit').addEventListener('input',e=>{
+        stamp.text=e.target.value;
+        const required=noteLayout({...stamp,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+        if(stamp.noteHeight!==null&&stamp.noteHeight<required){
+          stamp.noteHeight=null;
+          const heightLabel=$('selectedStampHeightValue');
+          if(heightLabel)heightLabel.textContent='Auto · '+required+' pt';
+        }
+        renderStamps();scheduleSave();
+      });
       watchHistoryField($('stampTextEdit'),'edit '+stamp.criterion+' comment');
       restoreAppearance();
       bindAppearanceEditor(stamp,'selectedStamp',true);
       bindPriority(stamp,true);
+      $('compactStamp').addEventListener('click',()=>makeStampCompact(stamp,{existing:true}));
+      $('findClearSpace').addEventListener('click',()=>findStampClearSpace(stamp));
       $('moveStamp').addEventListener('click',()=>{movingStampId=stamp.id;draft=null;selectedStampId=null;renderEditor();setInstruction(); if (currentPage!==stamp.page) navigate(stamp.page);});
       $('copyStamp').addEventListener('click',()=>copyCommentText(stamp.text));
       $('duplicateStamp').addEventListener('click',()=>{
@@ -1015,8 +1077,13 @@ let pdfRendererLoad = null;
       $('selectionEditor').innerHTML = '<div class="selection-empty"><span class="small-ring">A</span><span>Choose a comment to prepare a stamp.</span></div>';
       return;
     }
-    $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Ready: criterion ${escapeHtml(draft.criterion)}</strong><span class="polarity ${draft.tone}">${draft.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span></div><textarea id="draftTextEdit" maxlength="1800" aria-label="Personalise only this stamp comment">${escapeHtml(draft.text)}</textarea>${priorityField(draft)}${appearanceEditor(draft,'draftStamp')}<div class="selection-actions"><small>Personalise this stamp before placing it on the PDF.</small><button type="button" class="btn primary" id="placeHint">${isReady()?'Click PDF to place':'Add PDF first'} &#8594;</button></div></div>`;
-    $('draftTextEdit').addEventListener('input',e=>{draft.text=e.target.value;});
+    $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Ready: criterion ${escapeHtml(draft.criterion)}</strong><span class="polarity ${draft.tone}">${draft.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span></div><textarea id="draftTextEdit" maxlength="1800" aria-label="Personalise only this stamp comment">${escapeHtml(draft.text)}</textarea>${priorityField(draft)}<div class="note-quick-actions"><button id="compactDraft" class="btn subtle" type="button">Compact &amp; fit</button></div>${appearanceEditor(draft,'draftStamp')}<div class="selection-actions"><small>Personalise this stamp before placing it on the PDF.</small><button type="button" class="btn primary" id="placeHint">${isReady()?'Click PDF to place':'Add PDF first'} &#8594;</button></div></div>`;
+    $('draftTextEdit').addEventListener('input',e=>{
+      draft.text=e.target.value;
+      const required=noteLayout({...draft,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+      if(draft.noteHeight!==null&&draft.noteHeight<required)draft.noteHeight=null;
+    });
+    $('compactDraft').addEventListener('click',()=>makeStampCompact(draft));
     restoreAppearance();
     bindAppearanceEditor(draft,'draftStamp',false);
     bindPriority(draft,false);
@@ -1063,17 +1130,35 @@ let pdfRendererLoad = null;
   }
   function noteLayout(stamp,pageWidth,pageHeight,font=pdfMeasureFont()) {
     const width=Math.min(normalNoteWidth(stamp.noteWidth ?? state.stampStyle.noteWidth),Math.max(100,pageWidth-2*NOTE_PAD));
-    const circle=normalSize(stamp.size),textX=Math.max(circle+17,42);
+    const circle=normalSize(stamp.size);
+    const circleX=6,circleY=5;
+    const textX=circleX+circle+8;
+    const headerTop=6;
+    // Text wraps beside the badge only while the circle physically occupies
+    // that row. Every subsequent line reclaims the entire left column. The
+    // same per-row x coordinates are used on screen, in preview and export.
     const fontSize=noteFontSize(stamp),lineHeight=noteLineHeight(fontSize);
     const headerFontSize=Math.max(8,Math.min(12,Math.round(fontSize*.85*10)/10));
-    const rows=pdfWrap(stamp.text,font,fontSize,Math.max(30,width-textX-8));
-    const minHeight=Math.ceil(Math.max(circle+20,39+rows.length*lineHeight));
+    const bodyTop=headerTop+Math.max(11,headerFontSize*1.2)+5;
+    const flowed=wrapStampText(stamp.text,{
+      lineArea:index=>{
+        const top=bodyTop+index*lineHeight;
+        const x=top<circleY+circle+4?textX:NOTE_INSET;
+        return {x,width:Math.max(30,width-x-NOTE_INSET)};
+      },
+      measure:value=>font.widthOfTextAtSize(value,fontSize),
+    });
+    const rows=flowed.map(entry=>entry.text);
+    const rowXs=flowed.map(entry=>entry.x);
+    const bodyX=0;
+    const minHeight=Math.ceil(Math.max(circleY+circle+7,bodyTop+rows.length*lineHeight+7));
     const height=normalNoteHeight(stamp.noteHeight) ?? minHeight;
     const fits=height<=pageHeight-2*NOTE_PAD;
     const contentFits=height>=minHeight;
     const x=Math.min(Math.max(NOTE_PAD,Number(stamp.x||0)*pageWidth),Math.max(NOTE_PAD,pageWidth-width-NOTE_PAD));
     const y=Math.min(Math.max(NOTE_PAD,Number(stamp.y||0)*pageHeight),Math.max(NOTE_PAD,pageHeight-height-NOTE_PAD));
-    return {x,y,width,height,circle,textX,rows,fontSize,headerFontSize,lineHeight,minHeight,contentFits,fits,
+    return {x,y,width,height,circle,circleX,circleY,textX,headerTop,bodyX,bodyTop,
+      rows,rowXs,fontSize,headerFontSize,lineHeight,minHeight,contentFits,fits,
       textColor:noteTextColor(stamp),fillColor:noteFillColor(stamp),borderColor:noteBorderColor(stamp),pageWidth,pageHeight};
   }
   function noteOverlap(a,b) {
@@ -1094,28 +1179,64 @@ let pdfRendererLoad = null;
   }
   function placeNoteInFreeSpace(stamp,stamps,pageWidth,pageHeight) {
     const others=stamps.filter(item=>item.id!==stamp.id).map(item=>noteLayout(item,pageWidth,pageHeight));
-    let best=noteLayout(stamp,pageWidth,pageHeight);
-    if(!best.fits) return best;
-    if(!others.some(rect=>noteOverlap(best,rect))) {
-      stamp.x=best.x/pageWidth;stamp.y=best.y/pageHeight;return best;
+    const source=selectableTextFor(stamp.page);
+    const start=noteLayout(stamp,pageWidth,pageHeight);
+    if(!start.fits)return start;
+    const collision=box=>others.some(rect=>noteOverlap(box,rect));
+    const coverage=box=>textCoverage(box,source);
+    const startCovered=coverage(start),hasStampConflict=collision(start);
+    if(!hasStampConflict&&startCovered<5){
+      stamp.x=start.x/pageWidth;stamp.y=start.y/pageHeight;return start;
     }
-    // Nearby clear positions first; never hide or truncate the comment.
-    // The teacher can subsequently drag the annotation into better whitespace.
-    const step=20;
-    const desiredX=best.x,desiredY=best.y;
-    const candidates=[];
-    for(let radius=step;radius<=Math.max(pageWidth,pageHeight);radius+=step) {
-      for(let dy=-radius;dy<=radius;dy+=step) for(const dx of [-radius,radius]) candidates.push([desiredX+dx,desiredY+dy]);
-      for(let dx=-radius+step;dx<radius;dx+=step) for(const dy of [-radius,radius]) candidates.push([desiredX+dx,desiredY+dy]);
-      if(candidates.length>2000)break;
-    }
-    for(const [x,y] of candidates) {
+    const desiredX=start.x,desiredY=start.y;
+    const step=16;
+    const maxRadius=source.length?(stamp.preferExtendedClearance||hasStampConflict?224:128):Math.max(pageWidth,pageHeight);
+    const seen=new Set();
+    let fallback=!hasStampConflict?{layout:start,covered:startCovered,score:startCovered}:null;
+    const maybeCandidate=(x,y)=>{
       const candidate=noteLayout({...stamp,x:x/pageWidth,y:y/pageHeight},pageWidth,pageHeight);
-      if(!others.some(rect=>noteOverlap(candidate,rect))) {
-        stamp.x=candidate.x/pageWidth;stamp.y=candidate.y/pageHeight;return candidate;
-      }
+      const key=candidate.x.toFixed(1)+','+candidate.y.toFixed(1);
+      if(seen.has(key)||collision(candidate))return null;
+      seen.add(key);
+      const covered=coverage(candidate);
+      // Keep source avoidance local: do not relocate feedback to an
+      // unrelated section just because a clear gap exists far away.
+      const distance=Math.hypot(candidate.x-desiredX,candidate.y-desiredY);
+      const score=covered+distance*1.5;
+      if(!fallback||score<fallback.score)
+        fallback={layout:candidate,covered,score};
+      if(covered<5)return candidate;
+      return null;
+    };
+    if(source.length){
+      const here=maybeCandidate(desiredX,desiredY);
+      if(here){stamp.x=here.x/pageWidth;stamp.y=here.y/pageHeight;return here;}
     }
-    return best; // Export validation will require clearing any remaining overlap.
+    for(let radius=step;radius<=maxRadius;radius+=step){
+      for(let dy=-radius;dy<=radius;dy+=step){
+        for(const dx of [-radius,radius]){
+          const found=maybeCandidate(desiredX+dx,desiredY+dy);
+          if(found){stamp.x=found.x/pageWidth;stamp.y=found.y/pageHeight;return found;}
+        }
+      }
+      for(let dx=-radius+step;dx<radius;dx+=step){
+        for(const dy of [-radius,radius]){
+          const found=maybeCandidate(desiredX+dx,desiredY+dy);
+          if(found){stamp.x=found.x/pageWidth;stamp.y=found.y/pageHeight;return found;}
+        }
+      }
+      if(seen.size>2000)break;
+    }
+    // If no untouched whitespace is available, prefer the smallest nearby
+    // selectable-text intersection over silently covering an entire passage.
+    // Preflight still requires visual inspection of figures/scans.
+    if(fallback&&(!hasStampConflict
+      ?fallback.covered<startCovered*.82
+      :true)){
+      stamp.x=fallback.layout.x/pageWidth;stamp.y=fallback.layout.y/pageHeight;
+      return fallback.layout;
+    }
+    return start;
   }
   function clearPlacementPreview(){
     if(placementFrame!==null){cancelAnimationFrame(placementFrame);placementFrame=null;}
@@ -1135,9 +1256,17 @@ let pdfRendererLoad = null;
     const resolved=noteLayout(candidate,pageWidthPt,pageHeightPt);
     const overlaps=pageStamps(currentPage).filter(x=>x.id!==candidate.id)
       .some(x=>noteOverlap(noteLayout(x,pageWidthPt,pageHeightPt),resolved));
-    const feedback=placementFeedback({requested,resolved,overlaps,
+    let feedback=placementFeedback({requested,resolved,overlaps,
       fits:resolved.fits,contentFits:resolved.contentFits});
-    return {candidate,requested,resolved,feedback,overlaps};
+    const source=selectableTextFor(currentPage);
+    const covered=textCoverage(resolved,source);
+    if(source.length&&covered>20)feedback={
+      kind:'warning',text:'May cover selectable student text. Try another gap or make the box compact.',
+    };
+    else if(source.length&&feedback.kind==='ready')feedback={
+      kind:'ready',text:'Clear of selectable text. Still inspect diagrams and mathematical notation.',
+    };
+    return {candidate,requested,resolved,feedback,overlaps,covered};
   }
   function showPlacementPreview(position){
     if(!draft&&!movingStampId){clearPlacementPreview();return;}
@@ -1148,14 +1277,14 @@ let pdfRendererLoad = null;
     const color=stampColor(candidate),textColor=noteTextColor(candidate);
     const tone=candidate.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation';
     const moved=Math.hypot(resolved.x-requested.x,resolved.y-requested.y)>5;
-    const rows=resolved.rows.map(line=>'<span class="preview-line">'+escapeHtml(line)+'</span>').join('');
+    const rows=resolved.rows.map((line,i)=>'<span class="preview-line" style="margin-left:'+resolved.rowXs[i]*scale+'px">'+escapeHtml(line)+'</span>').join('');
     $('stampPlacementPreview')?.remove();
     $('stampPlacementAnchor')?.remove();
     const markup='<div id="stampPlacementPreview" aria-hidden="true" class="stamp-placement-preview '+(feedback.kind==='warning'?'is-warning':moved?'is-adjusted':'')+'"'
       +' style="left:'+resolved.x*scale+'px;top:'+resolved.y*scale+'px;width:'+resolved.width*scale+'px;height:'+resolved.height*scale+'px;background:'+noteFillColor(candidate)+'e8;color:'+textColor+';border-color:'+noteBorderColor(candidate)+'">'
-      +'<span class="preview-circle" style="left:'+8*scale+'px;top:'+11*scale+'px;width:'+resolved.circle*scale+'px;height:'+resolved.circle*scale+'px;background:'+color+';color:'+stampTextColor(candidate)+';font-size:'+Math.max(7,resolved.circle*.56*scale)+'px">'+escapeHtml(candidate.criterion)+'</span>'
-      +'<span class="preview-header" style="left:'+resolved.textX*scale+'px;top:'+10*scale+'px;font-size:'+resolved.headerFontSize*scale+'px">'+escapeHtml(candidate.criterion)+' · '+tone+'</span>'
-      +'<span class="preview-body" style="left:'+resolved.textX*scale+'px;top:'+25*scale+'px;font-size:'+resolved.fontSize*scale+'px;line-height:'+resolved.lineHeight*scale+'px">'+rows+'</span></div>'
+      +'<span class="preview-circle" style="left:'+resolved.circleX*scale+'px;top:'+resolved.circleY*scale+'px;width:'+resolved.circle*scale+'px;height:'+resolved.circle*scale+'px;background:'+color+';color:'+stampTextColor(candidate)+';font-size:'+Math.max(7,resolved.circle*.56*scale)+'px">'+escapeHtml(candidate.criterion)+'</span>'
+      +'<span class="preview-header" style="left:'+resolved.textX*scale+'px;top:'+resolved.headerTop*scale+'px;font-size:'+resolved.headerFontSize*scale+'px">'+escapeHtml(candidate.criterion)+' · '+tone+'</span>'
+      +'<span class="preview-body" style="left:'+resolved.bodyX*scale+'px;top:'+resolved.bodyTop*scale+'px;font-size:'+resolved.fontSize*scale+'px;line-height:'+resolved.lineHeight*scale+'px">'+rows+'</span></div>'
       +(moved?'<span id="stampPlacementAnchor" class="stamp-placement-anchor" aria-hidden="true" style="left:'+requested.x*scale+'px;top:'+requested.y*scale+'px"></span>':'');
     $('stampLayer').insertAdjacentHTML('beforeend',markup);
     $('placementAssist').className='placement-assist '+feedback.kind;
@@ -1174,11 +1303,19 @@ let pdfRendererLoad = null;
       showPlacementPreview(position);
     });
   }
-  function renderStampWarnings(problems) {
+  function renderStampWarnings(problems,sourceOverlap=0) {
     const el=$('annotationNotice');
     if(!el)return;
-    if(!problems.length){el.classList.add('hidden');el.textContent='';return;}
-    el.textContent=`On-page annotations need attention: ${problems.join('; ')}. Move or resize a box, increase its height, reduce the font size, or shorten the comment before exporting.`;
+    el.classList.remove('source-warning');
+    if(!problems.length&&!sourceOverlap){el.classList.add('hidden');el.textContent='';return;}
+    if(problems.length){
+      el.textContent='On-page annotations need attention: '+problems.join('; ')
+        +'. Move or resize a box, fit its height, or shorten the wording before exporting.';
+    }else{
+      el.classList.add('source-warning');
+      el.textContent=sourceOverlap+' comment'+(sourceOverlap===1?' may':'s may')
+        +' obscure selectable student text. Use Compact & fit or Find clear space, and check the PDF visually; diagrams and scanned pages cannot be automatically assessed.';
+    }
     el.classList.remove('hidden');
   }
   function renderStamps() {
@@ -1190,17 +1327,20 @@ let pdfRendererLoad = null;
     renderQuickPicker();
     const pageWidth=pageWidthPt||595,pageHeight=pageHeightPt||842;
     const preview=pageLayoutProblems(stampsOnPage,pageWidth,pageHeight);
-    renderStampWarnings(preview.problems);
+    const source=selectableTextFor(currentPage);
+    const overlapping=source.length
+      ?preview.items.filter(({layout})=>textCoverage(layout,source)>20).length:0;
+    renderStampWarnings(preview.problems,overlapping);
     $('stampLayer').innerHTML=preview.items.map(({stamp,layout})=>{
       const scale=viewScale||1;
       const label=stampLabel(stamp),color=stampColor(stamp);
-      const lines=layout.rows.map(line=>`<span class="onpage-note-line">${escapeHtml(line)}</span>`).join('');
+      const lines=layout.rows.map((line,i)=>`<span class="onpage-note-line" style="margin-left:${layout.rowXs[i]*scale}px">${escapeHtml(line)}</span>`).join('');
       const mismatch=preview.problems.some(issue=>issue.includes(label));
       return `<div role="button" tabindex="0" class="onpage-stamp ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};background:${layout.fillColor};border-color:${layout.borderColor};color:${layout.textColor};border-width:${Math.max(.7,1.25*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag comment to move; drag bottom-right corner to resize">
         <span class="onpage-border-accent" style="background:${layout.borderColor};width:${Math.max(2,3*scale)}px"></span>
-        <span class="onpage-circle" style="left:${8*scale}px;top:${11*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
-        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${10*scale}px;font-size:${layout.headerFontSize*scale}px;line-height:${Math.max(12,layout.headerFontSize*1.12)*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span>
-        <span class="onpage-note-body" style="left:${layout.textX*scale}px;top:${25*scale}px;font-size:${layout.fontSize*scale}px;line-height:${layout.lineHeight*scale}px;color:${layout.textColor}">${lines}</span>
+        <span class="onpage-circle" style="left:${layout.circleX*scale}px;top:${layout.circleY*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
+        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${layout.headerTop*scale}px;font-size:${layout.headerFontSize*scale}px;line-height:${Math.max(12,layout.headerFontSize*1.12)*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span>
+        <span class="onpage-note-body" style="left:${layout.bodyX*scale}px;top:${layout.bodyTop*scale}px;font-size:${layout.fontSize*scale}px;line-height:${layout.lineHeight*scale}px;color:${layout.textColor}">${lines}</span>
         <button type="button" class="note-resize-handle" data-resize-pin="${escapeHtml(stamp.id)}" aria-label="Resize width and height of ${escapeHtml(label)} comment" title="Drag to resize comment width and height"></button>
       </div>`;
     }).join('');
@@ -1252,14 +1392,18 @@ let pdfRendererLoad = null;
         const scale=viewScale||1;
         const maxWidth=Math.min(450,pageWidth-NOTE_PAD-anchorX);
         const maxHeight=Math.min(750,pageHeight-NOTE_PAD-anchorY);
-        const desiredWidth=Math.max(170,Math.min(maxWidth,originalWidth+(event.clientX-fromX)/scale));
-        const desiredHeight=Math.max(55,Math.min(maxHeight,originalHeight+(event.clientY-fromY)/scale));
+        const desiredWidth=Math.max(150,Math.min(maxWidth,originalWidth+(event.clientX-fromX)/scale));
+        const requestedHeight=Math.max(40,Math.min(maxHeight,originalHeight+(event.clientY-fromY)/scale));
+        const natural=noteLayout({...stamp,noteWidth:desiredWidth,noteHeight:null},pageWidth,pageHeight).minHeight;
+        // A direct resize cannot silently cut off text: keep at least enough
+        // height for the complete teacher comment at the chosen width.
+        const desiredHeight=Math.min(maxHeight,Math.max(natural,requestedHeight));
         const mock={...stamp,noteWidth:desiredWidth,noteHeight:desiredHeight};
         const layout=noteLayout(mock,pageWidth,pageHeight);
         btn.style.width=`${layout.width*scale}px`;
         btn.style.height=`${layout.height*scale}px`;
         btn.classList.toggle('note-conflict',!layout.contentFits||!layout.fits);
-        btn.querySelector('.onpage-note-body').innerHTML=layout.rows.map(row=>`<span class="onpage-note-line">${escapeHtml(row)}</span>`).join('');
+        btn.querySelector('.onpage-note-body').innerHTML=layout.rows.map((row,i)=>`<span class="onpage-note-line" style="margin-left:${layout.rowXs[i]*scale}px">${escapeHtml(row)}</span>`).join('');
         return {width:layout.width,height:layout.height};
       };
       handle.addEventListener('pointerdown',e=>{
@@ -1394,7 +1538,7 @@ let pdfRendererLoad = null;
       }).promise;
       resetHistory();lastPlacedDraft=null;repeatPlacement=false;
       if(!keepStamps){const replacingExistingPdf=isReady();state.stamps=[];state.markingStamps=[];state.feedbackStamps=[];state.feedbackCompleted={};if(replacingExistingPdf){state.marks=freshMarks();state.justifications=freshJustifications();}selectedStampId=null;movingStampId=null;draft=null;}
-      pdfDoc=loaded;state.pdfBytes=clone;state.pdfName=name || 'uploaded-ia.pdf';
+      pdfDoc=loaded;selectableTextByPage.clear();state.pdfBytes=clone;state.pdfName=name || 'uploaded-ia.pdf';
       currentPage=1;zoom=1;
       $('emptyViewer').classList.add('hidden');$('pageShell').classList.remove('hidden');
       $('uploadTitle').textContent='Replace PDF';$('uploadSubtext').textContent=isFeedback()?'Choose a different draft PDF':'Choose a different final IA';
@@ -1443,6 +1587,21 @@ let pdfRendererLoad = null;
       activeRenderTask = page.render({canvasContext:context,viewport,transform:displayRatio!==1?[displayRatio,0,0,displayRatio,0,0]:null});
       await activeRenderTask.promise;
       if (token === rendering) activeRenderTask = null;
+      if(token!==rendering)return;
+      if(!selectableTextByPage.has(currentPage)){
+        try{
+          // Text extraction is local. Its coordinates use the same unscaled
+          // PDF-point top-left origin as noteLayout and the preflight check.
+          const content=await page.getTextContent();
+          if(token!==rendering)return;
+          const rects=page.rotate%360===0
+            ?selectableTextRectangles(content.items,original.width,original.height):[];
+          selectableTextByPage.set(currentPage,rects);
+        }catch(error){
+          console.warn('Selectable PDF text could not be inspected',error);
+          selectableTextByPage.set(currentPage,[]);
+        }
+      }
       if(token!==rendering)return;
       $('pageNumber').value=currentPage;
       $('prevPage').disabled=currentPage<=1;
@@ -1795,7 +1954,7 @@ let pdfRendererLoad = null;
       stamps:[],markingStamps:[],feedbackStamps:[],feedbackCompleted:{},pdfName:'',pdfBytes:null};
     rendering++;
     if(activeRenderTask){try{activeRenderTask.cancel();}catch(error){}}
-    const oldDocument=pdfDoc;pdfDoc=null;
+    const oldDocument=pdfDoc;pdfDoc=null;selectableTextByPage.clear();
     if(oldDocument?.destroy)Promise.resolve(oldDocument.destroy()).catch(()=>{});
     currentPage=1;zoom=1;viewScale=1;pageWidthPt=0;pageHeightPt=0;
     draft=null;selectedStampId=null;movingStampId=null;
@@ -2203,13 +2362,13 @@ let pdfRendererLoad = null;
             color:pdfHexColor(layout.fillColor),borderColor:pdfHexColor(layout.borderColor),borderWidth:1.25});
           page.drawRectangle({x:layout.x,y:bottom,width:3,height:layout.height,color:pdfHexColor(layout.borderColor)});
           const radius=layout.circle/2;
-          const cx=layout.x+8+radius,cy=height-layout.y-11-radius;
+          const cx=layout.x+layout.circleX+radius,cy=height-layout.y-layout.circleY-radius;
           page.drawCircle({x:cx,y:cy,size:radius,color,borderWidth:1.1,borderColor:rgb(1,1,1)});
           const letterSize=Math.min(layout.circle*.55,18);
           pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
           const fullTextColor=pdfHexColor(layout.textColor);
-          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,layout.headerFontSize,bold,fullTextColor);
-          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.textX,height-layout.y-33-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
+          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}`,layout.x+layout.textX,height-layout.y-layout.headerTop-layout.headerFontSize*.95,layout.headerFontSize,bold,fullTextColor);
+          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.rowXs[index],height-layout.y-layout.bodyTop-layout.fontSize*.95-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
         }
       }
       if(isFeedback()){
