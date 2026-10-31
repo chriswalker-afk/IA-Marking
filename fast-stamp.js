@@ -46,6 +46,6 @@ export function placementFeedback({requested,resolved,overlaps=false,fits=true,c
   if(!requested||!resolved)return {kind:'ready',text:'Click to place beside the relevant work.'};
   const gap=Math.hypot((resolved.x-requested.x)||0,(resolved.y-requested.y)||0);
   return gap>5
-    ?{kind:'adjusted',text:'The stamp will move slightly to avoid existing comments.'}
+    ?{kind:'adjusted',text:'The stamp will shift to stay within the page and clear of other comments.'}
     :{kind:'ready',text:'The stamp will be placed here. Check it does not cover mathematics.'};
 }
