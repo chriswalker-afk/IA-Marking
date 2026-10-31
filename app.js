@@ -1190,7 +1190,7 @@ let pdfRendererLoad = null;
     }
     const desiredX=start.x,desiredY=start.y;
     const step=16;
-    const maxRadius=source.length?(stamp.preferExtendedClearance?224:128):Math.max(pageWidth,pageHeight);
+    const maxRadius=source.length?(stamp.preferExtendedClearance||hasStampConflict?224:128):Math.max(pageWidth,pageHeight);
     const seen=new Set();
     let fallback=!hasStampConflict?{layout:start,covered:startCovered,score:startCovered}:null;
     const maybeCandidate=(x,y)=>{
