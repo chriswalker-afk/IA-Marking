@@ -1,0 +1,63 @@
+/* Pass 3 — keyboard-first IA stamping. A UI-only layer on top of the
+   proven PDF-point stamp renderer; never affects exported PDF drawing. */
+.fast-workflow-actions{display:flex;align-items:center;gap:5px;flex:none}
+.fast-find-button{display:inline-flex;align-items:center;gap:6px;border:1px solid #c8dce7;background:#eef6fa;color:#27536d;font-weight:800;white-space:nowrap}
+.fast-find-button:hover{background:#e1f0f8}
+.fast-find-button>span{font-size:17px;line-height:1}
+.fast-find-button kbd,.fast-search-field kbd{border:1px solid #c7d7e2;background:#fff;color:#577083;padding:2px 5px;border-radius:5px;font:700 11px/1.3 inherit;box-shadow:0 1px 1px #1a3a5410}
+.shortcut-help-button{display:inline-flex;justify-content:center;align-items:center;min-width:33px;border:1px solid #d8e5eb;border-radius:8px;font-weight:850;font-size:14px;color:#476d80;background:#fff}
+.shortcut-help-button:hover{background:#f0f7fa}
+.fast-search-field{position:relative;display:flex;align-items:center;width:100%}
+.fast-search-field #commentSearch{width:100%;padding-right:39px;min-height:40px}
+.fast-search-field kbd{position:absolute;right:12px;pointer-events:none}
+.search-keyboard-status{min-height:16px;color:#567789;font-size:10.5px;line-height:1.35}
+.bank-browse-view .bank-filters{gap:6px}
+.bank-browse-view .comment-card.is-keyboard-active{border-color:#5e9dbc;box-shadow:0 0 0 2px #8fbfd839;background:#f2f9fc}
+.bank-browse-view .comment-card.is-keyboard-active .comment-select{outline:0}
+.bank-browse-view .comment-card.is-keyboard-active .topic{color:#215f81}
+.placement-assist{display:inline-flex;align-items:center;max-width:38%;padding:4px 9px;font-size:10.5px;font-weight:700;line-height:1.4;color:#275f72;background:#e8f2f5;border:1px solid #bad6df;border-radius:7px}
+.placement-assist.adjusted{color:#73521c;background:#fff0ce;border-color:#e4cd9f}
+.placement-assist.warning{color:#8d3634;background:#fff0ee;border-color:#e6b9b5}
+.placement-assist.hidden{display:none!important}
+.stamp-layer .stamp-placement-preview{position:absolute;z-index:7;display:block;box-sizing:border-box;pointer-events:none;border:2px dashed #277596;border-radius:8px;background:#e2f3fbeb;overflow:hidden;line-height:1.1;box-shadow:0 4px 18px #18394e22}
+.stamp-layer .stamp-placement-preview.is-adjusted{border-color:#ac833e;background:#fff6e6e8}
+.stamp-layer .stamp-placement-preview.is-warning{border-color:#b64a46;background:#fff1efea}
+.stamp-placement-preview .preview-circle{position:absolute;display:grid;place-items:center;border-radius:50%;font-family:Georgia,serif;font-weight:800}
+.stamp-placement-preview .preview-header{position:absolute;display:block;font-weight:800;white-space:nowrap;max-width:calc(100% - 52px);overflow:hidden;text-overflow:ellipsis}
+.stamp-placement-preview .preview-body{position:absolute;display:block;width:calc(100% - 54px);overflow:hidden;white-space:normal;font-weight:500}
+.stamp-placement-preview .preview-line{display:block;white-space:pre;overflow:hidden;text-overflow:clip}
+.stamp-placement-preview .preview-caption{position:absolute;left:5px;bottom:3px;right:5px;font-size:10px;font-weight:800;text-align:center;color:#265c74;background:#e3f3fad9;padding:2px;border-radius:4px}
+.stamp-placement-preview .preview-caption.is-warning{color:#a33a32;background:#ffe5e3f2}
+.stamp-layer .stamp-placement-anchor{position:absolute;z-index:8;pointer-events:none;width:14px;height:14px;border:2px solid #2f718e;border-radius:50%;background:#fff8;transform:translate(-50%,-50%);box-shadow:0 0 0 2px #ffffffbb}
+.shortcut-dialog{padding:0;max-width:min(520px,calc(100vw - 24px));width:100%;border:1px solid #c9dce8;border-radius:16px;box-shadow:0 25px 75px #0f27394b;color:#264358;background:#fff;overflow:hidden}
+.shortcut-dialog::backdrop{background:#142d43a3;backdrop-filter:blur(2px)}
+.shortcut-dialog header{display:flex;gap:16px;align-items:start;justify-content:space-between;padding:22px 24px 15px;border-bottom:1px solid #e3ebf0;background:#f8fbfc}
+.shortcut-dialog header h2{font-size:21px;margin:4px 0 5px}
+.shortcut-dialog header p{font-size:12px;line-height:1.5;color:#5c7586;max-width:360px;margin:0}
+.shortcut-dialog .icon-button{font-size:22px;background:#fff;border:1px solid #d4e2e9}
+.shortcut-grid{display:grid;grid-template-columns:minmax(148px,185px) minmax(0,1fr);gap:0;padding:12px 24px}
+.shortcut-grid dt,.shortcut-grid dd{padding:11px 4px;border-bottom:1px solid #eff3f6;line-height:1.45}
+.shortcut-grid dt{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px;color:#416174;font-weight:700}
+.shortcut-grid dd{margin:0;font-size:11.5px;color:#4c6678}
+.shortcut-grid kbd{display:inline-flex;align-items:center;justify-content:center;border:1px solid #cbdce5;background:#f3f8fa;border-radius:6px;padding:4px 6px;min-width:21px;font-size:11px;color:#244c65;box-shadow:0 1px 0 #b3cbd7}
+.shortcut-note{font-size:11px;line-height:1.55;color:#607b8b;margin:0;padding:0 24px 12px}
+.shortcut-dialog #shortcutHelpDone{display:block;margin:0 24px 22px auto}
+@media(max-width:1050px){
+ .fast-find-button{padding:7px 9px}
+ .fast-find-button kbd{display:none}
+ .fast-workflow-actions{gap:3px}
+ .placement-assist{max-width:50%}
+}
+@media(max-width:650px){
+ .efficiency-toolbar .fast-workflow-actions{order:1}
+ .fast-find-button{min-height:35px;font-size:11px}
+ .shortcut-help-button{min-height:35px}
+ .placement-assist{max-width:none;flex-basis:100%;font-size:10px}
+ .instruction-bar{flex-wrap:wrap}
+ .shortcut-grid{grid-template-columns:minmax(100px,135px) minmax(0,1fr);padding:9px 16px}
+ .shortcut-dialog header{padding:17px 16px 12px}
+ .shortcut-note{padding:0 16px 14px}
+ .shortcut-dialog #shortcutHelpDone{margin:0 16px 17px auto}
+ .shortcut-grid dt,.shortcut-grid dd{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.stamp-placement-preview{transition:none!important}}
