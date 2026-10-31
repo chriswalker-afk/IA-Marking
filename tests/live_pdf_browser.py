@@ -315,6 +315,9 @@ with tempfile.TemporaryDirectory() as folder:
         # and whether the FULL comment is physically within that page.
         page.locator('#openReview').click()
         assert page.locator('#exportAnnotated').is_disabled(), 'Final export must require a reviewed PDF.'
+        assert page.locator('#reviewJourney [data-review-step]').count()==3
+        page.locator('#reviewJumpToPreview').click()
+        expect(page.locator('#buildReviewPreview')).to_be_focused()
         page.locator('#buildReviewPreview').click()
         try:
             page.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=45000)
@@ -326,6 +329,8 @@ with tempfile.TemporaryDirectory() as folder:
                 +' | Page errors: '+repr(errors)
             ) from error
         expect(page.locator('#reviewPreviewPage')).to_have_text('Page 1 / 3',timeout=30000)
+        expect(page.locator('#reviewInspectionProgress')).to_have_text('1 of 3 pages inspected')
+        expect(page.locator('#reviewPageProgress')).to_have_attribute('aria-valuenow','33')
         assert page.locator('#reviewConfirmed').is_disabled()
         assert page.locator('#reviewPreviewCanvas').get_attribute('width') != '0'
         fit_width=page.locator('#reviewPreviewCanvas').bounding_box()['width']
@@ -339,10 +344,13 @@ with tempfile.TemporaryDirectory() as folder:
         page.set_viewport_size({'width':390,'height':844})
         page.screenshot(path=str(ROOT/'qa-moderation-mobile.png'))
         page.set_viewport_size({'width':1450,'height':930})
-        # Teacher must inspect the actual original pages AND marking summary.
+        # The 'next uninspected' control takes teachers through precisely the
+        # same exported PDF pages, including the appended marking summary.
         for number in [2,3]:
-            page.locator('#reviewPreviewNext').click()
+            page.locator('#reviewNextUnseen').click()
             expect(page.locator('#reviewPreviewPage')).to_have_text(f'Page {number} / 3',timeout=20000)
+        expect(page.locator('#reviewInspectionProgress')).to_have_text('3 of 3 pages inspected')
+        expect(page.locator('#reviewNextUnseen')).to_be_disabled()
         assert page.locator('#reviewConfirmed').is_enabled()
         page.locator('#reviewConfirmed').check()
         expect(page.locator('#exportAnnotated')).to_be_enabled()
@@ -868,6 +876,25 @@ with tempfile.TemporaryDirectory() as folder:
         assert 'high priority' in feedback_page.locator('#feedbackChecklist').inner_text().lower()
         feedback_page.locator('#feedbackChecklist [data-feedback-done]').first.check()
         expect(feedback_page.locator('#feedbackProgress')).to_have_text('1 of 2 actions checked')
+        expect(feedback_page.locator('#downloadFeedbackPdf')).to_be_enabled()
+        # The standalone PDF must retain every teacher action and strength,
+        # Unicode notation and page reference — with NO original mathematics
+        # pages or criterion marks. It is separate from the combined PDF.
+        with feedback_page.expect_download(timeout=45000) as checklist_pdf_download:
+            feedback_page.locator('#downloadFeedbackPdf').click()
+        checklist_pdf=fitz.open(stream=Path(checklist_pdf_download.value.path()).read_bytes(),filetype='pdf')
+        assert len(checklist_pdf)>=1
+        checklist_pdf_text=' '.join(page.get_text() for page in checklist_pdf)
+        assert 'Student revision checklist' in checklist_pdf_text
+        assert 'IA-014' not in checklist_pdf_text  # no assessment ID was entered
+        assert 'Review the relationship between your aim' in checklist_pdf_text
+        assert 'Check your graph scales' in checklist_pdf_text
+        assert 'What is working well' in checklist_pdf_text
+        assert 'What I changed' in checklist_pdf_text
+        assert 'Final total:' not in checklist_pdf_text
+        assert 'IA MARKING RECORD' not in checklist_pdf_text
+        assert len(checklist_pdf)<3,'Standalone checklist must not contain the original two student PDF pages'
+        checklist_pdf.close()
         with feedback_page.expect_download(timeout=30000) as checklist_download:
             feedback_page.locator('#downloadFeedbackChecklist').click()
         checklist_text=Path(checklist_download.value.path()).read_text(encoding='utf-8')
@@ -895,6 +922,8 @@ with tempfile.TemporaryDirectory() as folder:
         assert 'YOUR REVISION CHECKLIST' not in export_text or 'revision checklist' in export_text.lower()
         assert 'Check your graph scales' in export_text
         assert 'What is working well' in export_text
+        assert 'Student revision checklist' in export_text
+        expect(feedback_page.locator('#reviewInspectionProgress')).to_have_text(f'{preview_total} of {preview_total} pages inspected')
         assert 'IA MARKING RECORD' not in export_text
         assert 'Final total:' not in export_text
         draft_pdf.close()
