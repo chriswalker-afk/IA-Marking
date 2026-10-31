@@ -222,7 +222,17 @@ with tempfile.TemporaryDirectory() as folder:
         note_text=page.locator('.onpage-note-body').first.bounding_box()
         assert first_box and pdf_box and circle and note_text
         assert first_box['x'] >= pdf_box['x'] and first_box['x'] + first_box['width'] <= pdf_box['x'] + pdf_box['width'] + 2
-        assert circle['x']+circle['width'] <= note_text['x'], 'Full comment text must sit beside its coloured A-E circle'
+        # The new compact header is ABOVE the full-width comment; no
+        # permanent left gutter is wasted beneath the criterion badge.
+        assert note_text['y'] >= circle['y']+circle['height']-2, 'Comment body should start below the badge'
+        assert note_text['x'] < circle['x']+circle['width'], 'Comment should reclaim the left gutter'
+        assert first_box['width']/page.locator('#pdfCanvas').bounding_box()['width'] < .45
+        # One-click compacting must never increase the printed footprint.
+        page.locator('#compactStamp').click()
+        compact_box=page.locator('.onpage-stamp').first.bounding_box()
+        assert compact_box['width']*compact_box['height'] <= first_box['width']*first_box['height']+5
+        assert first_text in ' '.join(page.locator('.onpage-stamp').first.inner_text().split())
+        expect(page.locator('#findClearSpace')).to_be_visible()
 
         # Individual comment formatting is separate from the A-E circle style.
         # A true range input can be operated by keyboard without bypassing CSP.
@@ -271,13 +281,18 @@ with tempfile.TemporaryDirectory() as folder:
         assert resized_box['height'] > original_box['height']+8, 'Corner drag did not resize the box height.'
         assert 'Auto' not in page.locator('#selectedStampHeightValue').inner_text()
 
-        # A teacher cannot export a short box which clips the selected font.
+        # The height slider must clamp an attempted undersize so the full
+        # comment remains visible; teachers can always restore Auto height.
         page.locator('#selectedStampHeight').evaluate(
-            "(el) => { el.value='55'; el.dispatchEvent(new Event('input',{bubbles:true})); }")
-        expect(page.locator('#annotationNotice')).to_be_visible()
+            "(el) => { el.value='40'; el.dispatchEvent(new Event('input',{bubbles:true})); }")
+        height_box=page.locator('.onpage-stamp').first.bounding_box()
+        body=page.locator('.onpage-note-body').first.bounding_box()
+        assert body['y']+body['height'] <= height_box['y']+height_box['height']+1, (
+            f'Compact full comment must remain inside the note: {body} versus {height_box}')
+        if page.locator('#annotationNotice').is_visible():
+            assert 'needs at least' not in page.locator('#annotationNotice').inner_text()
         page.locator('#selectedStampHeightAuto').click()
         assert 'Auto' in page.locator('#selectedStampHeightValue').inner_text()
-        expect(page.locator('#annotationNotice')).to_be_hidden()
 
         page.locator('#bankBrowseTab').click()
         page.locator('#commentList [data-comment-id]').nth(1).click()
@@ -294,7 +309,11 @@ with tempfile.TemporaryDirectory() as folder:
         box1=page.locator('.onpage-stamp').nth(0).bounding_box()
         box2=page.locator('.onpage-stamp').nth(1).bounding_box()
         assert not (box1['x'] < box2['x'] + box2['width'] and box1['x'] + box1['width'] > box2['x'] and box1['y'] < box2['y'] + box2['height'] and box1['y'] + box1['height'] > box2['y']), 'On-page comments overlap'
-        assert page.locator('#annotationNotice').is_hidden(), 'No notes should overflow after initial placement.'
+        if page.locator('#annotationNotice').is_visible():
+            assert 'overlaps' not in page.locator('#annotationNotice').inner_text()
+            assert 'needs at least' not in page.locator('#annotationNotice').inner_text()
+            # Detecting overlap with student selectable text is a non-blocking
+            # warning, not an excuse to suppress the teacher's actual comment.
 
         # Editing a placed stamp changes the printed note and persists.
         page.locator('.onpage-stamp').first.click()
@@ -306,9 +325,13 @@ with tempfile.TemporaryDirectory() as folder:
         # A longer edited comment may overlap a neighbouring stamp; the
         # existing overlap detector must block export until notes are arranged.
         if page.locator('#annotationNotice').is_visible():
-            assert 'overlap' in page.locator('#annotationNotice').inner_text().lower()
-            page.locator('#arrangeNotes').click()
-            expect(page.locator('#annotationNotice')).to_be_hidden()
+            warning=page.locator('#annotationNotice').inner_text().lower()
+            if 'overlaps' in warning:
+                page.locator('#arrangeNotes').click()
+                if page.locator('#annotationNotice').is_visible():
+                    assert 'overlaps' not in page.locator('#annotationNotice').inner_text().lower()
+            else:
+                assert 'selectable student text' in warning or 'needs at least' not in warning
         page.screenshot(path=str(ROOT/'qa-inline-moderator-page.png'),full_page=True)
 
         # Export a REAL PDF and inspect both the retained original page geometry
