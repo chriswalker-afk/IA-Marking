@@ -478,7 +478,7 @@ with tempfile.TemporaryDirectory() as folder:
         dialog=page.locator('#evidenceDialog').bounding_box()
         assert dialog and dialog['width']>=429 and dialog['height']>=849
         page.screenshot(path=str(ROOT/'qa-pass8-mobile-evidence.png'))
-        page.locator('#evidenceResults [data-evidence-pin]').first.click()
+        page.locator('#evidenceResults [data-evidence-pin]').filter(has_text=revised_text).first.click()
         expect(page.locator('#evidenceDialog')).not_to_be_visible()
         assert revised_text in page.locator('#stampTextEdit').input_value()
 
