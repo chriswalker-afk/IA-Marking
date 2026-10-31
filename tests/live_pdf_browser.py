@@ -297,7 +297,7 @@ with tempfile.TemporaryDirectory() as folder:
         revised_text=first_text+' The mathematical evidence supports the awarded mark.'
         page.locator('#stampTextEdit').fill(revised_text)
         assert revised_text in ' '.join(page.locator('.onpage-stamp').first.inner_text().split())
-        assert revised_text in page.locator('#stampsList .stamp-row').first.inner_text()
+        assert any(revised_text in row.inner_text() for row in page.locator('#stampsList .stamp-row').all()), 'Edited stamp must appear in the page-sorted navigation list'
         # The larger PDF canvas intentionally changes pixel-to-point placement.
         # A longer edited comment may overlap a neighbouring stamp; the
         # existing overlap detector must block export until notes are arranged.
