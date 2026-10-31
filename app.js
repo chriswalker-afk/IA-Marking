@@ -501,7 +501,7 @@ let pdfRendererLoad = null;
     $('reviewConfirmText').textContent=isFeedback()
       ?'I have checked the student-facing feedback and checklist, and confirmed that all PDF comments are legible and do not obscure important mathematics.'
       :'I have inspected the exported preview, confirmed that the full comments are legible and that no important student mathematics is obscured.';
-    $('exportAnnotated').textContent=isFeedback()?'Export student feedback PDF ↓':'Export annotated PDF ↓';
+    $('exportAnnotated').textContent=isFeedback()?'Download checked draft feedback PDF ↓':'Download checked marking PDF ↓';
     $('feedbackReviewContent').classList.toggle('hidden',!isFeedback());
     $('reviewMarkingNote').classList.toggle('hidden',isFeedback());
     updateFrameworkNotice();
@@ -1957,6 +1957,7 @@ let pdfRendererLoad = null;
     const tasks=studentChecklistItems(state.stamps,state.feedbackCompleted);
     const strengths=studentFeedbackStrengths(state.stamps);
     const complete=tasks.filter(item=>item.completed).length;
+    $('downloadFeedbackPdf').disabled=!isReady()||usesNewFramework()||!tasks.length;
     $('feedbackProgress').textContent=complete+' of '+tasks.length+' actions checked';
     const strengthsHtml=strengths.length
       ?'<section class="feedback-strengths"><h4>What is working well ('+strengths.length+')</h4>'
@@ -2073,8 +2074,37 @@ let pdfRendererLoad = null;
     $('reviewPreviewBox').classList.add('hidden');
     $('exportAnnotated').disabled=true;
     $('reviewExportNotice').textContent='Generate the current PDF preview and inspect every page before exporting.';
+    updateReviewGate();
     if(reviewPreviewTask){try{reviewPreviewTask.cancel();}catch(error){}reviewPreviewTask=null;}
     if(reviewPreview.pdf){if(typeof reviewPreview.pdf.cleanup==='function')Promise.resolve(reviewPreview.pdf.cleanup()).catch(()=>{});reviewPreview.pdf=null;}
+  }
+  function updateReviewJourney(){
+    const valid=Boolean(reviewPreview.bytes&&reviewPreview.signature===previewSignature());
+    const count=reviewPreview.pdf?.numPages||0;
+    const seen=valid?reviewPreview.visited.size:0;
+    const inspected=valid&&count>0&&seen===count;
+    const approved=inspected&&$('reviewConfirmed').checked;
+    const contentReady=isFeedback()?Boolean(studentChecklistItems(state.stamps,state.feedbackCompleted).length+
+      studentFeedbackStrengths(state.stamps).length)
+      :Boolean(state.stamps.length);
+    const stages={
+      content:contentReady?'done':'current',
+      preview:inspected?'done':valid?'current':'waiting',
+      export:approved?'done':inspected?'current':'waiting',
+    };
+    for(const element of $('reviewJourney').querySelectorAll('[data-review-step]')){
+      element.dataset.state=stages[element.dataset.reviewStep]||'waiting';
+    }
+    const percent=count?Math.round(seen/count*100):0;
+    $('reviewInspectionProgress').textContent=seen+' of '+count+' pages inspected';
+    $('reviewInspectionPercent').textContent=percent+'%';
+    $('reviewPageProgress').setAttribute('aria-valuenow',String(percent));
+    $('reviewPageProgressFill').style.width=percent+'%';
+    $('reviewNextUnseen').disabled=!valid||!count||inspected;
+    $('reviewFooterGuidance').textContent=!valid?'Generate the exact PDF preview to begin.'
+      :!inspected?'Inspect all '+count+' pages ('+seen+' viewed).'
+      :!approved?'Confirm legibility and unobscured mathematics above.'
+      :'Reviewed PDF is ready for download.';
   }
   function renderPreflightIssues(issues){
     reviewPreview.issues=issues;
@@ -2084,7 +2114,10 @@ let pdfRendererLoad = null;
     badge.className='preflight-badge'+(errors?' has-errors':warnings?' has-issues':'');
     badge.textContent=errors?errors+' blocking':warnings?warnings+' to review':'No automatic warnings';
     $('preflightList').innerHTML=issues.map(item=>
-      '<li class="preflight-'+escapeHtml(item.severity)+'">'+escapeHtml(item.message)+'</li>'
+      '<li class="preflight-'+escapeHtml(item.severity)+'">'
+      +'<span>'+escapeHtml(item.message)+'</span>'
+      +(Number.isInteger(item.page)?'<button type="button" class="preflight-page-jump" data-preflight-page="'+item.page+'" aria-label="Open original PDF page '+item.page+' to check this issue">Open page '+item.page+' →</button>':'')
+      +'</li>'
     ).join('');
     return errors;
   }
@@ -2097,6 +2130,7 @@ let pdfRendererLoad = null;
     if(!complete)$('reviewConfirmed').checked=false;
     const approved=complete && $('reviewConfirmed').checked;
     $('exportAnnotated').disabled=!approved;
+    updateReviewJourney();
     $('reviewExportNotice').textContent=!valid?'Generate the current PDF preview first.'
       :!complete?'Pages inspected: '+visited+' / '+numPages+'. View each page, including the marking summary, then confirm.'
       :approved?'Preview approved. This exact PDF is ready for download.'
@@ -2588,6 +2622,34 @@ let pdfRendererLoad = null;
       renderModeratorPreviewPage().catch(console.error);
     });
     $('reviewConfirmed').addEventListener('change',updateReviewGate);
+    $('downloadFeedbackPdf').addEventListener('click',()=>{void exportStandaloneChecklistPdf();});
+    $('reviewJumpToPreview').addEventListener('click',()=>{
+      $('moderationPreflight').scrollIntoView({behavior:'smooth',block:'start'});
+      $('buildReviewPreview').focus({preventScroll:true});
+    });
+    $('preflightList').addEventListener('click',event=>{
+      const target=event.target.closest('[data-preflight-page]');
+      if(!target)return;
+      const page=Number(target.dataset.preflightPage);
+      if(!Number.isInteger(page)||page<1||page>(pdfDoc?.numPages||0))return;
+      $('reviewDialog').close();
+      void Promise.resolve(navigate(page)).then(()=>{
+        $('pdfScroll').scrollIntoView({behavior:'smooth',block:'nearest'});
+        $('pdfScroll').focus?.({preventScroll:true});
+      }).catch(error=>console.error('Could not jump to issue page',error));
+    });
+    $('reviewNextUnseen').addEventListener('click',()=>{
+      const total=reviewPreview.pdf?.numPages||0;
+      if(!total)return;
+      for(let offset=1;offset<=total;offset++){
+        const next=((reviewPreview.page-1+offset)%total)+1;
+        if(!reviewPreview.visited.has(next)){
+          reviewPreview.page=next;
+          renderModeratorPreviewPage().catch(console.error);
+          return;
+        }
+      }
+    });
     $('feedbackChecklist').addEventListener('change',event=>{
       const checkbox=event.target.closest('[data-feedback-done]');if(!checkbox||!isFeedback())return;
       if(checkbox.checked)state.feedbackCompleted[checkbox.dataset.feedbackDone]=true;
