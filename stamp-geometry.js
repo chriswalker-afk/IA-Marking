@@ -67,6 +67,7 @@ export function wrapStampText(value,{lineArea,measure}={}){
   };
   const paragraphs=String(value??'').normalize('NFC').replace(/\r\n?/g,'\n').split('\n');
   for(const paragraph of paragraphs){
+    const paragraphStart=rows.length;
     let line='';
     const words=paragraph.split(/\s+/u).filter(Boolean);
     for(const word of words){
@@ -91,7 +92,8 @@ export function wrapStampText(value,{lineArea,measure}={}){
         remaining=chars.slice(index).join('');
       }
     }
-    push(line);
+    // Long unbroken words may already have emitted complete rows.
+    if(line||rows.length===paragraphStart)push(line);
   }
   return rows.length?rows:[{text:'',x:lineArea(0).x}];
 }
