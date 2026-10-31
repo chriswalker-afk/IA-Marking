@@ -74,7 +74,7 @@ export function appendStudentChecklistPages({document,rgb,fonts,model}){
     pages.push(page);
     page.drawRectangle({x:0,y:H-12,width:W,height:12,color:navy});
     page.drawRectangle({x:L,y:H-67,width:4,height:32,color:teal});
-    draw('IB MATHEMATICS  /  FIRST DRAFT',L+14,H-38,9,bold,teal);
+    draw('IB MATHEMATICS  /  FIRST DRAFT STUDENT FEEDBACK',L+14,H-38,9,bold,teal);
     draw(pages.length===1?'Student revision checklist':'Revision checklist  |  continued',L+14,H-58,16.5,bold,navy);
     page.drawLine({start:{x:L,y:H-79},end:{x:R,y:H-79},thickness:1,color:border});
     top=H-105;
@@ -181,7 +181,14 @@ export function appendStudentChecklistPages({document,rgb,fonts,model}){
       draw(line,L+30,top,10.1,regular,ink);
       top-=15;
     }
-    ensure(32);
+    // Reserve the reflection space as a unit. If an action used the end of
+    // a page, repeat its identity so the student knows which response follows.
+    if(top-80<BOTTOM){
+      newPage();
+      draw(item.label+'  |  Page '+item.page+'  (response continued)',L+30,top,9,bold,teal);
+      top-=23;
+    }
+    ensure(65);
     draw('What I changed:',L+30,top-3,8.8,bold,muted);
     top-=16;
     page.drawLine({start:{x:L+30,y:top},end:{x:R-8,y:top},thickness:.55,color:border});
