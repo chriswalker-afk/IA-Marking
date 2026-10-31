@@ -769,7 +769,7 @@ let pdfRendererLoad = null;
       if(active&&scroll)button.scrollIntoView({block:'nearest'});
     }
     const all=getComments().filter(item=>(item.courses||[]).includes(state.course));
-    const total=$('bankFilteredCount').textContent.match(/^\\d+/)?.[0];
+    const total=parseInt($('bankFilteredCount').textContent,10);
     updateSearchSelectionStatus(total?Number(total):all.length);
   }
   function focusFastSearch(){
@@ -2447,8 +2447,41 @@ let pdfRendererLoad = null;
       recordHistory('arrange page '+currentPage+' comments',before);
       toast(updated?'Moved on-page comments into available positions. Check legibility before export.':'No clear rearrangement was needed.');
     });
-    $('cancelPlacement').addEventListener('click',()=>{draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();});
-    $('commentSearch').addEventListener('input',e=>{search=e.target.value;bankShowAll=false;renderBank();});
+    $('cancelPlacement').addEventListener('click',()=>{draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();clearPlacementPreview();});
+    $('findStampFast').addEventListener('click',focusFastSearch);
+    const closeShortcutHelp=()=>{if($('shortcutDialog').open)$('shortcutDialog').close();};
+    $('openShortcutHelp').addEventListener('click',()=>{$('shortcutDialog').showModal();$('closeShortcutHelp').focus();});
+    $('closeShortcutHelp').addEventListener('click',closeShortcutHelp);
+    $('shortcutHelpDone').addEventListener('click',closeShortcutHelp);
+    $('commentSearch').addEventListener('input',e=>{
+      search=e.target.value;
+      bankShowAll=false;searchKeyboardSelectionId=null;searchKeyboardActive=true;
+      renderBank();
+    });
+    $('commentSearch').addEventListener('keydown',e=>{
+      if(['ArrowDown','ArrowUp'].includes(e.key)){
+        e.preventDefault();e.stopPropagation();
+        const choices=Array.from($('commentList').querySelectorAll('[data-comment-id]'));
+        if(!choices.length)return;
+        const current=choices.findIndex(button=>button.dataset.commentId===searchKeyboardSelectionId);
+        const offset=e.key==='ArrowDown'?1:-1;
+        // When arriving from the search box start at the first result.
+        const target=current===-1?0:clampResultIndex(current+offset,choices.length);
+        highlightSearchResult(choices[target].dataset.commentId);
+      }else if(e.key==='Enter'){
+        e.preventDefault();e.stopPropagation();
+        const choices=Array.from($('commentList').querySelectorAll('[data-comment-id]'));
+        const first=choices.find(button=>button.dataset.commentId===searchKeyboardSelectionId)||choices[0];
+        if(first)prepareComment(first.dataset.commentId);
+      }else if(e.key==='Escape'){
+        e.preventDefault();e.stopPropagation();
+        if(search){
+          search='';$('commentSearch').value='';
+          searchKeyboardSelectionId=null;searchKeyboardActive=false;renderBank();
+        }else if(mobileDrawer){closeMobileDrawer({restoreFocus:true});}
+        else {$('commentSearch').blur();$('pdfScroll').focus?.();}
+      }
+    });
     document.querySelectorAll('[data-tone]').forEach(button=>button.addEventListener('click',()=>{tone=button.dataset.tone;bankShowAll=false;renderTone();renderBank();}));
     $('openLibrary').addEventListener('click',()=>openLibrary());
     $('closeLibrary').addEventListener('click',()=>$('libraryDialog').close());
@@ -2553,7 +2586,25 @@ let pdfRendererLoad = null;
       }
     });
     document.addEventListener('keydown',e=>{
-      if(e.key==='Tab'&&mobileWorkspace()&&mobileDrawer&&!document.querySelector('dialog[open]')){
+      const modalOpen=Boolean(document.querySelector('dialog[open]'));
+      const isEditable=e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||
+        e.target instanceof HTMLSelectElement||e.target?.isContentEditable;
+      const modifier=e.ctrlKey||e.metaKey;
+      if(!modalOpen&&modifier&&!e.altKey&&e.key.toLowerCase()==='k'){
+        e.preventDefault();focusFastSearch();return;
+      }
+      if(!modalOpen&&!modifier&&!isEditable&&!e.altKey){
+        if(e.key==='/'){e.preventDefault();focusFastSearch();return;}
+        if(e.key==='?'){e.preventDefault();$('shortcutDialog').showModal();$('closeShortcutHelp').focus();return;}
+        if(e.key==='['){e.preventDefault();navigate(currentPage-1);return;}
+        if(e.key===']'){e.preventDefault();navigate(currentPage+1);return;}
+        if(e.key.toLowerCase()==='r'&&!e.repeat){
+          e.preventDefault();repeatPlacement=!repeatPlacement;renderQuickPicker();
+          toast(repeatPlacement?'Repeat stamping on.':'Repeat stamping off.');
+          return;
+        }
+      }
+      if(e.key==='Tab'&&mobileWorkspace()&&mobileDrawer&&!modalOpen){
         const pane=$(mobileDrawer==='document'?'documentPane':'bankPane');
         const controls=Array.from(pane.querySelectorAll('button,a[href],input:not([type="hidden"]),select,textarea,summary'))
           .filter(node=>!node.disabled&&!node.inert&&!node.closest('[inert]')&&node.getClientRects().length>0);
@@ -2565,10 +2616,7 @@ let pdfRendererLoad = null;
           e.preventDefault();first.focus();return;
         }
       }
-      const inField=e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||
-        e.target instanceof HTMLSelectElement||e.target?.isContentEditable;
-      const modifier=e.ctrlKey||e.metaKey;
-      const modalOpen=Boolean(document.querySelector('dialog[open]'));
+      const inField=isEditable;
       if(modifier&&!e.altKey&&!inField&&!modalOpen){
         const key=e.key.toLowerCase();
         if(key==='z'){
@@ -2579,7 +2627,7 @@ let pdfRendererLoad = null;
       if(e.key==='Escape'&&!modalOpen){
         if(mobileDrawer){closeMobileDrawer({restoreFocus:true});return;}
         if(focusedPdf){focusedPdf=false;updateWorkspaceLayout();return;}
-        draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();
+        draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();clearPlacementPreview();
       }
       if(inField||modifier||modalOpen)return;
       if(e.key==='ArrowRight')navigate(currentPage+1);
