@@ -282,10 +282,14 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#bankBrowseTab').click()
         page.locator('#commentList [data-comment-id]').nth(1).click()
         page.locator('#draftTextEdit').fill(second_text)
-        # Choose exposed top-right page whitespace, not a fixed point which
-        # may be covered after resizing the first complete comment.
+        # Choose exposed lower-right whitespace, outside the resized first
+        # comment. This also keeps the navigation's page-position ordering
+        # intuitive: first note above second note.
         layer_size=page.locator('#stampLayer').bounding_box()
-        page.locator('#stampLayer').click(position={'x':int(layer_size['width'])-22,'y':34})
+        page.locator('#stampLayer').click(position={
+            'x':int(layer_size['width'])-22,
+            'y':int(layer_size['height'])-25,
+        })
         expect(page.locator('.onpage-stamp')).to_have_count(2)
         box1=page.locator('.onpage-stamp').nth(0).bounding_box()
         box2=page.locator('.onpage-stamp').nth(1).bounding_box()
