@@ -132,9 +132,22 @@ with tempfile.TemporaryDirectory() as folder:
         assert page.locator('[data-score="A"]').input_value() == '3'
         assert page.locator('[data-score="E"]').input_value() == '5'
 
-        # Upload a REAL two-page PDF and wait for PDF.js worker to render it.
-        page.locator('#pdfInput').set_input_files(str(sample))
+        # A mobile teacher can upload directly from the PDF's central CTA
+        # even though the document drawer (and its duplicate label) is closed.
+        page.set_viewport_size({'width':430,'height':850})
+        expect(page.locator('#documentPane')).to_be_hidden()
+        with page.expect_file_chooser(timeout=15000) as chooser:
+            page.locator('#emptyViewer .file-label').click()
+        chooser.value.set_files(str(sample))
         expect(page.locator('#pageTotal')).to_have_text('2', timeout=30000)
+        page.set_viewport_size({'width':1450,'height':930})
+        expect(page.locator('#workspace')).to_have_class('workspace document-collapsed')
+        expect(page.locator('#documentRailToggle')).to_be_visible()
+        page.locator('#toggleDocumentPane').click()
+        assert page.locator('#documentPane').is_visible()
+        expect(page.locator('#documentRailToggle')).to_be_hidden()
+        page.locator('#toggleDocumentPane').click()
+        expect(page.locator('#documentRailToggle')).to_be_visible()
         page.locator('#pdfCanvas').wait_for(state='visible')
         assert page.locator('#documentName').inner_text() == 'example-ia.pdf'
         assert page.locator('[data-score="A"]').input_value() == '3', 'First PDF upload must preserve previously entered marks.'
@@ -149,7 +162,13 @@ with tempfile.TemporaryDirectory() as folder:
         second_text=('The numerical limitation of the model is evaluated and its '
                      'consequences are explained in the conclusion. The notation '
                      'π ≤ √16, σ², ∑, ∫ and x² remains mathematical in the export.')
+        # Pass 2: a selected comment opens a dedicated editor instead of
+        # sharing its limited space with the entire search library.
+        expect(page.locator('#workspace')).to_have_attribute('data-bank-view','browse')
         page.locator('#commentList [data-comment-id]').first.click()
+        expect(page.locator('#workspace')).to_have_attribute('data-bank-view','edit')
+        expect(page.locator('#bankBrowseView')).to_be_hidden()
+        expect(page.locator('#selectionEditor')).to_be_visible()
         page.locator('#draftTextEdit').fill(first_text)
         page.locator('#stampLayer').click(position={'x': 120, 'y': 280})
         expect(page.locator('.onpage-stamp')).to_have_count(1)
@@ -219,6 +238,7 @@ with tempfile.TemporaryDirectory() as folder:
         assert 'Auto' in page.locator('#selectedStampHeightValue').inner_text()
         expect(page.locator('#annotationNotice')).to_be_hidden()
 
+        page.locator('#bankBrowseTab').click()
         page.locator('#commentList [data-comment-id]').nth(1).click()
         page.locator('#draftTextEdit').fill(second_text)
         page.locator('#stampLayer').click(position={'x': 350, 'y': 500})
@@ -234,6 +254,13 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#stampTextEdit').fill(revised_text)
         assert revised_text in ' '.join(page.locator('.onpage-stamp').first.inner_text().split())
         assert revised_text in page.locator('#stampsList .stamp-row').first.inner_text()
+        # The larger PDF canvas intentionally changes pixel-to-point placement.
+        # A longer edited comment may overlap a neighbouring stamp; the
+        # existing overlap detector must block export until notes are arranged.
+        if page.locator('#annotationNotice').is_visible():
+            assert 'overlap' in page.locator('#annotationNotice').inner_text().lower()
+            page.locator('#arrangeNotes').click()
+            expect(page.locator('#annotationNotice')).to_be_hidden()
         page.screenshot(path=str(ROOT/'qa-inline-moderator-page.png'),full_page=True)
 
         # Export a REAL PDF and inspect both the retained original page geometry
@@ -241,7 +268,15 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#openReview').click()
         assert page.locator('#exportAnnotated').is_disabled(), 'Final export must require a reviewed PDF.'
         page.locator('#buildReviewPreview').click()
-        page.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=45000)
+        try:
+            page.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=45000)
+        except Exception as error:
+            raise AssertionError(
+                'Preview blocked. Export notice: '+page.locator('#reviewExportNotice').inner_text()
+                +' | Preflight: '+page.locator('#preflightList').inner_text()
+                +' | Annotation notice: '+page.locator('#annotationNotice').inner_text()
+                +' | Page errors: '+repr(errors)
+            ) from error
         expect(page.locator('#reviewPreviewPage')).to_have_text('Page 1 / 3',timeout=30000)
         assert page.locator('#reviewConfirmed').is_disabled()
         assert page.locator('#reviewPreviewCanvas').get_attribute('width') != '0'
@@ -338,6 +373,46 @@ with tempfile.TemporaryDirectory() as folder:
         # On a narrower display the same complete notes remain inside the PDF
         # page instead of being moved beneath it or to an external margin.
         page.set_viewport_size({'width': 430, 'height': 850})
+        # Phone chrome is compact by default, yet all scoring and project
+        # controls remain available through reversible disclosures.
+        expect(page.locator('#mobileDetailsToggle')).to_be_visible()
+        expect(page.locator('#assessmentBar')).to_be_hidden()
+        expect(page.locator('#referenceBar')).to_be_hidden()
+        page.locator('#mobileDetailsToggle').click()
+        expect(page.locator('#assessmentBar')).to_be_visible()
+        expect(page.locator('#referenceBar')).to_be_visible()
+        page.locator('#mobileDetailsToggle').click()
+        expect(page.locator('#assessmentBar')).to_be_hidden()
+        page.locator('#mobileProjectToolsToggle').click()
+        expect(page.locator('#mobileProjectToolsToggle')).to_have_attribute('aria-expanded','true')
+        expect(page.locator('#openProjects')).to_be_visible()
+        page.locator('#mobileProjectToolsToggle').click()
+        expect(page.locator('#mobileProjectToolsToggle')).to_have_attribute('aria-expanded','false')
+        expect(page.locator('#openProjects')).to_be_hidden()
+        # The PDF remains the primary surface on narrow screens: document
+        # and library are drawers rather than a long stack underneath it.
+        expect(page.locator('#workspace')).to_have_attribute('data-mobile-drawer','')
+        assert page.locator('#pdfCanvas').is_visible()
+        assert page.locator('#bankPane').is_hidden()
+        assert page.locator('#documentPane').is_hidden()
+        page.screenshot(path=str(ROOT/'qa-pass2-mobile-pdf-first.png'))
+        page.locator('#toggleCommentPane').click()
+        expect(page.locator('#workspace')).to_have_attribute('data-mobile-drawer','comments')
+        expect(page.locator('#bankPane')).to_be_visible()
+        expect(page.locator('#workspaceBackdrop')).to_be_visible()
+        # CSS drawers animate in; wait for the settled position before QA.
+        expect(page.locator('#bankPane')).to_have_css('transform','matrix(1, 0, 0, 1, 0, 0)',timeout=5000)
+        drawer_bounds=page.locator('#bankPane').bounding_box()
+        assert drawer_bounds and drawer_bounds['x']<=20 and drawer_bounds['width']>=390, (
+            f'Comment drawer did not reach the visible phone viewport: {drawer_bounds}')
+        page.screenshot(path=str(ROOT/'qa-pass2-mobile-comment-drawer.png'))
+        page.locator('#closeBankPane').click()
+        expect(page.locator('#workspaceBackdrop')).to_be_hidden()
+        expect(page.locator('#bankPane')).to_be_hidden()
+        page.locator('#toggleDocumentPane').click()
+        expect(page.locator('#documentPane')).to_be_visible()
+        page.locator('#workspaceBackdrop').click(position={'x':2,'y':240})
+        expect(page.locator('#documentPane')).to_be_hidden()
         expect(page.locator('.onpage-stamp')).to_have_count(2)
         assert ' '.join(page.locator('.onpage-stamp').first.inner_text().split()).endswith(revised_text)
         mobile_page=page.locator('#pdfCanvas').bounding_box()
@@ -362,6 +437,7 @@ with tempfile.TemporaryDirectory() as folder:
         # Favourites persist outside the PDF project and can be chosen while
         # viewing the actual PDF. Recently used is based on placed stamps.
         page.set_viewport_size({'width':1450,'height':930})
+        page.locator('#bankBrowseTab').click()
         favourite=page.locator('#commentList [data-favourite-comment]').first.get_attribute('data-favourite-comment')
         page.locator('#commentList [data-favourite-comment]').first.click()
         page.locator('[data-bank-quick="favorites"]').click()
@@ -394,6 +470,7 @@ with tempfile.TemporaryDirectory() as folder:
         expect(page.locator('#allPinCount')).to_have_text('4')
 
         # Recent comments and a duplicate can be prepared without searching.
+        page.locator('#bankBrowseTab').click()
         page.locator('[data-bank-quick="recent"]').click()
         assert page.locator('#commentList [data-comment-id="'+favourite+'"]').count()==1
         page.locator('#repeatStamp').click()
@@ -475,6 +552,23 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#openReview').click()
         expect(page.locator('#exportAnnotated')).to_be_disabled()
         page.locator('#closeReview').click()
+        # Focus is reversible and never clears placed stamps or edits.
+        page.locator('#focusPdf').click()
+        expect(page.locator('#focusPdf')).to_have_attribute('aria-pressed','true')
+        assert page.locator('#bankPane').is_hidden()
+        assert page.locator('#documentPane').is_hidden()
+        expect(page.locator('#allPinCount')).to_have_text('4')
+        page.locator('#focusPdf').click()
+        expect(page.locator('#focusPdf')).to_have_attribute('aria-pressed','false')
+        expect(page.locator('#bankPane')).to_be_visible()
+        page.locator('#closeBankPane').click()
+        expect(page.locator('#bankPane')).to_be_hidden()
+        page.locator('#toggleCommentPane').click()
+        expect(page.locator('#bankPane')).to_be_visible()
+        expect(page.locator('#workspace')).to_have_attribute('data-bank-view','browse')
+        # A clean reusable editor is one click from any selected PDF stamp.
+        page.locator('#toggleEditorPane').click()
+        expect(page.locator('#workspace')).to_have_attribute('data-bank-view','edit')
         page.screenshot(path=str(ROOT/'qa-pass8-desktop-quick-tools.png'),full_page=True)
 
         # Pass 9: the project vault preserves multiple original PDFs without
@@ -688,6 +782,8 @@ with tempfile.TemporaryDirectory() as folder:
         expect(feedback_page.locator('#feedbackMode')).to_have_attribute('aria-pressed','true')
         assert feedback_page.locator('.score-strip').is_hidden()
         assert 'feedback library' in feedback_page.locator('#referenceLibraryLink').inner_text()
+        # Mobile drawing and desktop focus use the same feedback bank.
+        expect(feedback_page.locator('#bankBrowseTab')).to_have_attribute('aria-selected','true')
         assert feedback_page.locator('#independentLibraryLink').get_attribute('href')=='library.html?mode=feedback'
         assert feedback_page.locator('#toneLimitationLabel').inner_text()=='Improvements'
         assert feedback_page.locator('#legendLimitationLabel').inner_text()=='Improvement'
@@ -707,9 +803,11 @@ with tempfile.TemporaryDirectory() as folder:
         expect(feedback_page.locator('#allPinCount')).to_have_text('1')
         feedback_page.locator('#nextPage').click()
         expect(feedback_page.locator('#pageNumber')).to_have_value('2')
+        feedback_page.locator('#bankBrowseTab').click()
         feedback_page.locator('#commentList [data-comment-id="F021"]').click()
         feedback_page.locator('#draftTextEdit').fill('Check your graph scales and label both quantities with their units.')
         feedback_page.locator('#stampLayer').click(position={'x':120,'y':320})
+        feedback_page.locator('#bankBrowseTab').click()
         feedback_page.locator('#commentList [data-comment-id="F001"]').click()
         feedback_page.locator('#stampLayer').click(position={'x':350,'y':520})
         expect(feedback_page.locator('#allPinCount')).to_have_text('3')
@@ -730,6 +828,7 @@ with tempfile.TemporaryDirectory() as folder:
         assert 'label both quantities' in checklist_text
         feedback_page.locator('#buildReviewPreview').click()
         feedback_page.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=50000)
+        expect(feedback_page.locator('#reviewPreviewPage')).to_contain_text('Page 1 / ',timeout=30000)
         preview_label=feedback_page.locator('#reviewPreviewPage').inner_text()
         assert preview_label.startswith('Page 1 / '),preview_label
         preview_total=int(preview_label.split('/')[-1].strip())

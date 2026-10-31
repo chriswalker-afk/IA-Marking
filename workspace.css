@@ -1,0 +1,472 @@
+/*
+  Pass 2 / PDF-first workspace
+  The document and context panels are interface-only overlays; no annotation
+  coordinates or saved marking data are affected by changing the layout.
+*/
+.workspace {
+  --document-track: 230px;
+  --comment-track: 355px;
+  display: grid;
+  grid-template-columns: minmax(0,var(--document-track)) minmax(0,1fr) minmax(0,var(--comment-track));
+  align-items:stretch;
+  min-width:0;
+  min-height:620px;
+}
+.workspace.document-collapsed {--document-track: 64px}
+.workspace.bank-collapsed {--comment-track: 0px}
+.workspace.bank-collapsed > .bank-pane {display:none}
+.workspace-backdrop {display:none}
+.workspace-backdrop[hidden] {display:none!important}
+.document-pane,.bank-pane,.viewer-pane {min-width:0;box-sizing:border-box}
+.document-pane {overflow-y:auto;overscroll-behavior:contain;max-height:max(640px, calc(100dvh - 285px))}
+.document-pane .pane-heading {gap:8px}
+.pane-heading-actions {display:flex;align-items:center;gap:7px}
+.pane-close-button {
+  display:none;
+  flex:none;
+  align-items:center;
+  justify-content:center;
+  width:34px;
+  height:34px;
+  padding:0;
+  border:1px solid #d1e0e8;
+  background:#f5f9fb;
+  border-radius:9px;
+  color:#36566b;
+  cursor:pointer;
+  font-size:21px;
+  line-height:1;
+}
+.pane-close-button:hover {background:#e7f2f8}
+/* The comment panel is dismissible on desktop too; the Document panel collapses into its rail. */
+.bank-pane .pane-close-button {display:inline-flex}
+.document-rail-toggle {
+  display:none;
+  appearance:none;
+  border:1px solid #cbdce7;
+  background:#f0f6f9;
+  color:#355c76;
+  border-radius:11px;
+  padding:10px 4px;
+  gap:5px;
+  width:100%;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  cursor:pointer;
+}
+.document-rail-toggle:hover {border-color:#92b9cf;background:#e6f2f8}
+.document-rail-toggle span {font-size:22px;line-height:1.1}
+.document-rail-toggle small {font-size:10px;letter-spacing:.05em;font-weight:800}
+.workspace.document-collapsed .document-pane {padding:14px 8px;border-right:1px solid #d9e5eb}
+.workspace.document-collapsed .document-pane > :not(.document-rail-toggle) {display:none!important}
+.workspace.document-collapsed .document-rail-toggle {display:flex}
+.viewer-pane {width:auto;flex:initial;min-height:0}
+.viewer-toolbar {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px 12px;
+  height:auto;
+  min-height:60px;
+  padding:8px 15px;
+  background:#fcfdfe;
+}
+.workspace-panel-actions {display:flex;gap:4px;flex-wrap:nowrap;align-items:center}
+.workspace-panel-button,.workspace-focus-button {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  min-height:36px;
+  padding:7px 10px;
+  border:1px solid transparent;
+  border-radius:9px;
+  background:transparent;
+  color:#476779;
+  font-size:11.5px;
+  font-weight:730;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.workspace-panel-button > span:first-child,.workspace-focus-button > span:first-child {
+  font-size:17px;line-height:1;display:inline-flex;align-items:center;
+}
+.workspace-panel-button:hover,.workspace-focus-button:hover {background:#eef5f8;border-color:#e0e9ee}
+.workspace-panel-button.is-selected {
+  background:#e6f1f7;
+  color:#255672;
+  border-color:#bbd6e4;
+}
+.workspace-focus-button.is-selected {background:#dcecf4;color:#244f69;border-color:#a9c9da}
+.workspace-focus-button {border-color:#dce7ed;background:#f5f9fb}
+.viewer-toolbar .toolbar-left {gap:8px}
+.viewer-toolbar .toolbar-left .eyebrow {display:none}
+.viewer-toolbar .toolbar-left strong {font-size:12px}
+.viewer-toolbar .toolbar-controls {flex-wrap:nowrap;gap:4px}
+.viewer-toolbar .toolbar-controls .icon-button {min-width:32px;min-height:34px}
+.viewer-toolbar .toolbar-controls .page-counter {white-space:nowrap}
+.viewer-toolbar .zoom-label {white-space:nowrap}
+.workspace .pdf-scroll {
+  flex:initial;
+  width:100%;
+  min-height:540px;
+  height:clamp(540px, calc(100dvh - 330px), 980px);
+  max-height:none;
+  padding:26px 22px 36px;
+  overflow:auto;
+  overscroll-behavior:contain;
+}
+.workspace .viewer-pane .efficiency-toolbar {flex-shrink:0}
+.workspace .viewer-pane .instruction-bar {flex-shrink:0}
+.workspace .viewer-bottom {flex-shrink:0}
+
+/* A contextual panel: search and filters OR the editor, not both at once. */
+.bank-pane {
+  display:flex;
+  flex-direction:column;
+  height:clamp(600px, calc(100dvh - 290px), 980px);
+  max-height:none;
+  overflow:hidden;
+  gap:0;
+  padding:16px 15px;
+  border-left:1px solid #d8e4eb;
+  position:relative;
+}
+.bank-pane > .pane-heading {flex:0 0 auto;padding-bottom:10px;align-items:center}
+.bank-pane > .pane-heading .bank-total {white-space:nowrap}
+.bank-view-tabs {
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  align-items:stretch;
+  gap:4px;
+  background:#eaf1f5;
+  border-radius:11px;
+  padding:4px;
+  flex:none;
+  margin-bottom:11px;
+}
+.bank-view-tab {
+  min-height:39px;
+  font-size:12px;
+  font-weight:750;
+  color:#5a7182;
+  border-radius:8px;
+  border:1px solid transparent;
+  background:transparent;
+  cursor:pointer;
+}
+.bank-view-tab:hover {background:#f7fafc;color:#305772}
+.bank-view-tab.is-selected {
+  background:#fff;
+  color:#24536e;
+  border-color:#c5dbe7;
+  box-shadow:0 2px 6px rgba(24,58,79,.09);
+}
+.bank-browse-view {
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+.bank-browse-view #bankIntro {flex:none;margin:0 0 3px;font-size:11.5px;line-height:1.5}
+.bank-browse-view #criterionTabs,.bank-browse-view .bank-filters,
+.bank-browse-view .bank-quick-heading,.bank-browse-view .bank-list-heading,
+.bank-browse-view #openLibrary,.bank-browse-view #independentLibraryLink {flex:none}
+.bank-browse-view .comment-list {
+  flex:1 1 auto;
+  min-height:125px;
+  max-height:none;
+  margin:0;
+  padding:0 4px 5px 0;
+  overflow:auto;
+}
+.bank-source-details {flex:none;border-top:1px solid #e5edf2;padding:7px 0 0}
+.bank-source-details>summary {font-size:10.5px;font-weight:750;color:#54768a;cursor:pointer;list-style:none;padding:5px 2px}
+.bank-source-details>summary::before {content:"▸";font-size:10px;margin-right:7px}
+.bank-source-details[open]>summary::before {content:"▾"}
+.bank-browse-view #bankCaption {margin:5px 0 0;padding:7px 2px 3px;line-height:1.55}
+.workspace[data-bank-view="browse"] > .bank-pane .selection-editor,
+.workspace[data-bank-view="browse"] > .bank-pane #findAnotherComment {display:none!important}
+.workspace[data-bank-view="edit"] > .bank-pane .bank-browse-view {display:none!important}
+.workspace[data-bank-view="edit"] > .bank-pane .selection-editor {
+  flex:1 1 auto;
+  max-height:none;
+  min-height:0;
+  margin:0;
+  padding:4px 3px 8px;
+  overflow:auto;
+  border-top:0;
+}
+.workspace[data-bank-view="edit"] > .bank-pane .selection-active {min-height:0}
+.workspace[data-bank-view="edit"] > .bank-pane .selection-empty {
+  align-self:start;
+  padding:20px 10px;
+  border:1px dashed #cbdde8;
+  background:#f7fafc;
+  border-radius:10px;
+  font-size:12px;
+  line-height:1.6;
+  color:#516c7f;
+}
+.find-another-comment {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:38px;
+  padding:10px;
+  margin-top:8px;
+  border:1px solid #d5e4ec;
+  background:#f7fafc;
+  color:#315b76;
+  border-radius:9px;
+  font-weight:750;
+  font-size:11.5px;
+  cursor:pointer;
+  flex:none;
+  width:100%;
+}
+.find-another-comment:hover {background:#eaf4f8}
+body.pdf-focus .app .workspace {
+  --document-track:0px;
+  --comment-track:0px;
+  grid-template-columns:minmax(0,1fr);
+}
+body.pdf-focus .app .workspace > .document-pane,body.pdf-focus .app .workspace > .bank-pane {display:none!important}
+body.pdf-focus .app .review-mode-bar,body.pdf-focus .app .assessment-bar,
+body.pdf-focus .app .reference-bar,body.pdf-focus .app #frameworkNotice {display:none}
+body.pdf-focus .app .workspace .pdf-scroll {height:clamp(560px, calc(100dvh - 245px), 1400px)}
+body.pdf-focus .app .viewer-toolbar {position:sticky;top:0;z-index:5;box-shadow:0 2px 8px #1b405912}
+/* Maintain a minimum paper width; PDF.js scales the original page as needed. */
+@media(max-width:1390px) and (min-width:1001px){
+  .workspace {--document-track:205px;--comment-track:325px}
+  .workspace.document-collapsed {--document-track:60px}
+  .viewer-toolbar .toolbar-left strong {display:none}
+  .viewer-toolbar {padding:7px 10px;gap:6px}
+  .workspace-panel-button {padding:7px 8px}
+  .workspace-focus-button {padding:7px 8px}
+}
+/* At tablet and phone widths the document and comment panels become
+   keyboard-dismissible overlay drawers; PDF never gets pushed below them. */
+@media(max-width:1000px){
+  body.workspace-drawer-open {overflow:hidden}
+  .workspace, .workspace.document-collapsed, .workspace.bank-collapsed {
+    display:block;
+    min-height:0;
+    width:100%;
+  }
+  .workspace > .viewer-pane {
+    width:100%!important;
+    min-height:520px;
+    margin:0;
+  }
+  .workspace > .document-pane,.workspace > .bank-pane {
+    position:fixed;
+    top:0;right:0;bottom:0;
+    z-index:102;
+    display:flex!important;
+    flex-direction:column;
+    box-sizing:border-box;
+    width:min(440px, calc(100vw - 18px))!important;
+    min-width:0;
+    max-width:100vw;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    margin:0;
+    padding:18px 17px calc(18px + env(safe-area-inset-bottom));
+    background:#fff;
+    box-shadow:-20px 0 55px rgba(13,36,53,.2);
+    transform:translateX(108%);
+    transition:transform .2s ease;
+    pointer-events:none;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    visibility:hidden;
+    border-left:1px solid #cbdde6;
+  }
+  .workspace[data-mobile-drawer="document"] > .document-pane,
+  .workspace[data-mobile-drawer="comments"] > .bank-pane {
+    transform:translateX(0);
+    visibility:visible;
+    pointer-events:auto;
+  }
+  .workspace-backdrop:not([hidden]) {
+    display:block;
+    position:fixed;
+    inset:0;
+    z-index:101;
+    background:rgba(15,37,52,.43);
+    border:0;
+    padding:0;
+    width:100vw;
+    height:100dvh;
+    cursor:pointer;
+  }
+  .document-pane .pane-heading,.bank-pane .pane-heading {
+    position:relative;
+    padding-bottom:12px;
+    border-bottom:1px solid #e2eaf0;
+    margin-bottom:11px;
+  }
+  .pane-close-button {display:inline-flex}
+  .workspace > .document-pane .document-rail-toggle {display:none!important}
+  .workspace > .document-pane .stamps-list {
+    min-height:70px;
+    max-height:min(38dvh,340px);
+    overflow:auto;
+    flex:none;
+  }
+  .workspace > .document-pane .upload-card {flex-shrink:0}
+  .workspace > .document-pane .document-footer {margin-top:auto}
+  .workspace > .bank-pane {overflow:hidden}
+  .workspace > .bank-pane .bank-view-tabs {margin:0 0 12px}
+  .workspace > .bank-pane .bank-browse-view {overflow-y:auto;min-height:0}
+  .workspace > .bank-pane .comment-list {max-height:none}
+  .workspace > .bank-pane .selection-editor {max-height:none}
+  .viewer-toolbar {min-height:58px;padding:8px 13px}
+  .workspace .pdf-scroll {height:clamp(520px, calc(100dvh - 310px), 1000px);max-height:none}
+  body.pdf-focus .app .workspace .pdf-scroll {height:clamp(580px, calc(100dvh - 205px), 1400px)}
+}
+@media(max-width:650px){
+  .workspace-panel-actions {width:100%;order:0;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .workspace-panel-button {min-height:43px;font-size:12px;padding:9px 7px}
+  .workspace-panel-button>span:first-child {font-size:19px}
+  .viewer-toolbar {gap:6px 8px;padding:8px 10px}
+  .viewer-toolbar .toolbar-left {order:1}
+  .viewer-toolbar .toolbar-controls {order:2;margin-left:auto;max-width:100%;gap:2px}
+  .viewer-toolbar .toolbar-controls .icon-button {min-width:32px;min-height:36px}
+  .workspace-focus-button {min-height:37px;font-size:0;padding:7px 8px}
+  .workspace-focus-button>span:first-child {font-size:19px}
+  .viewer-toolbar .zoom-label {font-size:11px}
+  .viewer-toolbar .page-counter {font-size:12px}
+  .workspace .pdf-scroll {padding:16px 10px 24px;height:clamp(480px,calc(100dvh - 340px),850px);min-height:480px}
+  .workspace > .document-pane,.workspace > .bank-pane {width:min(410px,calc(100vw - 12px))!important;padding:17px 14px 18px}
+  .workspace-panel-actions .workspace-panel-button {white-space:nowrap}
+}
+@media(prefers-reduced-motion:reduce){
+  .workspace > .document-pane,.workspace > .bank-pane {transition:none}
+}
+@media print{
+  .workspace-panel-actions,.workspace-focus-button,.workspace-backdrop,.pane-close-button {display:none!important}
+}
+
+
+/* Explicit phone visibility wins over any earlier generic button display rules. */
+@media(max-width:650px){ .masthead .header-actions .mobile-project-control-hidden {display:none!important} }
+
+/* On a phone, secondary project controls and scoring tools no longer push
+   the PDF below the fold. Both disclosures remain accessible and reversible. */
+.mobile-project-tools-toggle,.mobile-details-toggle {display:none}
+@media(max-width:650px){
+  .masthead {gap:7px;padding:10px 12px}
+  .masthead .brand {min-height:34px}
+  .masthead .header-actions {
+    width:100%;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);
+    gap:6px;
+    align-items:center;
+    justify-content:stretch;
+  }
+  .masthead .header-actions #localSaveState {
+    grid-column:1/-1;
+    grid-row:2;
+    justify-self:start;
+    font-size:10px;
+    min-height:16px;
+    padding:0 2px;
+  }
+  .masthead .header-actions #mobileProjectToolsToggle {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    grid-column:1;
+    grid-row:1;
+    background:#f5f9fb;
+    border:1px solid #cbdce6;
+    color:#305871;
+    border-radius:9px;
+    min-height:39px;
+    padding:8px 10px;
+    font-size:11.5px;
+    font-weight:750;
+    cursor:pointer;
+  }
+  .masthead .header-actions #mobileProjectToolsToggle>span {font-size:16px}
+  .masthead .header-actions #openReview {
+    grid-column:2;
+    grid-row:1;
+    width:100%;
+    margin:0;
+    min-height:39px;
+    font-size:11.5px;
+  }
+  .masthead .header-actions #openProjects,
+  .masthead .header-actions #newProject,
+  .masthead .header-actions .file-label,
+  .masthead .header-actions #projectSave {display:none}
+  .masthead.mobile-projects-open .header-actions #mobileProjectToolsToggle {background:#e8f3f9;border-color:#91b9cf}
+  .masthead.mobile-projects-open .header-actions #mobileProjectToolsToggle>span {transform:rotate(180deg)}
+  .masthead.mobile-projects-open .header-actions #openProjects,
+  .masthead.mobile-projects-open .header-actions #newProject,
+  .masthead.mobile-projects-open .header-actions .file-label,
+  .masthead.mobile-projects-open .header-actions #projectSave {
+    display:inline-flex;
+    justify-content:center;
+    width:100%;
+    min-width:0;
+    min-height:36px;
+    grid-row:auto;
+    grid-column:auto;
+    padding:8px 6px;
+    font-size:11px;
+  }
+  .masthead.mobile-projects-open .header-actions #openProjects {grid-column:1;grid-row:3}
+  .masthead.mobile-projects-open .header-actions #newProject {grid-column:2;grid-row:3}
+  .masthead.mobile-projects-open .header-actions .file-label {grid-column:1;grid-row:4}
+  .masthead.mobile-projects-open .header-actions #projectSave {grid-column:2;grid-row:4}
+  .review-mode-bar {padding:8px 12px;gap:0}
+  .review-mode-tabs {padding:3px;gap:4px}
+  .review-mode-tab {min-height:42px;padding:9px 8px;justify-content:center}
+  .review-mode-tab strong {font-size:11.5px}
+  .review-mode-tab>span {display:none}
+  .review-mode-bar>p {display:none}
+  .mobile-details-toggle {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:auto auto;
+    width:100%;
+    text-align:left;
+    align-items:center;
+    column-gap:12px;
+    row-gap:1px;
+    min-height:52px;
+    padding:8px 15px;
+    border:0;
+    border-top:1px solid #dce8ef;
+    border-bottom:1px solid #dce8ef;
+    background:#f6fafc;
+    color:#254d69;
+    cursor:pointer;
+  }
+  .mobile-details-toggle>span:first-child {font-size:11.5px;font-weight:750;grid-column:1;grid-row:1}
+  .mobile-details-toggle>small {font-size:10.5px;color:#658195;grid-column:1;grid-row:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mobile-details-chevron {grid-column:2;grid-row:1/3;font-size:20px;line-height:1}
+  body.mobile-details-open .mobile-details-chevron {transform:rotate(180deg)}
+  body:not(.mobile-details-open) .assessment-bar,
+  body:not(.mobile-details-open) .reference-bar,
+  body:not(.mobile-details-open) #frameworkNotice:not(.warning) {display:none!important}
+  body.mobile-details-open .assessment-bar {display:flex!important}
+  body.mobile-details-open .reference-bar {display:flex!important}
+  body.mobile-details-open #frameworkNotice,
+  #frameworkNotice.warning {display:block!important}
+  .assessment-bar {padding:10px 12px}
+  .reference-bar {padding:8px 12px}
+  .viewer-toolbar {min-height:55px}
+  .workspace .viewer-pane {min-height:520px}
+  .workspace .pdf-scroll {height:clamp(520px,calc(100dvh - 265px),1100px)}
+}

@@ -8,6 +8,7 @@
   <title>IA Marking Desk | Mathematics</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="design-polish.css">
+  <link rel="stylesheet" href="workspace.css">
 </head>
 <body>
   <div id="app" class="app">
@@ -19,6 +20,7 @@
       <div class="header-center"><span class="teacher-chip"><span class="status-dot"></span>Private teacher workspace</span><span class="privacy-note">PDF stays in this browser</span></div>
       <div class="header-actions">
         <span id="localSaveState" class="local-save-state" role="status" aria-live="polite">Local storage checking…</span>
+        <button id="mobileProjectToolsToggle" class="mobile-project-tools-toggle" type="button" aria-expanded="false" aria-controls="openProjects newProject projectSave">Projects &amp; backups <span aria-hidden="true">⌄</span></button>
         <button id="openProjects" type="button" class="btn subtle project-dashboard-trigger">My IAs <span id="projectCountBadge">0</span></button>
         <button id="newProject" class="btn subtle" type="button" title="Start a new IA without deleting saved projects">New IA</button>
         <label for="projectOpen" class="btn subtle file-label" title="Import a previously downloaded editable .iamark.json backup">Import backup</label>
@@ -35,7 +37,8 @@
       </div>
       <p id="modeDescription" role="status">Final assessment: annotate evidence and record teacher marks against criteria A–E.</p>
     </section>
-    <section class="assessment-bar" aria-label="Assessment details and criterion marks">
+    <button id="mobileDetailsToggle" class="mobile-details-toggle" type="button" aria-expanded="false" aria-controls="assessmentBar referenceBar"><span>IA details, criteria &amp; marks</span><small id="mobileDetailsSummary">AA SL · Final assessment</small><span class="mobile-details-chevron" aria-hidden="true">⌄</span></button>
+    <section id="assessmentBar" class="assessment-bar" aria-label="Assessment details and criterion marks">
       <div class="assessment-fields">
         <label>Course
           <select id="course" aria-label="IB mathematics course">
@@ -55,22 +58,25 @@
 
     <div id="frameworkNotice" class="framework-notice" role="status">A-E assessment framework (final assessment November 2028). The new May 2029 criteria are not supported by this version.</div>
 
-    <nav class="reference-bar" aria-label="Teacher reference tools">
+    <nav id="referenceBar" class="reference-bar" aria-label="Teacher reference tools">
       <a id="referenceLibraryLink" class="btn subtle reference-link" href="library.html">Browse marking library <span aria-hidden="true">↗</span></a>
       <button class="btn subtle" id="openCriteria" type="button">Criteria &amp; marks</button>
       <span class="reference-help">Comments and criteria are available without a PDF.</span>
     </nav>
 
-    <main class="workspace">
-      <aside class="document-pane" aria-label="Document and annotations">
-        <div class="pane-heading"><div><span class="eyebrow">01 / DOCUMENT</span><h2>Document</h2></div><span id="documentHelp" class="pane-help" title="Choose a student IA PDF. The file stays in this browser.">?</span></div>
+    <!-- Keep the shared file chooser outside collapsed/overlay panes: both upload labels remain usable on phones. -->
+    <input id="pdfInput" class="sr-only" type="file" accept=".pdf,application/pdf">
+    <main id="workspace" class="workspace" data-bank-view="browse" data-mobile-drawer="">
+      <button type="button" id="workspaceBackdrop" class="workspace-backdrop" aria-label="Close workspace panel" hidden></button>
+      <aside id="documentPane" class="document-pane" aria-label="Document and annotations" aria-labelledby="documentPaneTitle">
+        <div class="pane-heading"><div><span class="eyebrow">01 / DOCUMENT</span><h2 id="documentPaneTitle">Document</h2></div><div class="pane-heading-actions"><span id="documentHelp" class="pane-help" title="Choose a student IA PDF. The file stays in this browser.">?</span><button type="button" id="closeDocumentPane" class="pane-close-button" aria-label="Close document panel" title="Close document panel">×</button></div></div>
+        <button type="button" id="documentRailToggle" class="document-rail-toggle" aria-label="Expand document panel" title="Expand document panel"><span aria-hidden="true">▤</span><small>PDF</small></button>
         <label for="pdfInput" class="upload-card" id="dropzone">
           <span class="upload-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V3m0 0L7 8m5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg></span>
           <strong id="uploadTitle">Upload student IA</strong>
           <span id="uploadSubtext">Drop a PDF here or browse files</span>
           <span class="upload-action">Choose PDF</span>
         </label>
-        <input id="pdfInput" class="sr-only" type="file" accept=".pdf,application/pdf">
         <p id="pdfLibraryStatus" class="pdf-error hidden" role="alert"></p>
         <button id="resumeLast" class="btn subtle hidden" type="button">Resume most recent local IA</button>
         <div id="documentMeta" class="document-meta hidden"><div class="doc-symbol">PDF</div><div class="doc-info"><strong id="documentName"></strong><small id="documentDetails"></small></div><button class="tiny-icon" id="replacePdf" type="button" title="Choose a different PDF">&#8635;</button></div>
@@ -101,10 +107,16 @@
         <div class="document-footer"><span class="lock-icon" aria-hidden="true">&#128274;</span><span>Local-first. No PDF or comments are uploaded to a server.</span></div>
       </aside>
 
-      <section class="viewer-pane" aria-label="PDF page viewer">
+      <section id="viewerPane" class="viewer-pane" aria-label="PDF page viewer">
         <div class="viewer-toolbar">
+          <div class="workspace-panel-actions" role="group" aria-label="Workspace panels">
+            <button id="toggleDocumentPane" class="workspace-panel-button" type="button" aria-controls="documentPane" aria-expanded="true" title="Show or hide document and placed stamps"><span aria-hidden="true">▤</span><span>Document</span></button>
+            <button id="toggleCommentPane" class="workspace-panel-button" type="button" aria-controls="bankPane" aria-expanded="true" title="Find a comment from the library"><span aria-hidden="true">☷</span><span>Comments</span></button>
+            <button id="toggleEditorPane" class="workspace-panel-button" type="button" aria-controls="selectionEditor" aria-expanded="false" title="Edit the selected or prepared stamp"><span aria-hidden="true">✎</span><span>Edit</span></button>
+          </div>
           <div class="toolbar-left"><span class="eyebrow">02 / PDF</span><strong>Exploration</strong><button type="button" id="arrangeNotes" class="btn subtle arrange-notes" title="Move overlapping on-page annotations into clear space">Arrange notes</button></div>
           <div class="toolbar-controls">
+            <button id="focusPdf" class="workspace-focus-button" type="button" aria-pressed="false" title="Expand the PDF and hide side panels"><span aria-hidden="true">⛶</span><span class="focus-label">Focus PDF</span></button>
             <button type="button" id="prevPage" aria-label="Previous page" class="icon-button">&#8592;</button>
             <span class="page-counter"><input id="pageNumber" type="number" min="1" value="1" aria-label="Page number"> / <span id="pageTotal">--</span></span>
             <button type="button" id="nextPage" aria-label="Next page" class="icon-button">&#8594;</button>
@@ -139,8 +151,13 @@
         <p id="annotationNotice" class="annotation-notice hidden" role="alert"></p><div class="viewer-bottom"><span id="footerDocInfo">Awaiting a PDF</span><span id="viewerBottomHelp">What you see printed on this page is what the moderator receives</span></div>
       </section>
 
-      <aside class="bank-pane" aria-label="Criterion evidence comment bank">
-        <div class="pane-heading"><div><span class="eyebrow" id="bankEyebrow">03 / COMMENTS</span><h2>Stamp library</h2></div><span class="bank-total" id="bankTotal">-- comments</span></div>
+      <aside id="bankPane" class="bank-pane" aria-label="Comments and stamp editor" aria-labelledby="bankPaneTitle">
+        <div class="pane-heading"><div><span class="eyebrow" id="bankEyebrow">03 / COMMENTS</span><h2 id="bankPaneTitle">Stamp library</h2></div><div class="pane-heading-actions"><span class="bank-total" id="bankTotal">-- comments</span><button type="button" id="closeBankPane" class="pane-close-button" aria-label="Close comment panel" title="Close comment panel">×</button></div></div>
+        <div class="bank-view-tabs" role="tablist" aria-label="Comment panel view">
+          <button type="button" id="bankBrowseTab" class="bank-view-tab is-selected" role="tab" aria-selected="true" aria-controls="bankBrowseView">Find a comment</button>
+          <button type="button" id="bankEditorTab" class="bank-view-tab" role="tab" aria-selected="false" aria-controls="selectionEditor">Edit stamp</button>
+        </div>
+        <div id="bankBrowseView" class="bank-browse-view" role="tabpanel" aria-labelledby="bankBrowseTab">
         <p id="bankIntro" class="bank-intro">Choose a teacher-facing assessment observation. Edit it to reflect the actual evidence before stamping.</p>
         <div class="criterion-tabs" id="criterionTabs" role="group" aria-label="Filter comments by criterion"></div>
         <div class="bank-filters"><input id="commentSearch" type="search" placeholder="Search comments or topics..." aria-label="Search the comment bank"><div class="tone-toggle" role="group" aria-label="Filter strengths and improvement areas"><button class="tone-btn active" data-tone="all" type="button">All</button><button class="tone-btn" data-tone="strength" type="button">Strengths</button><button class="tone-btn" id="toneLimitationLabel" data-tone="limitation" type="button">Limitations</button></div></div>
@@ -152,8 +169,10 @@
         <div class="bank-list-heading"><strong id="bankFilteredCount">Comments</strong><button id="newCustom" class="link-button" type="button">+ Write my own</button></div>
         <button id="openLibrary" class="library-open-button" type="button"><span>Full comment library</span><span>Browse, edit and copy &#8599;</span></button><a id="independentLibraryLink" class="library-independent-link" href="library.html">Open library in a separate page ↗</a>
         <div class="comment-list" id="commentList"></div>
-        <div class="selection-editor" id="selectionEditor"><div class="selection-empty"><span class="small-ring">A</span><span>Choose a comment to prepare a stamp.</span></div></div>
-        <div id="bankCaption" class="bank-caption">Curated from the supplied 2021-2026 examiner-feedback synthesis. These are prompts, not IB descriptors or automatic marks.</div>
+        <details class="bank-source-details"><summary>About these comments</summary><div id="bankCaption" class="bank-caption">Curated from the supplied 2021-2026 examiner-feedback synthesis. These are prompts, not IB descriptors or automatic marks.</div></details>
+        </div>
+        <div class="selection-editor" id="selectionEditor" role="tabpanel" aria-labelledby="bankEditorTab"><div class="selection-empty"><span class="small-ring">A</span><span>Choose a comment to prepare a stamp.</span></div></div>
+        <button type="button" id="findAnotherComment" class="find-another-comment">← Find another comment</button>
       </aside>
     </main>
   </div>
