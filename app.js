@@ -1314,7 +1314,7 @@ let pdfRendererLoad = null;
     }else{
       el.classList.add('source-warning');
       el.textContent=sourceOverlap+' comment'+(sourceOverlap===1?' may':'s may')
-        +' obscure selectable student text. Use Compact & find space, move the box, and check the PDF visually; diagrams and scanned pages cannot be automatically assessed.';
+        +' obscure selectable student text. Use Compact & fit or Find clear space, and check the PDF visually; diagrams and scanned pages cannot be automatically assessed.';
     }
     el.classList.remove('hidden');
   }
