@@ -1,8 +1,8 @@
 /* Compact on-script teacher comments:
    criterion identity is a short header, with full-width text beneath. */
 .onpage-stamp{border-radius:5px!important;box-shadow:0 1px 4px #112c4424}
-.onpage-note-body{right:8px;max-width:calc(100% - 18px);overflow:visible}
-.onpage-note-line{letter-spacing:normal;white-space:pre}
+.onpage-note-body{right:0;left:0;max-width:none;width:100%;overflow:visible}
+.onpage-note-line{letter-spacing:normal;white-space:pre;box-sizing:border-box}
 .onpage-note-header{max-width:calc(100% - 45px);overflow:hidden;text-overflow:ellipsis}
 .onpage-circle{border-width:.75px}
 .onpage-stamp .note-resize-handle{
@@ -16,7 +16,7 @@
 .onpage-stamp:focus-within .note-resize-handle{opacity:1}
 .onpage-stamp .note-resize-handle::after{right:3px;bottom:3px;width:7px;height:7px}
 .stamp-layer .stamp-placement-preview{border-radius:5px}
-.stamp-placement-preview .preview-body{width:calc(100% - 18px);white-space:nowrap;overflow:visible}
+.stamp-placement-preview .preview-body{width:100%;white-space:nowrap;overflow:visible}
 .stamp-placement-preview .preview-header{max-width:calc(100% - 45px);white-space:nowrap}
 .note-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:6px 0 11px}
 .note-quick-actions:has(> :only-child){grid-template-columns:1fr}
