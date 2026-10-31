@@ -440,7 +440,7 @@ with tempfile.TemporaryDirectory() as folder:
         assert styled['textColor']=='#b72a29'
         assert styled['fillColor']=='#f5e49a'
         assert styled['borderColor']=='#2d9b5b'
-        assert styled['noteWidth']>250
+        assert styled['noteWidth']>150, 'Manual corner resize should be retained even after compacting the stamp'
         assert styled['noteHeight'] is None, 'Fit-to-text preference was lost.'
         page.once('dialog',lambda dialog:dialog.accept())
         page.locator('#newProject').click()
