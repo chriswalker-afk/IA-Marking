@@ -104,6 +104,7 @@ let pdfRendererLoad = null;
   let draft = null;
   let selectedStampId = null;
   let movingStampId = null;
+  let placementFrame=null,previewPosition=null;
   let rendering = 0;
   let activeRenderTask = null;
   let savingTimer = null;
@@ -531,6 +532,7 @@ let pdfRendererLoad = null;
       bar.classList.remove('placing'); cancel.classList.add('hidden');
     }
     $('stampLayer').classList.toggle('placing',Boolean(draft || movingStampId));
+    if(!draft&&!movingStampId)clearPlacementPreview();
   }
   function getComments() {
     const edits=activeCommentEdits();
@@ -1113,6 +1115,63 @@ let pdfRendererLoad = null;
     }
     return best; // Export validation will require clearing any remaining overlap.
   }
+  function clearPlacementPreview(){
+    if(placementFrame!==null){cancelAnimationFrame(placementFrame);placementFrame=null;}
+    $('stampPlacementPreview')?.remove();
+    $('stampPlacementAnchor')?.remove();
+    $('placementAssist').textContent='';
+    $('placementAssist').className='placement-assist hidden';
+    previewPosition=null;
+  }
+  function placementPlanAt(position){
+    if(!isReady()||!pageWidthPt||!pageHeightPt)return null;
+    const base=movingStampId?state.stamps.find(x=>x.id===movingStampId):draft;
+    if(!base||!String(base.text||'').trim())return null;
+    const candidate={...base,id:base.id||'preview',page:currentPage,x:position.x,y:position.y};
+    const requested=noteLayout(candidate,pageWidthPt,pageHeightPt);
+    placeNoteInFreeSpace(candidate,pageStamps(currentPage),pageWidthPt,pageHeightPt);
+    const resolved=noteLayout(candidate,pageWidthPt,pageHeightPt);
+    const overlaps=pageStamps(currentPage).filter(x=>x.id!==candidate.id)
+      .some(x=>noteOverlap(noteLayout(x,pageWidthPt,pageHeightPt),resolved));
+    const feedback=placementFeedback({requested,resolved,overlaps,
+      fits:resolved.fits,contentFits:resolved.contentFits});
+    return {candidate,requested,resolved,feedback,overlaps};
+  }
+  function showPlacementPreview(position){
+    if(!draft&&!movingStampId){clearPlacementPreview();return;}
+    const plan=placementPlanAt(position);
+    if(!plan){clearPlacementPreview();return;}
+    const {candidate,resolved,feedback,requested}=plan;
+    const scale=viewScale||1;
+    const color=stampColor(candidate),textColor=noteTextColor(candidate);
+    const tone=candidate.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation';
+    const moved=Math.hypot(resolved.x-requested.x,resolved.y-requested.y)>5;
+    const rows=resolved.rows.map(line=>'<span class="preview-line">'+escapeHtml(line)+'</span>').join('');
+    $('stampPlacementPreview')?.remove();
+    $('stampPlacementAnchor')?.remove();
+    const markup='<div id="stampPlacementPreview" aria-hidden="true" class="stamp-placement-preview '+(feedback.kind==='warning'?'is-warning':moved?'is-adjusted':'')+'"'
+      +' style="left:'+resolved.x*scale+'px;top:'+resolved.y*scale+'px;width:'+resolved.width*scale+'px;height:'+resolved.height*scale+'px;background:'+noteFillColor(candidate)+'e8;color:'+textColor+';border-color:'+noteBorderColor(candidate)+'">'
+      +'<span class="preview-circle" style="left:'+8*scale+'px;top:'+11*scale+'px;width:'+resolved.circle*scale+'px;height:'+resolved.circle*scale+'px;background:'+color+';color:'+stampTextColor(candidate)+';font-size:'+Math.max(7,resolved.circle*.56*scale)+'px">'+escapeHtml(candidate.criterion)+'</span>'
+      +'<span class="preview-header" style="left:'+resolved.textX*scale+'px;top:'+10*scale+'px;font-size:'+resolved.headerFontSize*scale+'px">'+escapeHtml(candidate.criterion)+' · '+tone+'</span>'
+      +'<span class="preview-body" style="left:'+resolved.textX*scale+'px;top:'+25*scale+'px;font-size:'+resolved.fontSize*scale+'px;line-height:'+resolved.lineHeight*scale+'px">'+rows+'</span></div>'
+      +(moved?'<span id="stampPlacementAnchor" class="stamp-placement-anchor" aria-hidden="true" style="left:'+requested.x*scale+'px;top:'+requested.y*scale+'px"></span>':'');
+    $('stampLayer').insertAdjacentHTML('beforeend',markup);
+    $('placementAssist').className='placement-assist '+feedback.kind;
+    $('placementAssist').textContent=feedback.text;
+    previewPosition=position;
+  }
+  function queuePlacementPreview(event){
+    if(!draft&&!movingStampId)return;
+    if(event.target.closest('.onpage-stamp')){clearPlacementPreview();return;}
+    const position=positionOnPage(event);
+    // Avoid geometry searches on every raw pointer event.
+    if(previewPosition&&Math.hypot((position.x-previewPosition.x)*pageWidthPt,(position.y-previewPosition.y)*pageHeightPt)<4)return;
+    if(placementFrame!==null)cancelAnimationFrame(placementFrame);
+    placementFrame=requestAnimationFrame(()=>{
+      placementFrame=null;
+      showPlacementPreview(position);
+    });
+  }
   function renderStampWarnings(problems) {
     const el=$('annotationNotice');
     if(!el)return;
@@ -1121,6 +1180,7 @@ let pdfRendererLoad = null;
     el.classList.remove('hidden');
   }
   function renderStamps() {
+    clearPlacementPreview();
     const stampsOnPage=pageStamps(currentPage);
     $('allPinCount').textContent=state.stamps.length;
     updateMobileChrome();
@@ -1262,6 +1322,7 @@ let pdfRendererLoad = null;
   }
   function handlePageClick(event) {
     if(!isReady()||event.target.closest('.onpage-stamp'))return;
+    clearPlacementPreview();
     finishFieldHistory();
     const position = positionOnPage(event);
     if(movingStampId) {
@@ -2393,6 +2454,8 @@ let pdfRendererLoad = null;
     $('zoomOut').addEventListener('click',()=>{zoom=Math.max(.65,Math.round((zoom-.15)*100)/100);renderPage();});
     $('zoomIn').addEventListener('click',()=>{zoom=Math.min(2.2,Math.round((zoom+.15)*100)/100);renderPage();});
     $('stampLayer').addEventListener('click',handlePageClick);
+    $('stampLayer').addEventListener('pointermove',queuePlacementPreview);
+    $('stampLayer').addEventListener('pointerleave',clearPlacementPreview);
     $('undoMark').addEventListener('click',undoMarking);
     $('redoMark').addEventListener('click',redoMarking);
     $('repeatStamp').addEventListener('click',()=>{
