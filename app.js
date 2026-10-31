@@ -985,6 +985,9 @@ let pdfRendererLoad = null;
     const before=existing?historySnapshot():null;
     const pageW=pageWidthPt||595,pageH=pageHeightPt||842;
     const baseWidth=normalNoteWidth(item.noteWidth??state.stampStyle.noteWidth);
+    // Compact is an explicit opt-in, so respect larger teacher-chosen circles
+    // until this button is pressed. A 22 pt badge remains comfortably legible.
+    if(normalSize(item.size)>22)item.size=22;
     const best=compactWidth({
       currentWidth:baseWidth,
       measure:width=>noteLayout({...item,noteWidth:width,noteHeight:null},pageW,pageH),
@@ -1003,7 +1006,9 @@ let pdfRendererLoad = null;
     finishFieldHistory();const before=historySnapshot();
     const x=stamp.x,y=stamp.y;
     const sourceCount=selectableTextFor(stamp.page).length;
-    placeNoteInFreeSpace(stamp,pageStamps(stamp.page),pageWidthPt,pageHeightPt);
+    stamp.preferExtendedClearance=true;
+    try{placeNoteInFreeSpace(stamp,pageStamps(stamp.page),pageWidthPt,pageHeightPt);}
+    finally{delete stamp.preferExtendedClearance;}
     renderStamps();renderEditor();scheduleSave();
     if(stamp.x!==x||stamp.y!==y)recordHistory('reposition '+stamp.criterion+' comment',before);
     toast(sourceCount?
@@ -1185,7 +1190,7 @@ let pdfRendererLoad = null;
     }
     const desiredX=start.x,desiredY=start.y;
     const step=16;
-    const maxRadius=source.length?224:Math.max(pageWidth,pageHeight);
+    const maxRadius=source.length?(stamp.preferExtendedClearance?224:128):Math.max(pageWidth,pageHeight);
     const seen=new Set();
     let fallback=!hasStampConflict?{layout:start,covered:startCovered,score:startCovered}:null;
     const maybeCandidate=(x,y)=>{
