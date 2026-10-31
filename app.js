@@ -4,6 +4,7 @@ import {openLocalIAProjectVault,createLocalProjectId} from './project-vault.js';
 import {inspectModerationPages} from './moderation-preflight.js';
 import {studentChecklistItems,studentFeedbackStrengths,studentChecklistText,feedbackPriority} from './feedback-engine.js';
 import {rankStampComments,clampResultIndex,placementFeedback} from './fast-stamp.js';
+import {selectableTextRectangles,textCoverage,compactWidth} from './stamp-geometry.js';
 import {appendStudentChecklistPages,makeStudentChecklistModel} from './student-checklist-pdf.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
@@ -119,6 +120,10 @@ let pdfRendererLoad = null;
   let cachedProjectSummaries=[];
   let viewScale = 1;
   let pageWidthPt = 0, pageHeightPt = 0;
+  // Ephemeral PDF.js text obstacles used to guide new stamps away from
+  // selectable student writing. Diagrams/scans are never considered safe.
+  const selectableTextByPage=new Map();
+  const selectableTextFor=page=>selectableTextByPage.get(page)||[];
   let libraryEditingId = null;
   const MAX_BANK_VISIBLE = 42;
   const QUICK_PICKS_KEY='ia-marking-desk-quick-picks-v1';
@@ -1102,28 +1107,64 @@ let pdfRendererLoad = null;
   }
   function placeNoteInFreeSpace(stamp,stamps,pageWidth,pageHeight) {
     const others=stamps.filter(item=>item.id!==stamp.id).map(item=>noteLayout(item,pageWidth,pageHeight));
-    let best=noteLayout(stamp,pageWidth,pageHeight);
-    if(!best.fits) return best;
-    if(!others.some(rect=>noteOverlap(best,rect))) {
-      stamp.x=best.x/pageWidth;stamp.y=best.y/pageHeight;return best;
+    const source=selectableTextFor(stamp.page);
+    const start=noteLayout(stamp,pageWidth,pageHeight);
+    if(!start.fits)return start;
+    const collision=box=>others.some(rect=>noteOverlap(box,rect));
+    const coverage=box=>textCoverage(box,source);
+    const startCovered=coverage(start),hasStampConflict=collision(start);
+    if(!hasStampConflict&&startCovered<5){
+      stamp.x=start.x/pageWidth;stamp.y=start.y/pageHeight;return start;
     }
-    // Nearby clear positions first; never hide or truncate the comment.
-    // The teacher can subsequently drag the annotation into better whitespace.
-    const step=20;
-    const desiredX=best.x,desiredY=best.y;
-    const candidates=[];
-    for(let radius=step;radius<=Math.max(pageWidth,pageHeight);radius+=step) {
-      for(let dy=-radius;dy<=radius;dy+=step) for(const dx of [-radius,radius]) candidates.push([desiredX+dx,desiredY+dy]);
-      for(let dx=-radius+step;dx<radius;dx+=step) for(const dy of [-radius,radius]) candidates.push([desiredX+dx,desiredY+dy]);
-      if(candidates.length>2000)break;
-    }
-    for(const [x,y] of candidates) {
+    const desiredX=start.x,desiredY=start.y;
+    const step=16;
+    const maxRadius=source.length?224:Math.max(pageWidth,pageHeight);
+    const seen=new Set();
+    let fallback=!hasStampConflict?{layout:start,covered:startCovered,score:startCovered}:null;
+    const maybeCandidate=(x,y)=>{
       const candidate=noteLayout({...stamp,x:x/pageWidth,y:y/pageHeight},pageWidth,pageHeight);
-      if(!others.some(rect=>noteOverlap(candidate,rect))) {
-        stamp.x=candidate.x/pageWidth;stamp.y=candidate.y/pageHeight;return candidate;
-      }
+      const key=candidate.x.toFixed(1)+','+candidate.y.toFixed(1);
+      if(seen.has(key)||collision(candidate))return null;
+      seen.add(key);
+      const covered=coverage(candidate);
+      // Keep source avoidance local: do not relocate feedback to an
+      // unrelated section just because a clear gap exists far away.
+      const distance=Math.hypot(candidate.x-desiredX,candidate.y-desiredY);
+      const score=covered+distance*1.5;
+      if(!fallback||score<fallback.score)
+        fallback={layout:candidate,covered,score};
+      if(covered<5)return candidate;
+      return null;
+    };
+    if(source.length){
+      const here=maybeCandidate(desiredX,desiredY);
+      if(here){stamp.x=here.x/pageWidth;stamp.y=here.y/pageHeight;return here;}
     }
-    return best; // Export validation will require clearing any remaining overlap.
+    for(let radius=step;radius<=maxRadius;radius+=step){
+      for(let dy=-radius;dy<=radius;dy+=step){
+        for(const dx of [-radius,radius]){
+          const found=maybeCandidate(desiredX+dx,desiredY+dy);
+          if(found){stamp.x=found.x/pageWidth;stamp.y=found.y/pageHeight;return found;}
+        }
+      }
+      for(let dx=-radius+step;dx<radius;dx+=step){
+        for(const dy of [-radius,radius]){
+          const found=maybeCandidate(desiredX+dx,desiredY+dy);
+          if(found){stamp.x=found.x/pageWidth;stamp.y=found.y/pageHeight;return found;}
+        }
+      }
+      if(seen.size>2000)break;
+    }
+    // If no untouched whitespace is available, prefer the smallest nearby
+    // selectable-text intersection over silently covering an entire passage.
+    // Preflight still requires visual inspection of figures/scans.
+    if(fallback&&(!hasStampConflict
+      ?fallback.covered<startCovered*.82
+      :true)){
+      stamp.x=fallback.layout.x/pageWidth;stamp.y=fallback.layout.y/pageHeight;
+      return fallback.layout;
+    }
+    return start;
   }
   function clearPlacementPreview(){
     if(placementFrame!==null){cancelAnimationFrame(placementFrame);placementFrame=null;}
@@ -1143,9 +1184,17 @@ let pdfRendererLoad = null;
     const resolved=noteLayout(candidate,pageWidthPt,pageHeightPt);
     const overlaps=pageStamps(currentPage).filter(x=>x.id!==candidate.id)
       .some(x=>noteOverlap(noteLayout(x,pageWidthPt,pageHeightPt),resolved));
-    const feedback=placementFeedback({requested,resolved,overlaps,
+    let feedback=placementFeedback({requested,resolved,overlaps,
       fits:resolved.fits,contentFits:resolved.contentFits});
-    return {candidate,requested,resolved,feedback,overlaps};
+    const source=selectableTextFor(currentPage);
+    const covered=textCoverage(resolved,source);
+    if(source.length&&covered>20)feedback={
+      kind:'warning',text:'May cover selectable student text. Try another gap or make the box compact.',
+    };
+    else if(source.length&&feedback.kind==='ready')feedback={
+      kind:'ready',text:'Clear of selectable text. Still inspect diagrams and mathematical notation.',
+    };
+    return {candidate,requested,resolved,feedback,overlaps,covered};
   }
   function showPlacementPreview(position){
     if(!draft&&!movingStampId){clearPlacementPreview();return;}
@@ -1182,11 +1231,19 @@ let pdfRendererLoad = null;
       showPlacementPreview(position);
     });
   }
-  function renderStampWarnings(problems) {
+  function renderStampWarnings(problems,sourceOverlap=0) {
     const el=$('annotationNotice');
     if(!el)return;
-    if(!problems.length){el.classList.add('hidden');el.textContent='';return;}
-    el.textContent=`On-page annotations need attention: ${problems.join('; ')}. Move or resize a box, increase its height, reduce the font size, or shorten the comment before exporting.`;
+    el.classList.remove('source-warning');
+    if(!problems.length&&!sourceOverlap){el.classList.add('hidden');el.textContent='';return;}
+    if(problems.length){
+      el.textContent='On-page annotations need attention: '+problems.join('; ')
+        +'. Move or resize a box, fit its height, or shorten the wording before exporting.';
+    }else{
+      el.classList.add('source-warning');
+      el.textContent=sourceOverlap+' comment'+(sourceOverlap===1?' may':'s may')
+        +' obscure selectable student text. Use Compact & find space, move the box, and check the PDF visually; diagrams and scanned pages cannot be automatically assessed.';
+    }
     el.classList.remove('hidden');
   }
   function renderStamps() {
@@ -1198,7 +1255,10 @@ let pdfRendererLoad = null;
     renderQuickPicker();
     const pageWidth=pageWidthPt||595,pageHeight=pageHeightPt||842;
     const preview=pageLayoutProblems(stampsOnPage,pageWidth,pageHeight);
-    renderStampWarnings(preview.problems);
+    const source=selectableTextFor(currentPage);
+    const overlapping=source.length
+      ?preview.items.filter(({layout})=>textCoverage(layout,source)>20).length:0;
+    renderStampWarnings(preview.problems,overlapping);
     $('stampLayer').innerHTML=preview.items.map(({stamp,layout})=>{
       const scale=viewScale||1;
       const label=stampLabel(stamp),color=stampColor(stamp);
@@ -1406,7 +1466,7 @@ let pdfRendererLoad = null;
       }).promise;
       resetHistory();lastPlacedDraft=null;repeatPlacement=false;
       if(!keepStamps){const replacingExistingPdf=isReady();state.stamps=[];state.markingStamps=[];state.feedbackStamps=[];state.feedbackCompleted={};if(replacingExistingPdf){state.marks=freshMarks();state.justifications=freshJustifications();}selectedStampId=null;movingStampId=null;draft=null;}
-      pdfDoc=loaded;state.pdfBytes=clone;state.pdfName=name || 'uploaded-ia.pdf';
+      pdfDoc=loaded;selectableTextByPage.clear();state.pdfBytes=clone;state.pdfName=name || 'uploaded-ia.pdf';
       currentPage=1;zoom=1;
       $('emptyViewer').classList.add('hidden');$('pageShell').classList.remove('hidden');
       $('uploadTitle').textContent='Replace PDF';$('uploadSubtext').textContent=isFeedback()?'Choose a different draft PDF':'Choose a different final IA';
@@ -1455,6 +1515,21 @@ let pdfRendererLoad = null;
       activeRenderTask = page.render({canvasContext:context,viewport,transform:displayRatio!==1?[displayRatio,0,0,displayRatio,0,0]:null});
       await activeRenderTask.promise;
       if (token === rendering) activeRenderTask = null;
+      if(token!==rendering)return;
+      if(!selectableTextByPage.has(currentPage)){
+        try{
+          // Text extraction is local. Its coordinates use the same unscaled
+          // PDF-point top-left origin as noteLayout and the preflight check.
+          const content=await page.getTextContent();
+          if(token!==rendering)return;
+          const rects=page.rotate%360===0
+            ?selectableTextRectangles(content.items,original.width,original.height):[];
+          selectableTextByPage.set(currentPage,rects);
+        }catch(error){
+          console.warn('Selectable PDF text could not be inspected',error);
+          selectableTextByPage.set(currentPage,[]);
+        }
+      }
       if(token!==rendering)return;
       $('pageNumber').value=currentPage;
       $('prevPage').disabled=currentPage<=1;
@@ -1807,7 +1882,7 @@ let pdfRendererLoad = null;
       stamps:[],markingStamps:[],feedbackStamps:[],feedbackCompleted:{},pdfName:'',pdfBytes:null};
     rendering++;
     if(activeRenderTask){try{activeRenderTask.cancel();}catch(error){}}
-    const oldDocument=pdfDoc;pdfDoc=null;
+    const oldDocument=pdfDoc;pdfDoc=null;selectableTextByPage.clear();
     if(oldDocument?.destroy)Promise.resolve(oldDocument.destroy()).catch(()=>{});
     currentPage=1;zoom=1;viewScale=1;pageWidthPt=0;pageHeightPt=0;
     draft=null;selectedStampId=null;movingStampId=null;
