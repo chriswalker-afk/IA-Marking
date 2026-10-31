@@ -32,6 +32,14 @@
 - **Safety and persistence:** the visual preview is never written to the IA or exported PDF. All stamps, criteria marks, text editing, undo/redo, local save/restore and export preflight remain unchanged.
 - Unit tests and real-PDF browser checks cover matching, selection, preview-to-final placement agreement and the unchanged moderation/export workflow.
 
+## Pass 4 — review and export finishing touches
+
+- **Student checklist PDF:** first-draft feedback now offers a standalone, professionally formatted, printable A4 student checklist PDF. Its content comes strictly from teacher-placed feedback stamps, including strengths, page references, priority, task wording, optional checked status and a space for students to explain revisions. Original IA pages and scores are **not** included.
+- **Unified output:** the same Unicode-safe, multi-page checklist renderer is used for the standalone download and the final pages appended to the annotated first-draft PDF. This prevents mismatched tasks and preserves mathematical symbols and complete comments.
+- **Guided export:** the review window gives a visible three-stage path: check comments, inspect every actual exported PDF page and confirm/download. A page counter and **Next uninspected page** shortcut speed up navigation without bypassing the export approval gate.
+- **Preflight with fixes:** page-specific warnings and blocked annotations include links back to the relevant PDF page so they can be repositioned and checked before export. Any project edit invalidates prior PDF approval.
+- **Checks:** dedicated PDF-generation tests inspect action coverage, exact Unicode text, pagination and absence of scores. Existing real-PDF browser tests still cover both review modes and export.
+
 ## What you can do
 
 - Upload an IA PDF (rendered within your browser, not uploaded to this repository or a server). The annotated export prints notes directly onto each original PDF page, rather than placing them in a separate right-hand margin.
