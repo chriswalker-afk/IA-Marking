@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="design-polish.css">
   <link rel="stylesheet" href="workspace.css">
+  <link rel="stylesheet" href="fast-stamp.css">
 </head>
 <body>
   <div id="app" class="app">
@@ -136,9 +137,13 @@
             <button id="quickStampAgain" class="efficiency-action" type="button" disabled title="Prepare the last stamped comment again">Stamp again</button>
             <button id="repeatStamp" class="efficiency-action" type="button" aria-pressed="false" title="Keep a comment ready after placing it">Repeat: Off</button>
           </div>
+          <div class="fast-workflow-actions">
+            <button id="findStampFast" class="efficiency-action fast-find-button" type="button" title="Search comments (/ or Ctrl/Cmd + K)"><span aria-hidden="true">⌕</span> Find comment <kbd>/</kbd></button>
+            <button id="openShortcutHelp" class="efficiency-action shortcut-help-button" type="button" title="Marking keyboard shortcuts (?)" aria-label="Show keyboard shortcuts">?</button>
+          </div>
           <button id="openEvidence" class="efficiency-action evidence-button" type="button">A–E evidence <span id="evidenceCount" class="counter">0</span></button>
         </div>
-        <div class="instruction-bar" id="instructionBar"><span class="instruction-icon">i</span><span id="instructionText">Select a comment, then click on clear space on the actual PDF page. Its full text is printed there for moderation.</span><button id="cancelPlacement" class="text-button hidden" type="button">Cancel</button></div>
+        <div class="instruction-bar" id="instructionBar"><span class="instruction-icon">i</span><span id="instructionText">Select a comment, then click on clear space on the actual PDF page. Its full text is printed there for moderation.</span><span id="placementAssist" class="placement-assist hidden" role="status"></span><button id="cancelPlacement" class="text-button hidden" type="button">Cancel</button></div>
         <div class="pdf-scroll" id="pdfScroll">
           <div id="emptyViewer" class="empty-viewer">
             <div class="empty-art" aria-hidden="true"><div class="empty-page"><div class="empty-line long"></div><div class="empty-line"></div><div class="empty-line medium"></div><div class="empty-equation">f(x) = ax<sup>2</sup> + bx + c</div><div class="empty-line medium"></div><div class="empty-line long"></div><div class="illustrative-stamp">A</div></div></div>
@@ -160,7 +165,7 @@
         <div id="bankBrowseView" class="bank-browse-view" role="tabpanel" aria-labelledby="bankBrowseTab">
         <p id="bankIntro" class="bank-intro">Choose a teacher-facing assessment observation. Edit it to reflect the actual evidence before stamping.</p>
         <div class="criterion-tabs" id="criterionTabs" role="group" aria-label="Filter comments by criterion"></div>
-        <div class="bank-filters"><input id="commentSearch" type="search" placeholder="Search comments or topics..." aria-label="Search the comment bank"><div class="tone-toggle" role="group" aria-label="Filter strengths and improvement areas"><button class="tone-btn active" data-tone="all" type="button">All</button><button class="tone-btn" data-tone="strength" type="button">Strengths</button><button class="tone-btn" id="toneLimitationLabel" data-tone="limitation" type="button">Limitations</button></div></div>
+        <div class="bank-filters"><div class="fast-search-field"><input id="commentSearch" type="search" placeholder="Search by topic, keyword or criterion..." aria-label="Search comments. Use arrow keys and Enter to select a result." aria-keyshortcuts="/ Control+k Meta+k" aria-describedby="searchKeyboardStatus"><kbd aria-hidden="true">/</kbd></div><div id="searchKeyboardStatus" class="search-keyboard-status" role="status" aria-live="polite">Type to find an actionable comment.</div><div class="tone-toggle" role="group" aria-label="Filter strengths and improvement areas"><button class="tone-btn active" data-tone="all" type="button">All</button><button class="tone-btn" data-tone="strength" type="button">Strengths</button><button class="tone-btn" id="toneLimitationLabel" data-tone="limitation" type="button">Limitations</button></div></div>
         <div class="bank-quick-heading"><span>Quick access</span><div id="bankQuickTabs" role="group" aria-label="Show all, favourite or recently used comments">
             <button type="button" class="bank-quick-tab is-active" data-bank-quick="all" aria-pressed="true">All</button>
             <button type="button" class="bank-quick-tab" data-bank-quick="favorites" aria-pressed="false">★ Favourites</button>
@@ -317,6 +322,20 @@
     <div class="review-footer"><button id="exportProject" class="btn subtle" type="button">Save editable project</button><button id="exportAnnotated" class="btn primary" type="button" disabled>Export annotated PDF <span aria-hidden="true">&#8595;</span></button></div>
   </dialog>
 
+  <dialog id="shortcutDialog" class="shortcut-dialog" aria-labelledby="shortcutTitle">
+    <header><div><span class="eyebrow">FAST WORKFLOW</span><h2 id="shortcutTitle">Keyboard shortcuts</h2><p>Search, annotate and move through an IA without constantly switching tools.</p></div><button type="button" id="closeShortcutHelp" class="icon-button" aria-label="Close keyboard shortcuts">×</button></header>
+    <dl class="shortcut-grid">
+      <dt><kbd>/</kbd> or <kbd>Ctrl/⌘</kbd> + <kbd>K</kbd></dt><dd>Find a comment, even with the comment panel closed</dd>
+      <dt><kbd>↑</kbd> <kbd>↓</kbd> then <kbd>Enter</kbd></dt><dd>Choose a search result without leaving the keyboard</dd>
+      <dt><kbd>[</kbd> and <kbd>]</kbd></dt><dd>Previous or next PDF page</dd>
+      <dt><kbd>R</kbd></dt><dd>Toggle repeat stamping</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Cancel placement or close an open panel</dd>
+      <dt><kbd>Ctrl/⌘</kbd> + <kbd>Z</kbd></dt><dd>Undo your last annotation change</dd>
+      <dt><kbd>?</kbd></dt><dd>Show this shortcut guide</dd>
+    </dl>
+    <p class="shortcut-note">Shortcuts are disabled while entering text or working inside other dialogs, so they won't interrupt the maths or your comments.</p>
+    <button type="button" class="btn primary" id="shortcutHelpDone">Back to IA</button>
+  </dialog>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
   <script src="comments.js"></script>
