@@ -4,7 +4,7 @@ import {openLocalIAProjectVault,createLocalProjectId} from './project-vault.js';
 import {inspectModerationPages} from './moderation-preflight.js';
 import {studentChecklistItems,studentFeedbackStrengths,studentChecklistText,feedbackPriority} from './feedback-engine.js';
 import {rankStampComments,clampResultIndex,placementFeedback} from './fast-stamp.js';
-import {selectableTextRectangles,textCoverage,compactWidth} from './stamp-geometry.js';
+import {selectableTextRectangles,textCoverage,compactWidth,wrapStampText} from './stamp-geometry.js';
 import {appendStudentChecklistPages,makeStudentChecklistModel} from './student-checklist-pdf.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
@@ -1129,12 +1129,23 @@ let pdfRendererLoad = null;
     const circleX=6,circleY=5;
     const textX=circleX+circle+8;
     const headerTop=6;
-    // The criterion badge occupies only the first line. Below that line the
-    // text uses the FULL width rather than wasting the entire left gutter.
-    const bodyX=NOTE_INSET,bodyTop=circleY+circle+5;
+    // Text wraps beside the badge only while the circle physically occupies
+    // that row. Every subsequent line reclaims the entire left column. The
+    // same per-row x coordinates are used on screen, in preview and export.
     const fontSize=noteFontSize(stamp),lineHeight=noteLineHeight(fontSize);
     const headerFontSize=Math.max(8,Math.min(12,Math.round(fontSize*.85*10)/10));
-    const rows=pdfWrap(stamp.text,font,fontSize,Math.max(30,width-bodyX-NOTE_INSET));
+    const bodyTop=headerTop+Math.max(11,headerFontSize*1.2)+5;
+    const flowed=wrapStampText(stamp.text,{
+      lineArea:index=>{
+        const top=bodyTop+index*lineHeight;
+        const x=top<circleY+circle+4?textX:NOTE_INSET;
+        return {x,width:Math.max(30,width-x-NOTE_INSET)};
+      },
+      measure:value=>font.widthOfTextAtSize(value,fontSize),
+    });
+    const rows=flowed.map(entry=>entry.text);
+    const rowXs=flowed.map(entry=>entry.x);
+    const bodyX=0;
     const minHeight=Math.ceil(Math.max(circleY+circle+7,bodyTop+rows.length*lineHeight+7));
     const height=normalNoteHeight(stamp.noteHeight) ?? minHeight;
     const fits=height<=pageHeight-2*NOTE_PAD;
@@ -1142,7 +1153,7 @@ let pdfRendererLoad = null;
     const x=Math.min(Math.max(NOTE_PAD,Number(stamp.x||0)*pageWidth),Math.max(NOTE_PAD,pageWidth-width-NOTE_PAD));
     const y=Math.min(Math.max(NOTE_PAD,Number(stamp.y||0)*pageHeight),Math.max(NOTE_PAD,pageHeight-height-NOTE_PAD));
     return {x,y,width,height,circle,circleX,circleY,textX,headerTop,bodyX,bodyTop,
-      rows,fontSize,headerFontSize,lineHeight,minHeight,contentFits,fits,
+      rows,rowXs,fontSize,headerFontSize,lineHeight,minHeight,contentFits,fits,
       textColor:noteTextColor(stamp),fillColor:noteFillColor(stamp),borderColor:noteBorderColor(stamp),pageWidth,pageHeight};
   }
   function noteOverlap(a,b) {
@@ -1261,7 +1272,7 @@ let pdfRendererLoad = null;
     const color=stampColor(candidate),textColor=noteTextColor(candidate);
     const tone=candidate.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation';
     const moved=Math.hypot(resolved.x-requested.x,resolved.y-requested.y)>5;
-    const rows=resolved.rows.map(line=>'<span class="preview-line">'+escapeHtml(line)+'</span>').join('');
+    const rows=resolved.rows.map((line,i)=>'<span class="preview-line" style="margin-left:'+resolved.rowXs[i]*scale+'px">'+escapeHtml(line)+'</span>').join('');
     $('stampPlacementPreview')?.remove();
     $('stampPlacementAnchor')?.remove();
     const markup='<div id="stampPlacementPreview" aria-hidden="true" class="stamp-placement-preview '+(feedback.kind==='warning'?'is-warning':moved?'is-adjusted':'')+'"'
@@ -1318,7 +1329,7 @@ let pdfRendererLoad = null;
     $('stampLayer').innerHTML=preview.items.map(({stamp,layout})=>{
       const scale=viewScale||1;
       const label=stampLabel(stamp),color=stampColor(stamp);
-      const lines=layout.rows.map(line=>`<span class="onpage-note-line">${escapeHtml(line)}</span>`).join('');
+      const lines=layout.rows.map((line,i)=>`<span class="onpage-note-line" style="margin-left:${layout.rowXs[i]*scale}px">${escapeHtml(line)}</span>`).join('');
       const mismatch=preview.problems.some(issue=>issue.includes(label));
       return `<div role="button" tabindex="0" class="onpage-stamp ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};background:${layout.fillColor};border-color:${layout.borderColor};color:${layout.textColor};border-width:${Math.max(.7,1.25*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag comment to move; drag bottom-right corner to resize">
         <span class="onpage-border-accent" style="background:${layout.borderColor};width:${Math.max(2,3*scale)}px"></span>
@@ -1387,7 +1398,7 @@ let pdfRendererLoad = null;
         btn.style.width=`${layout.width*scale}px`;
         btn.style.height=`${layout.height*scale}px`;
         btn.classList.toggle('note-conflict',!layout.contentFits||!layout.fits);
-        btn.querySelector('.onpage-note-body').innerHTML=layout.rows.map(row=>`<span class="onpage-note-line">${escapeHtml(row)}</span>`).join('');
+        btn.querySelector('.onpage-note-body').innerHTML=layout.rows.map((row,i)=>`<span class="onpage-note-line" style="margin-left:${layout.rowXs[i]*scale}px">${escapeHtml(row)}</span>`).join('');
         return {width:layout.width,height:layout.height};
       };
       handle.addEventListener('pointerdown',e=>{
@@ -2352,7 +2363,7 @@ let pdfRendererLoad = null;
           pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
           const fullTextColor=pdfHexColor(layout.textColor);
           pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}`,layout.x+layout.textX,height-layout.y-layout.headerTop-layout.headerFontSize*.95,layout.headerFontSize,bold,fullTextColor);
-          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.bodyX,height-layout.y-layout.bodyTop-layout.fontSize*.95-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
+          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.rowXs[index],height-layout.y-layout.bodyTop-layout.fontSize*.95-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
         }
       }
       if(isFeedback()){
