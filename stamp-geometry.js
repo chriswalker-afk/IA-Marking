@@ -50,3 +50,48 @@ export function compactWidth({currentWidth=230,minWidth=150,measure}){
   }
   return best||{width:ceiling,height:null,score:Infinity,area:Infinity};
 }
+
+
+/**
+ * Greedy, newline-aware wrapping for a stamp whose criterion badge occupies
+ * the first few lines only. It is measured in exact PDF points and returns an
+ * x-coordinate for each line. Text underneath the badge uses the full width.
+ */
+export function wrapStampText(value,{lineArea,measure}={}){
+  if(typeof lineArea!=='function'||typeof measure!=='function')
+    throw Error('Measured line areas and font widths are required');
+  const rows=[];
+  const push=text=>{
+    const area=lineArea(rows.length);
+    rows.push({text,x:area.x});
+  };
+  const paragraphs=String(value??'').normalize('NFC').replace(/\r\n?/g,'\n').split('\n');
+  for(const paragraph of paragraphs){
+    let line='';
+    const words=paragraph.split(/\s+/u).filter(Boolean);
+    for(const word of words){
+      let remaining=word;
+      while(remaining){
+        const area=lineArea(rows.length);
+        const maxWidth=Math.max(20,area.width);
+        const combined=line?line+' '+remaining:remaining;
+        if(measure(combined)<=maxWidth){
+          line=combined;remaining='';break;
+        }
+        if(line){push(line);line='';continue;}
+        // Keep a long unbroken mathematical token, URL or identifier complete
+        // by flowing it across lines, never by clipping or dropping glyphs.
+        let part='',index=0;
+        const chars=Array.from(remaining);
+        for(;index<chars.length;index++){
+          if(part&&measure(part+chars[index])>maxWidth)break;
+          part+=chars[index];
+        }
+        push(part);
+        remaining=chars.slice(index).join('');
+      }
+    }
+    push(line);
+  }
+  return rows.length?rows:[{text:'',x:lineArea(0).x}];
+}
