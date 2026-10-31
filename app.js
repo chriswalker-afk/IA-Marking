@@ -921,10 +921,11 @@ let pdfRendererLoad = null;
         <label for="${prefix}BorderColor">Box border <input id="${prefix}BorderColor" type="color" value="${noteBorderColor(item)}"></label>
       </div>
       <span class="comment-style-heading">Text box dimensions</span>
+      <small class="note-format-help">Compact layout: the circle stays above the comment, so the wording can use the full box width. Full text remains visible in the exported PDF.</small>
       <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="150" max="450" step="5" value="${width}"></label>
       <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="40" max="750" step="5" value="${heightValue}"></label>
       <button id="${prefix}HeightAuto" type="button" class="text-button note-fit-button">Fit box height to full comment</button>
-      <small class="note-format-help">Drag the bottom-right handle on a placed comment to resize both dimensions. Export will stop if text is clipped.</small>
+      <small class="note-format-help">Resize from the lower-right corner, or choose Auto to fit all lines. The box cannot be dragged smaller than its full comment.</small>
     </div></details>`;
   }
   function bindAppearanceEditor(item,prefix,existing) {
@@ -941,10 +942,16 @@ let pdfRendererLoad = null;
     $(`${prefix}Color`).addEventListener('input',e=>{item.color=normalColor(e.target.value,stampColor(item));refresh();});
     $(`${prefix}Width`).addEventListener('input',e=>{
       item.noteWidth=normalNoteWidth(e.target.value);
+      // A new narrower width can increase the wrapped line count. An older
+      // fixed height must never silently cut off the remainder.
+      const required=noteLayout({...item,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+      if(item.noteHeight!==null&&Number(item.noteHeight)<required)item.noteHeight=null;
       $(`${prefix}WidthValue`).textContent=`${item.noteWidth} pt`;refresh();
     });
     $(`${prefix}Font`).addEventListener('input',e=>{
       item.fontSize=normalFontSize(e.target.value);
+      const required=noteLayout({...item,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+      if(item.noteHeight!==null&&Number(item.noteHeight)<required)item.noteHeight=null;
       $(`${prefix}FontValue`).textContent=`${item.fontSize} pt`;refresh();
     });
     for(const [suffix,key,fallback] of [
@@ -957,7 +964,11 @@ let pdfRendererLoad = null;
       });
     }
     $(`${prefix}Height`).addEventListener('input',e=>{
-      item.noteHeight=normalNoteHeight(e.target.value);refresh();
+      const requested=normalNoteHeight(e.target.value);
+      const minimum=noteLayout({...item,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+      item.noteHeight=Math.max(requested??minimum,minimum);
+      e.target.value=String(Math.min(750,item.noteHeight));
+      refresh();
     });
     $(`${prefix}HeightAuto`).addEventListener('click',()=>{
       const before=existing?historySnapshot():null;
@@ -969,6 +980,35 @@ let pdfRendererLoad = null;
         watchHistoryField($(`${prefix}${field}`),'format '+item.criterion+' comment',true);
       }
     }
+  }
+  function makeStampCompact(item,{existing=false}={}){
+    const before=existing?historySnapshot():null;
+    const pageW=pageWidthPt||595,pageH=pageHeightPt||842;
+    const baseWidth=normalNoteWidth(item.noteWidth??state.stampStyle.noteWidth);
+    const best=compactWidth({
+      currentWidth:baseWidth,
+      measure:width=>noteLayout({...item,noteWidth:width,noteHeight:null},pageW,pageH),
+    });
+    item.noteWidth=normalNoteWidth(best.width);
+    item.noteHeight=null;
+    if(existing){
+      renderStamps();scheduleSave();recordHistory('compact '+item.criterion+' comment',before);
+      toast('Box width reduced and all comment lines fitted. Check it against the student work.');
+    }else toast('Compact stamp ready to place. Check the suggested position on the PDF.');
+    renderEditor();
+  }
+  function findStampClearSpace(stamp){
+    if(!isReady())return;
+    if(currentPage!==stamp.page){toast('Open the stamped PDF page before finding space.');return;}
+    finishFieldHistory();const before=historySnapshot();
+    const x=stamp.x,y=stamp.y;
+    const sourceCount=selectableTextFor(stamp.page).length;
+    placeNoteInFreeSpace(stamp,pageStamps(stamp.page),pageWidthPt,pageHeightPt);
+    renderStamps();renderEditor();scheduleSave();
+    if(stamp.x!==x||stamp.y!==y)recordHistory('reposition '+stamp.criterion+' comment',before);
+    toast(sourceCount?
+      'Searched nearby clear space using selectable PDF text. Check diagrams and scans manually.'
+      :'No selectable text was detected. Checked for space between existing stamps only.');
   }
   function renderEditor() {
     // Keep advanced settings open through subsequent edits to this same stamp
@@ -995,12 +1035,23 @@ let pdfRendererLoad = null;
       });
     };
     if(stamp) {
-      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} ${isFeedback()?'feedback':'evidence'} stamp</strong><small>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${priorityField(stamp)}${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
-      $('stampTextEdit').addEventListener('input', e => {stamp.text=e.target.value;renderStamps();scheduleSave();});
+      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} ${isFeedback()?'feedback':'evidence'} stamp</strong><small>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${priorityField(stamp)}<div class="note-quick-actions"><button id="compactStamp" class="btn subtle" type="button" title="Find the smallest readable box and fit every line of text">Compact &amp; fit</button><button id="findClearSpace" class="btn subtle" type="button" title="Find a nearby position avoiding selectable PDF text where possible">Find clear space</button></div>${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
+      $('stampTextEdit').addEventListener('input',e=>{
+        stamp.text=e.target.value;
+        const required=noteLayout({...stamp,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+        if(stamp.noteHeight!==null&&stamp.noteHeight<required){
+          stamp.noteHeight=null;
+          const heightLabel=$('selectedStampHeightValue');
+          if(heightLabel)heightLabel.textContent='Auto · '+required+' pt';
+        }
+        renderStamps();scheduleSave();
+      });
       watchHistoryField($('stampTextEdit'),'edit '+stamp.criterion+' comment');
       restoreAppearance();
       bindAppearanceEditor(stamp,'selectedStamp',true);
       bindPriority(stamp,true);
+      $('compactStamp').addEventListener('click',()=>makeStampCompact(stamp,{existing:true}));
+      $('findClearSpace').addEventListener('click',()=>findStampClearSpace(stamp));
       $('moveStamp').addEventListener('click',()=>{movingStampId=stamp.id;draft=null;selectedStampId=null;renderEditor();setInstruction(); if (currentPage!==stamp.page) navigate(stamp.page);});
       $('copyStamp').addEventListener('click',()=>copyCommentText(stamp.text));
       $('duplicateStamp').addEventListener('click',()=>{
@@ -1021,8 +1072,13 @@ let pdfRendererLoad = null;
       $('selectionEditor').innerHTML = '<div class="selection-empty"><span class="small-ring">A</span><span>Choose a comment to prepare a stamp.</span></div>';
       return;
     }
-    $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Ready: criterion ${escapeHtml(draft.criterion)}</strong><span class="polarity ${draft.tone}">${draft.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span></div><textarea id="draftTextEdit" maxlength="1800" aria-label="Personalise only this stamp comment">${escapeHtml(draft.text)}</textarea>${priorityField(draft)}${appearanceEditor(draft,'draftStamp')}<div class="selection-actions"><small>Personalise this stamp before placing it on the PDF.</small><button type="button" class="btn primary" id="placeHint">${isReady()?'Click PDF to place':'Add PDF first'} &#8594;</button></div></div>`;
-    $('draftTextEdit').addEventListener('input',e=>{draft.text=e.target.value;});
+    $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Ready: criterion ${escapeHtml(draft.criterion)}</strong><span class="polarity ${draft.tone}">${draft.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span></div><textarea id="draftTextEdit" maxlength="1800" aria-label="Personalise only this stamp comment">${escapeHtml(draft.text)}</textarea>${priorityField(draft)}<div class="note-quick-actions"><button id="compactDraft" class="btn subtle" type="button">Compact &amp; fit</button></div>${appearanceEditor(draft,'draftStamp')}<div class="selection-actions"><small>Personalise this stamp before placing it on the PDF.</small><button type="button" class="btn primary" id="placeHint">${isReady()?'Click PDF to place':'Add PDF first'} &#8594;</button></div></div>`;
+    $('draftTextEdit').addEventListener('input',e=>{
+      draft.text=e.target.value;
+      const required=noteLayout({...draft,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
+      if(draft.noteHeight!==null&&draft.noteHeight<required)draft.noteHeight=null;
+    });
+    $('compactDraft').addEventListener('click',()=>makeStampCompact(draft));
     restoreAppearance();
     bindAppearanceEditor(draft,'draftStamp',false);
     bindPriority(draft,false);
