@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="design-polish.css">
   <link rel="stylesheet" href="workspace.css">
   <link rel="stylesheet" href="fast-stamp.css">
+  <link rel="stylesheet" href="review-polish.css">
 </head>
 <body>
   <div id="app" class="app">
@@ -291,11 +292,18 @@
     <div class="review-header"><div><span id="reviewEyebrow" class="eyebrow">MARKING RECORD</span><h2 id="reviewTitle">Review &amp; export</h2><p id="reviewIntro">Capture criterion-specific reasons for the awarded marks. A stamp count never determines a score.</p></div><button id="closeReview" class="icon-button" type="button" aria-label="Close review">&#10005;</button></div>
     <div class="review-body">
       <div id="reviewStatus" class="review-status" role="status"></div>
+      <nav id="reviewJourney" class="review-journey" aria-label="Review and export stages">
+        <span class="review-journey-step" data-review-step="content"><strong>1</strong><span>Check comments</span></span>
+        <span class="review-journey-step" data-review-step="preview"><strong>2</strong><span>Inspect every page</span></span>
+        <span class="review-journey-step" data-review-step="export"><strong>3</strong><span>Confirm &amp; export</span></span>
+      </nav>
+      <button id="reviewJumpToPreview" class="review-jump-to-preview" type="button">Go to PDF inspection <span aria-hidden="true">↓</span></button>
       <div id="reviewScores" class="review-scores"></div>
       <section id="feedbackReviewContent" class="feedback-review hidden" aria-label="First draft student revision checklist">
         <div class="feedback-review-heading"><div><span class="eyebrow">STUDENT REVISION PLAN</span><h3>Actions from your placed feedback stamps</h3><p>Every improvement stamp becomes one checklist item, linked to its PDF page. Strengths are shown separately. Review and edit the comments before sharing.</p></div><span id="feedbackProgress" class="feedback-progress" role="status">0 actions</span></div>
         <div id="feedbackChecklist" class="feedback-checklist"></div>
         <div class="feedback-review-actions">
+          <button type="button" id="downloadFeedbackPdf" class="btn primary" disabled>Download student checklist PDF</button>
           <button type="button" id="copyFeedbackChecklist" class="btn subtle">Copy checklist</button>
           <button type="button" id="downloadFeedbackChecklist" class="btn subtle">Download checklist (.txt)</button>
           <button type="button" id="printFeedbackChecklist" class="btn subtle">Print checklist</button>
@@ -303,14 +311,22 @@
         <p class="feedback-integrity-note"><strong>First draft guidance, not a rewritten solution.</strong> Prompts identify where students should reconsider their own mathematics. Teachers should not supply replacement mathematical arguments or corrected passages.</p>
       </section>
       <div class="review-note" id="reviewMarkingNote"><strong>Before IB submission</strong><p>Check the applicable official descriptors and your school's moderation arrangements. All teacher comments are printed on the original IA pages, so inspect each page for readability and unobscured mathematical work.</p><button id="reviewOpenCriteria" type="button" class="btn subtle">View full IB criteria and marks</button></div>
-      <section class="moderation-preflight" aria-labelledby="moderationPreflightTitle">
+      <section id="moderationPreflight" class="moderation-preflight" aria-labelledby="moderationPreflightTitle">
         <div class="moderation-preflight-heading"><div><span class="eyebrow">EXPORT RELIABILITY</span><h3 id="moderationPreflightTitle">Moderator-ready PDF check</h3><p id="preflightIntro">Automated checks identify likely problems. Inspect the exact annotated export before releasing it.</p></div><span id="preflightBadge" class="preflight-badge">Not checked</span></div>
         <ul id="preflightList" class="preflight-list" aria-live="polite"><li>Build a preview to check all pages.</li></ul>
-        <button id="buildReviewPreview" type="button" class="btn subtle">Generate actual PDF preview</button>
+        <div class="preflight-next-action">
+          <span><strong id="reviewPreviewIntroLabel">Step 2: Inspect the exact PDF</strong><small>Check every page for legible feedback, complete text and unobscured mathematics.</small></span>
+          <button id="buildReviewPreview" type="button" class="btn primary">Generate checked PDF preview</button>
+        </div>
         <div id="reviewPreviewBox" class="review-preview hidden">
           <div class="review-preview-bar">
             <strong>Exact PDF export preview</strong>
             <div class="review-preview-controls"><button id="reviewPreviewPrevious" type="button" class="icon-button" aria-label="Previous exported page">&#8592;</button><span id="reviewPreviewPage">Page — / —</span><button id="reviewPreviewNext" type="button" class="icon-button" aria-label="Next exported page">&#8594;</button><div class="review-preview-zoom"><button id="reviewPreviewZoomOut" type="button" class="icon-button" aria-label="Zoom out exported PDF preview">−</button><span id="reviewPreviewZoomLabel">Fit</span><button id="reviewPreviewZoomIn" type="button" class="icon-button" aria-label="Zoom in exported PDF preview">+</button></div></div>
+          </div>
+          <div class="review-page-check">
+            <div class="review-page-check-top"><strong id="reviewInspectionProgress">0 of 0 pages inspected</strong><span id="reviewInspectionPercent">0%</span></div>
+            <div class="review-page-progress" role="progressbar" aria-label="Export pages inspected" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="reviewPageProgress"><span id="reviewPageProgressFill"></span></div>
+            <button id="reviewNextUnseen" type="button" class="btn subtle" disabled>Next uninspected page →</button>
           </div>
           <div class="review-preview-scroll"><canvas id="reviewPreviewCanvas" aria-label="Rendered exported PDF page including teacher annotations"></canvas></div>
           <p id="reviewPreviewHint" class="review-preview-hint">Page through the student work and marking summary. The PDF you see here is the same file used by Export.</p>
@@ -319,7 +335,11 @@
         <p id="reviewExportNotice" class="review-export-notice" role="status">Generate the preview, then confirm it before exporting.</p>
       </section>
     </div>
-    <div class="review-footer"><button id="exportProject" class="btn subtle" type="button">Save editable project</button><button id="exportAnnotated" class="btn primary" type="button" disabled>Export annotated PDF <span aria-hidden="true">&#8595;</span></button></div>
+    <div class="review-footer">
+      <span class="review-footer-guidance" id="reviewFooterGuidance">Generate and inspect the PDF before exporting.</span>
+      <button id="exportProject" class="btn subtle" type="button">Back up editable IA</button>
+      <button id="exportAnnotated" class="btn primary" type="button" disabled>Download reviewed PDF <span aria-hidden="true">&#8595;</span></button>
+    </div>
   </dialog>
 
   <dialog id="shortcutDialog" class="shortcut-dialog" aria-labelledby="shortcutTitle">
