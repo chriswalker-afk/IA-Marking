@@ -32,16 +32,17 @@ let pdfRendererLoad = null;
   const isFeedback=()=>mode==='feedback';
   const activeBank=()=>isFeedback()?FEEDBACK_BANK:BANK;
   const STAMP_DEFAULTS = Object.freeze({
-    size:20,strengthColor:'#477b97',limitationColor:'#b7803c',
-    fontSize:9.5,textColor:'#263d4f',fillColor:'#fbfdff',borderColor:'#477b97',noteWidth:250,
+    size:18,strengthColor:'#477b97',limitationColor:'#b7803c',
+    fontSize:9.5,textColor:'#263d4f',fillColor:'#fbfdff',borderColor:'#477b97',noteWidth:230,
   });
-  const NOTE_PAD=6;
-  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(170,Math.min(450,Math.round(Number(value)/5)*5)) : 250;
+  const NOTE_PAD=4;
+  const NOTE_INSET=9;
+  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(150,Math.min(450,Math.round(Number(value)/5)*5)) : 230;
   const normalNoteHeight = value => value===null || value===undefined || value==='' ? null :
-    Number.isFinite(Number(value)) ? Math.max(55,Math.min(750,Math.round(Number(value)))) : null;
+    Number.isFinite(Number(value)) ? Math.max(40,Math.min(750,Math.round(Number(value)))) : null;
   const normalFontSize = value => value!==null && value!==undefined && value!=='' && Number.isFinite(Number(value)) ?
     Math.max(7,Math.min(18,Math.round(Number(value)*2)/2)) : STAMP_DEFAULTS.fontSize;
-  const noteLineHeight = size => Math.round(normalFontSize(size)*1.35*10)/10;
+  const noteLineHeight = size => Math.round(normalFontSize(size)*1.23*10)/10;
   const normalSize = value => Number.isFinite(Number(value)) ? Math.max(14,Math.min(42,Math.round(Number(value)))) : STAMP_DEFAULTS.size;
   const normalColor = (value,fallback) => typeof value==='string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
   function normalStyle(value={}) {
@@ -915,8 +916,8 @@ let pdfRendererLoad = null;
         <label for="${prefix}BorderColor">Box border <input id="${prefix}BorderColor" type="color" value="${noteBorderColor(item)}"></label>
       </div>
       <span class="comment-style-heading">Text box dimensions</span>
-      <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="170" max="450" step="5" value="${width}"></label>
-      <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="55" max="750" step="5" value="${heightValue}"></label>
+      <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="150" max="450" step="5" value="${width}"></label>
+      <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="40" max="750" step="5" value="${heightValue}"></label>
       <button id="${prefix}HeightAuto" type="button" class="text-button note-fit-button">Fit box height to full comment</button>
       <small class="note-format-help">Drag the bottom-right handle on a placed comment to resize both dimensions. Export will stop if text is clipped.</small>
     </div></details>`;
@@ -1063,17 +1064,24 @@ let pdfRendererLoad = null;
   }
   function noteLayout(stamp,pageWidth,pageHeight,font=pdfMeasureFont()) {
     const width=Math.min(normalNoteWidth(stamp.noteWidth ?? state.stampStyle.noteWidth),Math.max(100,pageWidth-2*NOTE_PAD));
-    const circle=normalSize(stamp.size),textX=Math.max(circle+17,42);
+    const circle=normalSize(stamp.size);
+    const circleX=6,circleY=5;
+    const textX=circleX+circle+8;
+    const headerTop=6;
+    // The criterion badge occupies only the first line. Below that line the
+    // text uses the FULL width rather than wasting the entire left gutter.
+    const bodyX=NOTE_INSET,bodyTop=circleY+circle+5;
     const fontSize=noteFontSize(stamp),lineHeight=noteLineHeight(fontSize);
     const headerFontSize=Math.max(8,Math.min(12,Math.round(fontSize*.85*10)/10));
-    const rows=pdfWrap(stamp.text,font,fontSize,Math.max(30,width-textX-8));
-    const minHeight=Math.ceil(Math.max(circle+20,39+rows.length*lineHeight));
+    const rows=pdfWrap(stamp.text,font,fontSize,Math.max(30,width-bodyX-NOTE_INSET));
+    const minHeight=Math.ceil(Math.max(circleY+circle+7,bodyTop+rows.length*lineHeight+7));
     const height=normalNoteHeight(stamp.noteHeight) ?? minHeight;
     const fits=height<=pageHeight-2*NOTE_PAD;
     const contentFits=height>=minHeight;
     const x=Math.min(Math.max(NOTE_PAD,Number(stamp.x||0)*pageWidth),Math.max(NOTE_PAD,pageWidth-width-NOTE_PAD));
     const y=Math.min(Math.max(NOTE_PAD,Number(stamp.y||0)*pageHeight),Math.max(NOTE_PAD,pageHeight-height-NOTE_PAD));
-    return {x,y,width,height,circle,textX,rows,fontSize,headerFontSize,lineHeight,minHeight,contentFits,fits,
+    return {x,y,width,height,circle,circleX,circleY,textX,headerTop,bodyX,bodyTop,
+      rows,fontSize,headerFontSize,lineHeight,minHeight,contentFits,fits,
       textColor:noteTextColor(stamp),fillColor:noteFillColor(stamp),borderColor:noteBorderColor(stamp),pageWidth,pageHeight};
   }
   function noteOverlap(a,b) {
@@ -1153,9 +1161,9 @@ let pdfRendererLoad = null;
     $('stampPlacementAnchor')?.remove();
     const markup='<div id="stampPlacementPreview" aria-hidden="true" class="stamp-placement-preview '+(feedback.kind==='warning'?'is-warning':moved?'is-adjusted':'')+'"'
       +' style="left:'+resolved.x*scale+'px;top:'+resolved.y*scale+'px;width:'+resolved.width*scale+'px;height:'+resolved.height*scale+'px;background:'+noteFillColor(candidate)+'e8;color:'+textColor+';border-color:'+noteBorderColor(candidate)+'">'
-      +'<span class="preview-circle" style="left:'+8*scale+'px;top:'+11*scale+'px;width:'+resolved.circle*scale+'px;height:'+resolved.circle*scale+'px;background:'+color+';color:'+stampTextColor(candidate)+';font-size:'+Math.max(7,resolved.circle*.56*scale)+'px">'+escapeHtml(candidate.criterion)+'</span>'
-      +'<span class="preview-header" style="left:'+resolved.textX*scale+'px;top:'+10*scale+'px;font-size:'+resolved.headerFontSize*scale+'px">'+escapeHtml(candidate.criterion)+' · '+tone+'</span>'
-      +'<span class="preview-body" style="left:'+resolved.textX*scale+'px;top:'+25*scale+'px;font-size:'+resolved.fontSize*scale+'px;line-height:'+resolved.lineHeight*scale+'px">'+rows+'</span></div>'
+      +'<span class="preview-circle" style="left:'+resolved.circleX*scale+'px;top:'+resolved.circleY*scale+'px;width:'+resolved.circle*scale+'px;height:'+resolved.circle*scale+'px;background:'+color+';color:'+stampTextColor(candidate)+';font-size:'+Math.max(7,resolved.circle*.56*scale)+'px">'+escapeHtml(candidate.criterion)+'</span>'
+      +'<span class="preview-header" style="left:'+resolved.textX*scale+'px;top:'+resolved.headerTop*scale+'px;font-size:'+resolved.headerFontSize*scale+'px">'+escapeHtml(candidate.criterion)+' · '+tone+'</span>'
+      +'<span class="preview-body" style="left:'+resolved.bodyX*scale+'px;top:'+resolved.bodyTop*scale+'px;font-size:'+resolved.fontSize*scale+'px;line-height:'+resolved.lineHeight*scale+'px">'+rows+'</span></div>'
       +(moved?'<span id="stampPlacementAnchor" class="stamp-placement-anchor" aria-hidden="true" style="left:'+requested.x*scale+'px;top:'+requested.y*scale+'px"></span>':'');
     $('stampLayer').insertAdjacentHTML('beforeend',markup);
     $('placementAssist').className='placement-assist '+feedback.kind;
@@ -1198,9 +1206,9 @@ let pdfRendererLoad = null;
       const mismatch=preview.problems.some(issue=>issue.includes(label));
       return `<div role="button" tabindex="0" class="onpage-stamp ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};background:${layout.fillColor};border-color:${layout.borderColor};color:${layout.textColor};border-width:${Math.max(.7,1.25*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag comment to move; drag bottom-right corner to resize">
         <span class="onpage-border-accent" style="background:${layout.borderColor};width:${Math.max(2,3*scale)}px"></span>
-        <span class="onpage-circle" style="left:${8*scale}px;top:${11*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
-        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${10*scale}px;font-size:${layout.headerFontSize*scale}px;line-height:${Math.max(12,layout.headerFontSize*1.12)*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span>
-        <span class="onpage-note-body" style="left:${layout.textX*scale}px;top:${25*scale}px;font-size:${layout.fontSize*scale}px;line-height:${layout.lineHeight*scale}px;color:${layout.textColor}">${lines}</span>
+        <span class="onpage-circle" style="left:${layout.circleX*scale}px;top:${layout.circleY*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
+        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${layout.headerTop*scale}px;font-size:${layout.headerFontSize*scale}px;line-height:${Math.max(12,layout.headerFontSize*1.12)*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span>
+        <span class="onpage-note-body" style="left:${layout.bodyX*scale}px;top:${layout.bodyTop*scale}px;font-size:${layout.fontSize*scale}px;line-height:${layout.lineHeight*scale}px;color:${layout.textColor}">${lines}</span>
         <button type="button" class="note-resize-handle" data-resize-pin="${escapeHtml(stamp.id)}" aria-label="Resize width and height of ${escapeHtml(label)} comment" title="Drag to resize comment width and height"></button>
       </div>`;
     }).join('');
@@ -1252,8 +1260,12 @@ let pdfRendererLoad = null;
         const scale=viewScale||1;
         const maxWidth=Math.min(450,pageWidth-NOTE_PAD-anchorX);
         const maxHeight=Math.min(750,pageHeight-NOTE_PAD-anchorY);
-        const desiredWidth=Math.max(170,Math.min(maxWidth,originalWidth+(event.clientX-fromX)/scale));
-        const desiredHeight=Math.max(55,Math.min(maxHeight,originalHeight+(event.clientY-fromY)/scale));
+        const desiredWidth=Math.max(150,Math.min(maxWidth,originalWidth+(event.clientX-fromX)/scale));
+        const requestedHeight=Math.max(40,Math.min(maxHeight,originalHeight+(event.clientY-fromY)/scale));
+        const natural=noteLayout({...stamp,noteWidth:desiredWidth,noteHeight:null},pageWidth,pageHeight).minHeight;
+        // A direct resize cannot silently cut off text: keep at least enough
+        // height for the complete teacher comment at the chosen width.
+        const desiredHeight=Math.min(maxHeight,Math.max(natural,requestedHeight));
         const mock={...stamp,noteWidth:desiredWidth,noteHeight:desiredHeight};
         const layout=noteLayout(mock,pageWidth,pageHeight);
         btn.style.width=`${layout.width*scale}px`;
@@ -2203,13 +2215,13 @@ let pdfRendererLoad = null;
             color:pdfHexColor(layout.fillColor),borderColor:pdfHexColor(layout.borderColor),borderWidth:1.25});
           page.drawRectangle({x:layout.x,y:bottom,width:3,height:layout.height,color:pdfHexColor(layout.borderColor)});
           const radius=layout.circle/2;
-          const cx=layout.x+8+radius,cy=height-layout.y-11-radius;
+          const cx=layout.x+layout.circleX+radius,cy=height-layout.y-layout.circleY-radius;
           page.drawCircle({x:cx,y:cy,size:radius,color,borderWidth:1.1,borderColor:rgb(1,1,1)});
           const letterSize=Math.min(layout.circle*.55,18);
           pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
           const fullTextColor=pdfHexColor(layout.textColor);
-          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}`,layout.x+layout.textX,height-layout.y-16,layout.headerFontSize,bold,fullTextColor);
-          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.textX,height-layout.y-33-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
+          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}`,layout.x+layout.textX,height-layout.y-layout.headerTop-layout.headerFontSize*.95,layout.headerFontSize,bold,fullTextColor);
+          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.bodyX,height-layout.y-layout.bodyTop-layout.fontSize*.95-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
         }
       }
       if(isFeedback()){
