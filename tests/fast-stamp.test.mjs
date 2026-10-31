@@ -23,8 +23,13 @@ test('Search matches words across topic, tags, criterion and text and ranks topi
 });
 test('Relevant favourites and recent comments receive a modest ranking boost',()=>{
   const results=rankStampComments(comments,'graph',{favorites:['B-outlier'],recent:['B-outlier']});
-  assert.equal(results[0].id,'B-outlier');
+  assert.equal(results[0].id,'B-graph','A direct topic match should still rank before a recently-used body match');
   assert.equal(results.length,2);
+  const tied=[
+    {id:'first',criterion:'A',topic:'Graph',text:'Consider the graph.'},
+    {id:'favourite',criterion:'A',topic:'Graph',text:'Consider the graph.'},
+  ];
+  assert.equal(rankStampComments(tied,'graph',{favorites:['favourite'],recent:['favourite']})[0].id,'favourite');
   // Relevance still matters: a favourite outside the query does not appear.
   assert.deepEqual(rankStampComments(comments,'motivation',{favorites:['B-outlier']}).map(x=>x.id),['A-aim']);
 });
