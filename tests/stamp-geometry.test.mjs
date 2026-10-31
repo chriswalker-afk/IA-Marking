@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
-import {selectableTextRectangles,textCoverage,compactWidth} from '../stamp-geometry.js';
+import {selectableTextRectangles,textCoverage,compactWidth,wrapStampText} from '../stamp-geometry.js';
 
 test('PDF.js text geometry is transformed to top-left page coordinates and clamped',()=>{
   const items=[
@@ -43,23 +43,41 @@ test('Compact sizing balances actual printed footprint with avoiding extremely t
   assert.throws(()=>compactWidth({}),/measurement/);
 });
 
+test('Text wraps beside the criterion only while needed and reclaims the left gutter below',()=>{
+  const text='Compare the data and explain why the mathematical model is appropriate for this situation.';
+  const lines=wrapStampText(text,{
+    lineArea:i=>i<2?{x:40,width:84}:{x:9,width:190},
+    measure:value=>Array.from(value).length*4.5,
+  });
+  assert.equal(lines[0].x,40);
+  assert.equal(lines[1].x,40);
+  assert.ok(lines.some(line=>line.x===9),'Lines beneath the badge must use almost the full width.');
+  lines.forEach((line,i)=>assert.ok(
+    line.text.length*4.5<=(i<2?84:190)+.01,
+    'Every rendered row must fit its measured PDF width'));
+  assert.equal(lines.map(x=>x.text).join(' ').replace(/\s+/g,' '),text);
+  const long='πSuperLongMathematicalIdentifierThatNeedsSplitting';
+  const parts=wrapStampText(long,{lineArea:()=>({x:9,width:50}),measure:v=>Array.from(v).length*5});
+  assert.equal(parts.map(x=>x.text).join(''),long,'Long mathematical identifiers must not lose glyphs.');
+  assert.equal(parts.at(-1).text.length>0,true,'Do not introduce an empty trailing line.');
+});
 test('Compact layout is used consistently for exact PDF rendering and live stamp previews',()=>{
   const app=readFileSync('app.js','utf8');
   const html=readFileSync('index.html','utf8');
   const css=readFileSync('compact-stamps.css','utf8');
   const build=readFileSync('scripts/build.mjs','utf8');
-  assert.ok(app.includes('bodyX=NOTE_INSET,bodyTop=circleY+circle+5'));
-  assert.ok(app.includes('width-bodyX-NOTE_INSET'));
-  assert.ok(app.includes('layout.bodyX*scale'));
-  assert.ok(app.includes('layout.x+layout.bodyX'));
-  assert.ok(app.includes('resolved.bodyX*scale'));
+  assert.ok(app.includes('bodyTop=headerTop+Math.max(11,headerFontSize*1.2)+5'));
+  assert.ok(app.includes('lineArea:index=>'));
+  assert.ok(app.includes('layout.rowXs[i]*scale'));
+  assert.ok(app.includes('layout.x+layout.rowXs[index]'));
+  assert.ok(app.includes('resolved.rowXs[i]*scale'));
   for(const marker of ['selectableTextByPage','getTextContent()','selectableTextRectangles','textCoverage',
     'compactWidth','makeStampCompact','findStampClearSpace','source-warning']){
     assert.ok(app.includes(marker),marker);
   }
   assert.ok(html.includes('href="compact-stamps.css"'));
   assert.ok(build.includes("'stamp-geometry.js'")&&build.includes("'compact-stamps.css'"));
-  assert.ok(css.includes('preview-body{width:calc(100% - 18px)'));
+  assert.ok(css.includes('preview-body{width:100%'));
   execFileSync(process.execPath,['--check','app.js']);
   execFileSync(process.execPath,['--check','stamp-geometry.js']);
 });
