@@ -24,6 +24,14 @@
 - **Unchanged marking data:** these controls affect only the local browser layout; marks, feedback actions, PDF coordinates, on-page exports and project backups remain as before.
 - **Verification:** the existing real-PDF end-to-end suite now tests search-to-editor, panel controls, mobile drawers, focus mode and the complete export path.
 
+## Pass 3 — faster marking and feedback
+
+- **Keyboard-first comment finding:** use **/** or **Ctrl/Cmd + K** anywhere outside another modal to open the appropriate comment bank, even in the PDF-only focused view. Search understands *multiple independent keywords* across criterion, category, tags and full comment wording, ranking closely related suggestions first. Use **↑/↓** and **Enter** to prepare a stamp without leaving the keyboard.
+- **Predictable stamp placement:** as the pointer moves over empty PDF space, an outlined preview shows the **full teacher comment at its calculated final location**. The same existing placement algorithm shifts boxes away from other teacher comments when possible. The preview reports when it moves or when a box needs attention. It does **not** claim to detect or avoid the student's mathematical work; teachers still inspect and position every stamp.
+- **Fewer clicks:** keep favourites and recent stamps, use **R** to toggle repeat stamping, **[** and **]** to change PDF pages, and **Esc** to abandon a placement. The **?** guide is available beside the fast search button. Typing shortcuts are inactive inside text fields; Ctrl/Cmd + K can still open search. All shortcuts are inactive inside other dialogs.
+- **Safety and persistence:** the visual preview is never written to the IA or exported PDF. All stamps, criteria marks, text editing, undo/redo, local save/restore and export preflight remain unchanged.
+- Unit tests and real-PDF browser checks cover matching, selection, preview-to-final placement agreement and the unchanged moderation/export workflow.
+
 ## What you can do
 
 - Upload an IA PDF (rendered within your browser, not uploaded to this repository or a server). The annotated export prints notes directly onto each original PDF page, rather than placing them in a separate right-hand margin.

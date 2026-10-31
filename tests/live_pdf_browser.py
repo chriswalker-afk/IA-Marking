@@ -154,6 +154,37 @@ with tempfile.TemporaryDirectory() as folder:
         assert page.locator('[data-score="E"]').input_value() == '5'
         assert page.locator('#pdfLibraryStatus').is_hidden(), page.locator('#pdfLibraryStatus').inner_text()
 
+        # Pass 3: keyboard-only search, results, guide and fast navigation.
+        page.locator('#toggleCommentPane').focus()
+        page.keyboard.press('Control+k')
+        expect(page.locator('#commentSearch')).to_be_focused()
+        page.locator('#commentSearch').fill('outlier')
+        assert page.locator('#commentList [data-comment-id]').count()>=1
+        expect(page.locator('.comment-card.is-keyboard-active')).to_have_count(1)
+        page.locator('#commentSearch').press('ArrowDown')
+        expect(page.locator('.comment-card.is-keyboard-active')).to_have_count(1)
+        page.locator('#commentSearch').press('Enter')
+        expect(page.locator('#workspace')).to_have_attribute('data-bank-view','edit')
+        expect(page.locator('#draftTextEdit')).to_be_visible()
+        page.locator('#bankBrowseTab').click()
+        page.locator('#commentSearch').fill('')
+        page.locator('#commentSearch').press('Escape')
+        expect(page.locator('#openShortcutHelp')).to_be_visible()
+        page.locator('#openShortcutHelp').click()
+        expect(page.locator('#shortcutDialog[open]')).to_be_visible()
+        page.keyboard.press('Escape')
+        expect(page.locator('#shortcutDialog')).not_to_be_visible()
+        page.locator('#prevPage').focus()
+        page.keyboard.press(']')
+        expect(page.locator('#pageNumber')).to_have_value('2')
+        page.keyboard.press('[')
+        expect(page.locator('#pageNumber')).to_have_value('1')
+        page.locator('#findStampFast').focus()
+        page.keyboard.press('r')
+        expect(page.locator('#repeatStamp')).to_have_attribute('aria-pressed','true')
+        page.keyboard.press('r')
+        expect(page.locator('#repeatStamp')).to_have_attribute('aria-pressed','false')
+
         # Real on-page annotations: the complete text and its A-E circle are
         # inside the original student-page rectangle, not in a separate rail.
         first_text=('The analysis uses residuals to check the accuracy of the fitted model. '
@@ -170,8 +201,18 @@ with tempfile.TemporaryDirectory() as folder:
         expect(page.locator('#bankBrowseView')).to_be_hidden()
         expect(page.locator('#selectionEditor')).to_be_visible()
         page.locator('#draftTextEdit').fill(first_text)
+        # The hover preview is a non-interactive overlay, and the click must
+        # place the real comment at exactly the previewed PDF-point position.
+        page.locator('#stampLayer').hover(position={'x':120,'y':280})
+        expect(page.locator('#stampPlacementPreview')).to_be_visible()
+        preview_box=page.locator('#stampPlacementPreview').bounding_box()
+        assert preview_box and page.locator('#stampPlacementPreview').get_attribute('aria-hidden')=='true'
         page.locator('#stampLayer').click(position={'x': 120, 'y': 280})
+        expect(page.locator('#stampPlacementPreview')).to_have_count(0)
         expect(page.locator('.onpage-stamp')).to_have_count(1)
+        placed_box=page.locator('.onpage-stamp').first.bounding_box()
+        assert placed_box and abs(placed_box['x']-preview_box['x'])<4 and abs(placed_box['y']-preview_box['y'])<4, (
+            f'Placement preview disagrees with saved stamp: preview={preview_box}, placed={placed_box}')
         assert page.locator('#allPinCount').inner_text()=='1'
         assert page.locator('#pageNotes').count()==0
         assert ' '.join(page.locator('.onpage-stamp').inner_text().split()).endswith(first_text)
@@ -241,7 +282,14 @@ with tempfile.TemporaryDirectory() as folder:
         page.locator('#bankBrowseTab').click()
         page.locator('#commentList [data-comment-id]').nth(1).click()
         page.locator('#draftTextEdit').fill(second_text)
-        page.locator('#stampLayer').click(position={'x': 350, 'y': 500})
+        # Choose exposed lower-right whitespace, outside the resized first
+        # comment. This also keeps the navigation's page-position ordering
+        # intuitive: first note above second note.
+        layer_size=page.locator('#stampLayer').bounding_box()
+        page.locator('#stampLayer').click(position={
+            'x':int(layer_size['width'])-22,
+            'y':int(layer_size['height'])-25,
+        })
         expect(page.locator('.onpage-stamp')).to_have_count(2)
         box1=page.locator('.onpage-stamp').nth(0).bounding_box()
         box2=page.locator('.onpage-stamp').nth(1).bounding_box()
@@ -253,7 +301,7 @@ with tempfile.TemporaryDirectory() as folder:
         revised_text=first_text+' The mathematical evidence supports the awarded mark.'
         page.locator('#stampTextEdit').fill(revised_text)
         assert revised_text in ' '.join(page.locator('.onpage-stamp').first.inner_text().split())
-        assert revised_text in page.locator('#stampsList .stamp-row').first.inner_text()
+        assert any(revised_text in row.inner_text() for row in page.locator('#stampsList .stamp-row').all()), 'Edited stamp must appear in the page-sorted navigation list'
         # The larger PDF canvas intentionally changes pixel-to-point placement.
         # A longer edited comment may overlap a neighbouring stamp; the
         # existing overlap detector must block export until notes are arranged.
@@ -430,7 +478,7 @@ with tempfile.TemporaryDirectory() as folder:
         dialog=page.locator('#evidenceDialog').bounding_box()
         assert dialog and dialog['width']>=429 and dialog['height']>=849
         page.screenshot(path=str(ROOT/'qa-pass8-mobile-evidence.png'))
-        page.locator('#evidenceResults [data-evidence-pin]').first.click()
+        page.locator('#evidenceResults [data-evidence-pin]').filter(has_text=revised_text).first.click()
         expect(page.locator('#evidenceDialog')).not_to_be_visible()
         assert revised_text in page.locator('#stampTextEdit').input_value()
 

@@ -3,6 +3,7 @@ import {MarkingHistory,sanitizeQuickPicks} from './marking-history.js';
 import {openLocalIAProjectVault,createLocalProjectId} from './project-vault.js';
 import {inspectModerationPages} from './moderation-preflight.js';
 import {studentChecklistItems,studentFeedbackStrengths,studentChecklistText,feedbackPriority} from './feedback-engine.js';
+import {rankStampComments,clampResultIndex,placementFeedback} from './fast-stamp.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
 (() => {
@@ -98,10 +99,12 @@ let pdfRendererLoad = null;
   let tab = 'all';
   let tone = 'all';
   let search = '';
+  let searchKeyboardSelectionId=null,searchKeyboardActive=false;
   let bankShowAll = false;
   let draft = null;
   let selectedStampId = null;
   let movingStampId = null;
+  let placementFrame=null,previewPosition=null;
   let rendering = 0;
   let activeRenderTask = null;
   let savingTimer = null;
@@ -508,6 +511,7 @@ let pdfRendererLoad = null;
     state.stamps=isFeedback()?state.feedbackStamps:state.markingStamps;
     draft=null;selectedStampId=null;movingStampId=null;tab='all';tone='all';search='';
     bankShowAll=false;bankQuickFilter='all';libraryEditingId=null;
+    searchKeyboardActive=false;searchKeyboardSelectionId=null;
     $('commentSearch').value='';
     resetHistory();lastPlacedDraft=null;repeatPlacement=false;
     workspaceView='browse';closeMobileDrawer();updateWorkspaceLayout({rerender:false});
@@ -529,6 +533,7 @@ let pdfRendererLoad = null;
       bar.classList.remove('placing'); cancel.classList.add('hidden');
     }
     $('stampLayer').classList.toggle('placing',Boolean(draft || movingStampId));
+    if(!draft&&!movingStampId)clearPlacementPreview();
   }
   function getComments() {
     const edits=activeCommentEdits();
@@ -718,11 +723,11 @@ let pdfRendererLoad = null;
   }
   function renderBank() {
     const all = getComments().filter(item => (item.courses || []).includes(state.course));
-    const query = search.toLowerCase().trim();
+    const query = search.trim();
     const quickIds=bankQuickFilter==='favorites'?quickPicks.favorites:bankQuickFilter==='recent'?quickPicks.recent:null;
-    let items = all.filter(item => (tab === 'all'||item.criterion === tab) && (tone === 'all'||item.tone === tone) && (!quickIds||quickIds.includes(item.id))
-      && (!query || [item.text,item.topic,item.criterion,...(item.tags || [])].join(' ').toLowerCase().includes(query)));
-    if(quickIds)items=items.sort((a,b)=>quickIds.indexOf(a.id)-quickIds.indexOf(b.id));
+    let items = all.filter(item => (tab === 'all'||item.criterion === tab) && (tone === 'all'||item.tone === tone) && (!quickIds||quickIds.includes(item.id)));
+    if(query)items=rankStampComments(items,query,{favorites:quickPicks.favorites,recent:quickPicks.recent});
+    else if(quickIds)items=items.sort((a,b)=>quickIds.indexOf(a.id)-quickIds.indexOf(b.id));
     document.querySelectorAll('[data-bank-quick]').forEach(button=>{
       const active=button.dataset.bankQuick===bankQuickFilter;
       button.classList.toggle('is-active',active);
@@ -731,7 +736,9 @@ let pdfRendererLoad = null;
     $('bankTotal').textContent = `${all.length} comments`;
     $('bankFilteredCount').textContent = `${items.length} matching ${items.length===1?'comment':'comments'}`;
     const visible = bankShowAll ? items : items.slice(0,MAX_BANK_VISIBLE);
-    $('commentList').innerHTML = visible.map(item => `<div class="comment-card ${draft?.id===item.id?'is-active':''}"><button type="button" class="comment-select" data-comment-id="${escapeHtml(item.id)}" aria-label="Use ${escapeHtml(item.criterion)} ${escapeHtml(item.tone)} comment as stamp"><span class="comment-card-head"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span><span class="topic">${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</span>${item.origin==='Teacher custom comment' ? '<span class="custom-tag">CUSTOM</span>' : ''}</span><p>${escapeHtml(item.text)}</p></button><div class="comment-card-actions"><button type="button" class="favourite-button ${quickPicks.favorites.includes(item.id)?'is-favourite':''}" data-favourite-comment="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}" aria-label="${quickPicks.favorites.includes(item.id)?'Remove from':'Add to'} favourite comments">${quickPicks.favorites.includes(item.id)?'★':'☆'} <span>Favourite</span></button><button type="button" data-copy-comment="${escapeHtml(item.id)}">Copy</button><button type="button" data-edit-comment="${escapeHtml(item.id)}">Edit</button></div></div>`).join('');
+    if(searchKeyboardActive && !visible.some(item=>item.id===searchKeyboardSelectionId))searchKeyboardSelectionId=visible[0]?.id||null;
+    if(!visible.length)searchKeyboardSelectionId=null;
+    $('commentList').innerHTML = visible.map(item => `<div class="comment-card ${draft?.id===item.id?'is-active':''} ${searchKeyboardActive&&searchKeyboardSelectionId===item.id?'is-keyboard-active':''}"><button type="button" class="comment-select" data-comment-id="${escapeHtml(item.id)}" aria-label="Use ${escapeHtml(item.criterion)} ${escapeHtml(item.tone)} comment as stamp"><span class="comment-card-head"><span class="polarity ${item.tone}">${item.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span><span class="topic">${escapeHtml(item.criterion)} / ${escapeHtml(item.topic)}</span>${item.origin==='Teacher custom comment' ? '<span class="custom-tag">CUSTOM</span>' : ''}</span><p>${escapeHtml(item.text)}</p></button><div class="comment-card-actions"><button type="button" class="favourite-button ${quickPicks.favorites.includes(item.id)?'is-favourite':''}" data-favourite-comment="${escapeHtml(item.id)}" aria-pressed="${quickPicks.favorites.includes(item.id)}" aria-label="${quickPicks.favorites.includes(item.id)?'Remove from':'Add to'} favourite comments">${quickPicks.favorites.includes(item.id)?'★':'☆'} <span>Favourite</span></button><button type="button" data-copy-comment="${escapeHtml(item.id)}">Copy</button><button type="button" data-edit-comment="${escapeHtml(item.id)}">Edit</button></div></div>`).join('');
     if(!visible.length) $('commentList').innerHTML = '<p class="bank-empty">'+(bankQuickFilter==='favorites'?'No favourites yet. Star a comment in All to save it for quick stamping.':bankQuickFilter==='recent'?'No recent stamps yet. Placed comments will appear here.':'No matching comments. Try another search or write your own.')+'</p>';
     if(!bankShowAll && items.length>MAX_BANK_VISIBLE) $('commentList').insertAdjacentHTML('beforeend',`<button type="button" id="showMoreComments" class="btn subtle" style="width:100%">Show all ${items.length} comments</button>`);
     $('commentList').querySelectorAll('[data-comment-id]').forEach(button => button.addEventListener('click', () => prepareComment(button.dataset.commentId)));
@@ -743,6 +750,38 @@ let pdfRendererLoad = null;
     }));
     $('commentList').querySelectorAll('[data-edit-comment]').forEach(button => button.addEventListener('click',()=>openLibrary(button.dataset.editComment)));
     $('showMoreComments')?.addEventListener('click', () => {bankShowAll=true;renderBank();});
+    updateSearchSelectionStatus(items.length);
+  }
+  function updateSearchSelectionStatus(total){
+    if(!searchKeyboardActive){
+      $('searchKeyboardStatus').textContent='Tip: / or Ctrl/⌘ K to find; ↑ ↓ then Enter to use.';
+      return;
+    }
+    const cards=Array.from($('commentList').querySelectorAll('[data-comment-id]'));
+    const current=cards.findIndex(button=>button.dataset.commentId===searchKeyboardSelectionId);
+    $('searchKeyboardStatus').textContent=!cards.length?'No matching comments. Try fewer keywords.'
+      :(current+1)+' of '+cards.length+' shown'+(total>cards.length?' ('+total+' matching)':'')+' · Enter to use · ↑ ↓ to choose';
+  }
+  function highlightSearchResult(id,{scroll=true}={}){
+    searchKeyboardSelectionId=id;
+    searchKeyboardActive=Boolean(id);
+    const buttons=Array.from($('commentList').querySelectorAll('[data-comment-id]'));
+    for(const button of buttons){
+      const active=button.dataset.commentId===id;
+      button.closest('.comment-card')?.classList.toggle('is-keyboard-active',active);
+      if(active&&scroll)button.scrollIntoView({block:'nearest'});
+    }
+    const all=getComments().filter(item=>(item.courses||[]).includes(state.course));
+    const total=parseInt($('bankFilteredCount').textContent,10);
+    updateSearchSelectionStatus(total?Number(total):all.length);
+  }
+  function focusFastSearch(){
+    // Open the searchable bank even from the PDF-only focused view or drawer.
+    tab='all';tone='all';bankQuickFilter='all';bankShowAll=false;
+    searchKeyboardActive=true;searchKeyboardSelectionId=null;
+    renderTabs();renderTone();renderBank();
+    setWorkspaceView('browse',{openOnMobile:true,focusControl:true});
+    requestAnimationFrame(()=>{$('commentSearch').focus({preventScroll:true});$('commentSearch').select();});
   }
   function filteredLibraryComments() {
     const query=$('librarySearch').value.toLowerCase().trim();
@@ -1077,6 +1116,63 @@ let pdfRendererLoad = null;
     }
     return best; // Export validation will require clearing any remaining overlap.
   }
+  function clearPlacementPreview(){
+    if(placementFrame!==null){cancelAnimationFrame(placementFrame);placementFrame=null;}
+    $('stampPlacementPreview')?.remove();
+    $('stampPlacementAnchor')?.remove();
+    $('placementAssist').textContent='';
+    $('placementAssist').className='placement-assist hidden';
+    previewPosition=null;
+  }
+  function placementPlanAt(position){
+    if(!isReady()||!pageWidthPt||!pageHeightPt)return null;
+    const base=movingStampId?state.stamps.find(x=>x.id===movingStampId):draft;
+    if(!base||!String(base.text||'').trim())return null;
+    const candidate={...base,id:base.id||'preview',page:currentPage,x:position.x,y:position.y};
+    const requested=noteLayout(candidate,pageWidthPt,pageHeightPt);
+    placeNoteInFreeSpace(candidate,pageStamps(currentPage),pageWidthPt,pageHeightPt);
+    const resolved=noteLayout(candidate,pageWidthPt,pageHeightPt);
+    const overlaps=pageStamps(currentPage).filter(x=>x.id!==candidate.id)
+      .some(x=>noteOverlap(noteLayout(x,pageWidthPt,pageHeightPt),resolved));
+    const feedback=placementFeedback({requested,resolved,overlaps,
+      fits:resolved.fits,contentFits:resolved.contentFits});
+    return {candidate,requested,resolved,feedback,overlaps};
+  }
+  function showPlacementPreview(position){
+    if(!draft&&!movingStampId){clearPlacementPreview();return;}
+    const plan=placementPlanAt(position);
+    if(!plan){clearPlacementPreview();return;}
+    const {candidate,resolved,feedback,requested}=plan;
+    const scale=viewScale||1;
+    const color=stampColor(candidate),textColor=noteTextColor(candidate);
+    const tone=candidate.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation';
+    const moved=Math.hypot(resolved.x-requested.x,resolved.y-requested.y)>5;
+    const rows=resolved.rows.map(line=>'<span class="preview-line">'+escapeHtml(line)+'</span>').join('');
+    $('stampPlacementPreview')?.remove();
+    $('stampPlacementAnchor')?.remove();
+    const markup='<div id="stampPlacementPreview" aria-hidden="true" class="stamp-placement-preview '+(feedback.kind==='warning'?'is-warning':moved?'is-adjusted':'')+'"'
+      +' style="left:'+resolved.x*scale+'px;top:'+resolved.y*scale+'px;width:'+resolved.width*scale+'px;height:'+resolved.height*scale+'px;background:'+noteFillColor(candidate)+'e8;color:'+textColor+';border-color:'+noteBorderColor(candidate)+'">'
+      +'<span class="preview-circle" style="left:'+8*scale+'px;top:'+11*scale+'px;width:'+resolved.circle*scale+'px;height:'+resolved.circle*scale+'px;background:'+color+';color:'+stampTextColor(candidate)+';font-size:'+Math.max(7,resolved.circle*.56*scale)+'px">'+escapeHtml(candidate.criterion)+'</span>'
+      +'<span class="preview-header" style="left:'+resolved.textX*scale+'px;top:'+10*scale+'px;font-size:'+resolved.headerFontSize*scale+'px">'+escapeHtml(candidate.criterion)+' · '+tone+'</span>'
+      +'<span class="preview-body" style="left:'+resolved.textX*scale+'px;top:'+25*scale+'px;font-size:'+resolved.fontSize*scale+'px;line-height:'+resolved.lineHeight*scale+'px">'+rows+'</span></div>'
+      +(moved?'<span id="stampPlacementAnchor" class="stamp-placement-anchor" aria-hidden="true" style="left:'+requested.x*scale+'px;top:'+requested.y*scale+'px"></span>':'');
+    $('stampLayer').insertAdjacentHTML('beforeend',markup);
+    $('placementAssist').className='placement-assist '+feedback.kind;
+    $('placementAssist').textContent=feedback.text;
+    previewPosition=position;
+  }
+  function queuePlacementPreview(event){
+    if(!draft&&!movingStampId)return;
+    if(event.target.closest('.onpage-stamp')){clearPlacementPreview();return;}
+    const position=positionOnPage(event);
+    // Avoid geometry searches on every raw pointer event.
+    if(previewPosition&&Math.hypot((position.x-previewPosition.x)*pageWidthPt,(position.y-previewPosition.y)*pageHeightPt)<4)return;
+    if(placementFrame!==null)cancelAnimationFrame(placementFrame);
+    placementFrame=requestAnimationFrame(()=>{
+      placementFrame=null;
+      showPlacementPreview(position);
+    });
+  }
   function renderStampWarnings(problems) {
     const el=$('annotationNotice');
     if(!el)return;
@@ -1085,6 +1181,7 @@ let pdfRendererLoad = null;
     el.classList.remove('hidden');
   }
   function renderStamps() {
+    clearPlacementPreview();
     const stampsOnPage=pageStamps(currentPage);
     $('allPinCount').textContent=state.stamps.length;
     updateMobileChrome();
@@ -1226,6 +1323,7 @@ let pdfRendererLoad = null;
   }
   function handlePageClick(event) {
     if(!isReady()||event.target.closest('.onpage-stamp'))return;
+    clearPlacementPreview();
     finishFieldHistory();
     const position = positionOnPage(event);
     if(movingStampId) {
@@ -2357,6 +2455,8 @@ let pdfRendererLoad = null;
     $('zoomOut').addEventListener('click',()=>{zoom=Math.max(.65,Math.round((zoom-.15)*100)/100);renderPage();});
     $('zoomIn').addEventListener('click',()=>{zoom=Math.min(2.2,Math.round((zoom+.15)*100)/100);renderPage();});
     $('stampLayer').addEventListener('click',handlePageClick);
+    $('stampLayer').addEventListener('pointermove',queuePlacementPreview);
+    $('stampLayer').addEventListener('pointerleave',clearPlacementPreview);
     $('undoMark').addEventListener('click',undoMarking);
     $('redoMark').addEventListener('click',redoMarking);
     $('repeatStamp').addEventListener('click',()=>{
@@ -2411,8 +2511,41 @@ let pdfRendererLoad = null;
       recordHistory('arrange page '+currentPage+' comments',before);
       toast(updated?'Moved on-page comments into available positions. Check legibility before export.':'No clear rearrangement was needed.');
     });
-    $('cancelPlacement').addEventListener('click',()=>{draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();});
-    $('commentSearch').addEventListener('input',e=>{search=e.target.value;bankShowAll=false;renderBank();});
+    $('cancelPlacement').addEventListener('click',()=>{draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();clearPlacementPreview();});
+    $('findStampFast').addEventListener('click',focusFastSearch);
+    const closeShortcutHelp=()=>{if($('shortcutDialog').open)$('shortcutDialog').close();};
+    $('openShortcutHelp').addEventListener('click',()=>{$('shortcutDialog').showModal();$('closeShortcutHelp').focus();});
+    $('closeShortcutHelp').addEventListener('click',closeShortcutHelp);
+    $('shortcutHelpDone').addEventListener('click',closeShortcutHelp);
+    $('commentSearch').addEventListener('input',e=>{
+      search=e.target.value;
+      bankShowAll=false;searchKeyboardSelectionId=null;searchKeyboardActive=true;
+      renderBank();
+    });
+    $('commentSearch').addEventListener('keydown',e=>{
+      if(['ArrowDown','ArrowUp'].includes(e.key)){
+        e.preventDefault();e.stopPropagation();
+        const choices=Array.from($('commentList').querySelectorAll('[data-comment-id]'));
+        if(!choices.length)return;
+        const current=choices.findIndex(button=>button.dataset.commentId===searchKeyboardSelectionId);
+        const offset=e.key==='ArrowDown'?1:-1;
+        // When arriving from the search box start at the first result.
+        const target=current===-1?0:clampResultIndex(current+offset,choices.length);
+        highlightSearchResult(choices[target].dataset.commentId);
+      }else if(e.key==='Enter'){
+        e.preventDefault();e.stopPropagation();
+        const choices=Array.from($('commentList').querySelectorAll('[data-comment-id]'));
+        const first=choices.find(button=>button.dataset.commentId===searchKeyboardSelectionId)||choices[0];
+        if(first)prepareComment(first.dataset.commentId);
+      }else if(e.key==='Escape'){
+        e.preventDefault();e.stopPropagation();
+        if(search){
+          search='';$('commentSearch').value='';
+          searchKeyboardSelectionId=null;searchKeyboardActive=false;renderBank();
+        }else if(mobileDrawer){closeMobileDrawer({restoreFocus:true});}
+        else {$('commentSearch').blur();$('pdfScroll').focus?.();}
+      }
+    });
     document.querySelectorAll('[data-tone]').forEach(button=>button.addEventListener('click',()=>{tone=button.dataset.tone;bankShowAll=false;renderTone();renderBank();}));
     $('openLibrary').addEventListener('click',()=>openLibrary());
     $('closeLibrary').addEventListener('click',()=>$('libraryDialog').close());
@@ -2517,7 +2650,25 @@ let pdfRendererLoad = null;
       }
     });
     document.addEventListener('keydown',e=>{
-      if(e.key==='Tab'&&mobileWorkspace()&&mobileDrawer&&!document.querySelector('dialog[open]')){
+      const modalOpen=Boolean(document.querySelector('dialog[open]'));
+      const isEditable=e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||
+        e.target instanceof HTMLSelectElement||e.target?.isContentEditable;
+      const modifier=e.ctrlKey||e.metaKey;
+      if(!modalOpen&&modifier&&!e.altKey&&e.key.toLowerCase()==='k'){
+        e.preventDefault();focusFastSearch();return;
+      }
+      if(!modalOpen&&!modifier&&!isEditable&&!e.altKey){
+        if(e.key==='/'){e.preventDefault();focusFastSearch();return;}
+        if(e.key==='?'){e.preventDefault();$('shortcutDialog').showModal();$('closeShortcutHelp').focus();return;}
+        if(e.key==='['){e.preventDefault();navigate(currentPage-1);return;}
+        if(e.key===']'){e.preventDefault();navigate(currentPage+1);return;}
+        if(e.key.toLowerCase()==='r'&&!e.repeat){
+          e.preventDefault();repeatPlacement=!repeatPlacement;renderQuickPicker();
+          toast(repeatPlacement?'Repeat stamping on.':'Repeat stamping off.');
+          return;
+        }
+      }
+      if(e.key==='Tab'&&mobileWorkspace()&&mobileDrawer&&!modalOpen){
         const pane=$(mobileDrawer==='document'?'documentPane':'bankPane');
         const controls=Array.from(pane.querySelectorAll('button,a[href],input:not([type="hidden"]),select,textarea,summary'))
           .filter(node=>!node.disabled&&!node.inert&&!node.closest('[inert]')&&node.getClientRects().length>0);
@@ -2529,10 +2680,7 @@ let pdfRendererLoad = null;
           e.preventDefault();first.focus();return;
         }
       }
-      const inField=e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||
-        e.target instanceof HTMLSelectElement||e.target?.isContentEditable;
-      const modifier=e.ctrlKey||e.metaKey;
-      const modalOpen=Boolean(document.querySelector('dialog[open]'));
+      const inField=isEditable;
       if(modifier&&!e.altKey&&!inField&&!modalOpen){
         const key=e.key.toLowerCase();
         if(key==='z'){
@@ -2543,7 +2691,7 @@ let pdfRendererLoad = null;
       if(e.key==='Escape'&&!modalOpen){
         if(mobileDrawer){closeMobileDrawer({restoreFocus:true});return;}
         if(focusedPdf){focusedPdf=false;updateWorkspaceLayout();return;}
-        draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();
+        draft=null;movingStampId=null;renderEditor();renderBank();setInstruction();clearPlacementPreview();
       }
       if(inField||modifier||modalOpen)return;
       if(e.key==='ArrowRight')navigate(currentPage+1);
