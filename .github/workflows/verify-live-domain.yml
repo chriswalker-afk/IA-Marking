@@ -1,0 +1,33 @@
+name: Verify live IA Marking custom domain
+on:
+  pull_request:
+    paths:
+      - .github/workflows/verify-live-domain.yml
+      - scripts/verify-live-domain.mjs
+      - tests/live_domain_browser.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-site:
+    name: Live assets, synthetic PDF workflow and browser security
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify HTTPS, PDF assets, fonts and repository parity
+        run: node scripts/verify-live-domain.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Chromium and synthetic PDF test dependencies
+        run: |
+          python -m pip install --disable-pip-version-check playwright pymupdf
+          python -m playwright install --with-deps chromium
+      - name: Run local-only synthetic PDF upload, stamp, backup and export
+        run: python tests/live_domain_browser.py
