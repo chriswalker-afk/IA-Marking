@@ -1,5 +1,19 @@
 # IA Marking Desk - Mathematics
 
+## Custom domain: marking.mrwalkermaths.com
+
+**New intended address:** https://marking.mrwalkermaths.com/
+
+**Original address:** https://chriswalker-afk.github.io/IA-Marking/index.html
+
+Cloudflare has a DNS-only CNAME for `marking.mrwalkermaths.com` pointing to `chriswalker-afk.github.io`. This repo deploys its **`dist/` artifact using GitHub Actions**, with local PDF.js, PDF export libraries, comment banks, and font files. All site asset URLs are relative and supported from both GitHub's original project path and the custom-domain root.
+
+**One-time GitHub setup:** In [Settings → Pages](https://github.com/chriswalker-afk/IA-Marking/settings/pages), leave the existing **GitHub Actions** source selected, enter `marking.mrwalkermaths.com` under **Custom domain** and click Save. When GitHub provisions its certificate, enable **Enforce HTTPS**. A source `CNAME` file does **not** configure the custom domain for a GitHub Actions Pages deployment.
+
+**Before switching browsers or hostnames:** The marking workspace is local-first. Each hostname has separate browser storage, so existing teacher projects, uploaded PDFs, annotations, modified banks, and marking history will not simply appear at the new domain. Use **Back up IA** to export each important project and **Import backup** to restore it under the new address. Keep the old Pages address accessible while confirming the migration. Nothing is uploaded to a server during PDF annotation.
+
+
+
 **Teacher-only, local-first review workspace for IB Mathematics explorations.** Supports both final assessment and constructive first-draft feedback. It is an independent teacher aid, not an official IB product or an automated marking service.
 
 ## Review workflows
