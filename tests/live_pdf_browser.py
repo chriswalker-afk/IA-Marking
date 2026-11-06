@@ -248,7 +248,7 @@ with tempfile.TemporaryDirectory() as folder:
         font_slider=page.locator('#selectedStampFont')
         font_slider.focus()
         font_slider.press('Home')
-        for _ in range(12):
+        for _ in range(16):
             font_slider.press('ArrowRight')
         expect(font_slider).to_have_value('13')
         for control, colour in [
@@ -973,6 +973,79 @@ with tempfile.TemporaryDirectory() as folder:
         assert feedback_errors==[],f'First draft feedback browser errors: {feedback_errors}'
         feedback_context.close()
 
+        # New linked-annotation workflow: low-height comments, detached bubbles,
+        # draggable evidence anchors, portable backup and exact PDF output.
+        linked_context=browser.new_context(accept_downloads=True,viewport={'width':1450,'height':930})
+        linked=linked_context.new_page()
+        linked_errors=[]
+        linked.on('pageerror',lambda e: linked_errors.append(str(e)))
+        linked.goto(base_url+'/index.html')
+        linked.locator('#pdfInput').set_input_files(str(sample))
+        expect(linked.locator('#pageShell')).to_be_visible(timeout=30000)
+        expect(linked.locator('#documentName')).to_have_text('example-ia.pdf',timeout=30000)
+        expect(linked.locator('#pageNumber')).to_have_value('1',timeout=20000)
+        linked.locator('#commentList [data-comment-id]').first.click()
+        linked.locator('#draftTextEdit').fill('Check the working here.')
+        linked.locator('#stampLayer').click(position={'x':180,'y':230})
+        expect(linked.locator('.onpage-stamp')).to_have_count(1)
+        linked.locator('#selectedStampAppearance > summary').click()
+        linked.locator('#selectedStampMode').select_option('slim')
+        expect(linked.locator('.slim-note')).to_have_count(1)
+        expect(linked.locator('.annotation-marker')).to_have_count(1)
+        slim_bounds=linked.locator('.slim-note').bounding_box()
+        assert slim_bounds['height']<35, f'Between-line comment was not slim: {slim_bounds}'
+        linked.locator('#moveMarker').click()
+        linked.locator('#stampLayer').click(position={'x':90,'y':170})
+        first_marker=linked.locator('.annotation-marker').bounding_box()
+        assert first_marker
+        linked.locator('.annotation-marker').hover()
+        linked.mouse.down()
+        linked.mouse.move(first_marker['x']+first_marker['width']/2+24,
+                          first_marker['y']+first_marker['height']/2+18,steps=4)
+        linked.mouse.up()
+        after_marker=linked.locator('.annotation-marker').bounding_box()
+        assert after_marker and after_marker['x']>first_marker['x']+12
+        linked.locator('#highlightStamp').click()
+        layer=linked.locator('#stampLayer').bounding_box()
+        linked.mouse.move(layer['x']+100,layer['y']+85)
+        linked.mouse.down()
+        linked.mouse.move(layer['x']+270,layer['y']+102,steps=5)
+        linked.mouse.up()
+        expect(linked.locator('.annotation-links rect')).to_have_count(1)
+        with linked.expect_download(timeout=20000) as highlighted_backup:
+            linked.locator('#projectSave').click()
+        highlighted=json.loads(Path(highlighted_backup.value.path()).read_text())
+        assert highlighted['stamps'][0]['noteMode']=='slim'
+        assert highlighted['stamps'][0]['markerDetached'] is True
+        assert highlighted['stamps'][0]['textAnchor']['kind']=='highlight'
+        assert highlighted['stamps'][0]['markerX'] is not None
+        linked.locator('#underlineStamp').click()
+        linked.mouse.move(layer['x']+90,layer['y']+140)
+        linked.mouse.down()
+        linked.mouse.move(layer['x']+260,layer['y']+140,steps=4)
+        linked.mouse.up()
+        expect(linked.locator('.annotation-links rect')).to_have_count(0)
+        with linked.expect_download(timeout=20000) as underlined_backup:
+            linked.locator('#projectSave').click()
+        underlined=json.loads(Path(underlined_backup.value.path()).read_text())
+        assert underlined['stamps'][0]['textAnchor']['kind']=='underline'
+        linked.locator('#openReview').click()
+        linked.locator('#buildReviewPreview').click()
+        linked.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=45000)
+        expect(linked.locator('#reviewPreviewPage')).to_contain_text('Page 1 / ',timeout=30000)
+        total_pages=int(linked.locator('#reviewPreviewPage').inner_text().split('/')[-1].strip())
+        for number in range(2,total_pages+1):
+            linked.locator('#reviewPreviewNext').click()
+            expect(linked.locator('#reviewPreviewPage')).to_have_text(f'Page {number} / {total_pages}')
+        linked.locator('#reviewConfirmed').check()
+        with linked.expect_download(timeout=35000) as linked_download:
+            linked.locator('#exportAnnotated').click()
+        linked_pdf=fitz.open(stream=Path(linked_download.value.path()).read_bytes(),filetype='pdf')
+        assert 'Check the working here.' in linked_pdf[0].get_text()
+        assert linked_pdf[0].get_drawings(), 'Expected vector leaders and underline in exported PDF'
+        linked_pdf.close()
+        assert not linked_errors, f'Linked annotation browser errors: {linked_errors}'
+        linked_context.close()
         browser.close()
 server.shutdown()
 print('Real PDF marking/export, Pass 9 local cohort dashboard, portable ZIP, migration, privacy cleanup and recovery: PASS')

@@ -5,6 +5,7 @@ import {inspectModerationPages} from './moderation-preflight.js';
 import {studentChecklistItems,studentFeedbackStrengths,studentChecklistText,feedbackPriority} from './feedback-engine.js';
 import {rankStampComments,clampResultIndex,placementFeedback} from './fast-stamp.js';
 import {selectableTextRectangles,textCoverage,compactWidth,wrapStampText} from './stamp-geometry.js';
+import {MIN_NOTE_WIDTH,normalNoteMode,normalTextAnchor,textAnchorFromDrag,annotationGeometry} from './annotation-geometry.js';
 import {appendStudentChecklistPages,makeStudentChecklistModel} from './student-checklist-pdf.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
@@ -34,15 +35,16 @@ let pdfRendererLoad = null;
   const activeBank=()=>isFeedback()?FEEDBACK_BANK:BANK;
   const STAMP_DEFAULTS = Object.freeze({
     size:18,strengthColor:'#477b97',limitationColor:'#b7803c',
-    fontSize:9.5,textColor:'#263d4f',fillColor:'#fbfdff',borderColor:'#477b97',noteWidth:230,
+    fontSize:9.5,textColor:'#263d4f',fillColor:'#fbfdff',borderColor:'#477b97',noteWidth:230,noteMode:'standard',
   });
   const NOTE_PAD=4;
-  const NOTE_INSET=9;
-  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(150,Math.min(450,Math.round(Number(value)/5)*5)) : 230;
+  const NOTE_INSET=2;
+  let anchorSelection=null,movingMarkerId=null;
+  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(MIN_NOTE_WIDTH,Math.min(550,Math.round(Number(value)/5)*5)) : 230;
   const normalNoteHeight = value => value===null || value===undefined || value==='' ? null :
-    Number.isFinite(Number(value)) ? Math.max(40,Math.min(750,Math.round(Number(value)))) : null;
+    Number.isFinite(Number(value)) ? Math.max(12,Math.min(750,Math.round(Number(value)))) : null;
   const normalFontSize = value => value!==null && value!==undefined && value!=='' && Number.isFinite(Number(value)) ?
-    Math.max(7,Math.min(18,Math.round(Number(value)*2)/2)) : STAMP_DEFAULTS.fontSize;
+    Math.max(5,Math.min(18,Math.round(Number(value)*2)/2)) : STAMP_DEFAULTS.fontSize;
   const noteLineHeight = size => Math.round(normalFontSize(size)*1.23*10)/10;
   const normalSize = value => Number.isFinite(Number(value)) ? Math.max(14,Math.min(42,Math.round(Number(value)))) : STAMP_DEFAULTS.size;
   const normalColor = (value,fallback) => typeof value==='string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
@@ -55,7 +57,7 @@ let pdfRendererLoad = null;
       textColor:normalColor(value?.textColor,STAMP_DEFAULTS.textColor),
       fillColor:normalColor(value?.fillColor,STAMP_DEFAULTS.fillColor),
       borderColor:normalColor(value?.borderColor,STAMP_DEFAULTS.borderColor),
-      noteWidth:normalNoteWidth(value?.noteWidth),
+      noteWidth:normalNoteWidth(value?.noteWidth),noteMode:normalNoteMode(value?.noteMode),
     };
   }
   function stampColor(stamp) {
@@ -584,6 +586,7 @@ let pdfRendererLoad = null;
     $('defaultNoteBorderColour').value=state.stampStyle.borderColor;
     $('defaultNoteWidth').value=String(state.stampStyle.noteWidth);
     $('defaultNoteWidthValue').textContent=`${state.stampStyle.noteWidth} pt`;
+    $('defaultNoteMode').value=state.stampStyle.noteMode;
     for(const [id,tone,letter] of [['previewStrength','strength','A'],['previewLimitation','limitation','D']]) {
       const el=$(id),stamp={tone};const color=stampColor(stamp);
       el.style.cssText=`width:${Math.min(size+4,42)}px;height:${Math.min(size+4,42)}px;background:${color};color:${stampTextColor(stamp)}`;
@@ -879,7 +882,7 @@ let pdfRendererLoad = null;
     if(!item) return;
     selectedStampId = null; movingStampId = null;
     draft = {...item,priority:'normal',
-      size:state.stampStyle.size,noteWidth:state.stampStyle.noteWidth,noteHeight:null,
+      size:state.stampStyle.size,noteWidth:state.stampStyle.noteWidth,noteHeight:null,noteMode:state.stampStyle.noteMode,
       fontSize:state.stampStyle.fontSize,textColor:state.stampStyle.textColor,
       fillColor:state.stampStyle.fillColor,borderColor:state.stampStyle.borderColor,
       color:item.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor};
@@ -893,7 +896,7 @@ let pdfRendererLoad = null;
       id:stamp.libraryId||'repeat-'+stamp.id,
       libraryId:stamp.libraryId||'',
       criterion:stamp.criterion,tone:stamp.tone,topic:stamp.topic,text:stamp.text,priority:feedbackPriority(stamp.priority),
-      size:stamp.size,color:stamp.color,noteWidth:stamp.noteWidth,noteHeight:stamp.noteHeight,
+      size:stamp.size,color:stamp.color,noteWidth:stamp.noteWidth,noteHeight:stamp.noteHeight,noteMode:stamp.noteMode,
       fontSize:stamp.fontSize,textColor:stamp.textColor,
       fillColor:stamp.fillColor,borderColor:stamp.borderColor,
     };
@@ -914,18 +917,19 @@ let pdfRendererLoad = null;
       <label for="${prefix}Size">Circle size <output id="${prefix}SizeValue">${size} pt</output><input id="${prefix}Size" type="range" min="14" max="42" step="2" value="${size}"></label>
       <label for="${prefix}Color">Circle colour <input id="${prefix}Color" type="color" value="${color}"></label>
       <span class="comment-style-heading">Full comment formatting</span>
-      <label class="note-dimension-field" for="${prefix}Font">Font size <output id="${prefix}FontValue">${fontSize} pt</output><input id="${prefix}Font" type="range" min="7" max="18" step=".5" value="${fontSize}" aria-label="Font size for the full teacher comment"></label>
+      <label class="note-dimension-field" for="${prefix}Font">Font size <output id="${prefix}FontValue">${fontSize} pt</output><input id="${prefix}Font" type="range" min="5" max="18" step=".5" value="${fontSize}" aria-label="Font size for the full teacher comment"></label>
+      <label for="${prefix}Mode">Box layout<select id="${prefix}Mode"><option value="standard" ${normalNoteMode(item.noteMode)==="standard"?"selected":""}>Standard · margin note</option><option value="slim" ${normalNoteMode(item.noteMode)==="slim"?"selected":""}>Slim · between lines</option></select></label>
       <div class="note-colours">
         <label for="${prefix}TextColor">Text colour <input id="${prefix}TextColor" type="color" value="${noteTextColor(item)}"></label>
         <label for="${prefix}FillColor">Box background <input id="${prefix}FillColor" type="color" value="${noteFillColor(item)}"></label>
         <label for="${prefix}BorderColor">Box border <input id="${prefix}BorderColor" type="color" value="${noteBorderColor(item)}"></label>
       </div>
       <span class="comment-style-heading">Text box dimensions</span>
-      <small class="note-format-help">Compact layout: the circle stays above the comment, so the wording can use the full box width. Full text remains visible in the exported PDF.</small>
-      <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="150" max="450" step="5" value="${width}"></label>
-      <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="40" max="750" step="5" value="${heightValue}"></label>
+      <small class="note-format-help">Slim layout removes the heading and places the letter bubble outside the note. Both layouts print the full text.</small>
+      <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="70" max="550" step="5" value="${width}"></label>
+      <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="12" max="750" step="5" value="${heightValue}"></label>
       <button id="${prefix}HeightAuto" type="button" class="text-button note-fit-button">Fit box height to full comment</button>
-      <small class="note-format-help">Resize from the lower-right corner, or choose Auto to fit all lines. The box cannot be dragged smaller than its full comment.</small>
+      <small class="note-format-help">Resize the box or fit automatically. Text smaller than 9 pt is flagged for manual review.</small>
     </div></details>`;
   }
   function bindAppearanceEditor(item,prefix,existing) {
@@ -936,6 +940,7 @@ let pdfRendererLoad = null;
       if(height===null)$(`${prefix}Height`).value=String(Math.min(750,natural));
       if(existing){renderStamps();scheduleSave();}
     };
+    $(`${prefix}Mode`).addEventListener('change',e=>{const before=existing?historySnapshot():null;item.noteMode=normalNoteMode(e.target.value);item.noteHeight=null;if(existing){renderStamps();scheduleSave();recordHistory('change box layout',before);}renderEditor();});
     $(`${prefix}Size`).addEventListener('input',e=>{
       item.size=normalSize(e.target.value);$(`${prefix}SizeValue`).textContent=`${item.size} pt`;refresh();
     });
@@ -976,7 +981,7 @@ let pdfRendererLoad = null;
       if(existing)recordHistory('fit '+item.criterion+' comment box',before);
     });
     if(existing){
-      for(const field of ['Size','Color','Width','Font','TextColor','FillColor','BorderColor','Height']){
+      for(const field of ['Size','Color','Width','Font','TextColor','FillColor','BorderColor','Height','Mode']){
         watchHistoryField($(`${prefix}${field}`),'format '+item.criterion+' comment',true);
       }
     }
@@ -1040,7 +1045,13 @@ let pdfRendererLoad = null;
       });
     };
     if(stamp) {
-      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} ${isFeedback()?'feedback':'evidence'} stamp</strong><small>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${priorityField(stamp)}<div class="note-quick-actions"><button id="compactStamp" class="btn subtle" type="button" title="Find the smallest readable box and fit every line of text">Compact &amp; fit</button><button id="findClearSpace" class="btn subtle" type="button" title="Find a nearby position avoiding selectable PDF text where possible">Find clear space</button></div>${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
+      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} ${isFeedback()?'feedback':'evidence'} stamp</strong><small>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${priorityField(stamp)}<div class="note-quick-actions"><button id="compactStamp" class="btn subtle" type="button" title="Find the smallest readable box and fit every line of text">Compact &amp; fit</button><button id="findClearSpace" class="btn subtle" type="button" title="Find a nearby position avoiding selectable PDF text where possible">Find clear space</button></div>${appearanceEditor(stamp,'selectedStamp')}<div class="annotation-anchor-controls">
+      <button id="detachMarker" type="button" class="btn subtle">${stamp.markerDetached||normalNoteMode(stamp.noteMode)==='slim'?'Reattach bubble':'Detach bubble'}</button>
+      <button id="moveMarker" type="button" class="btn subtle">Position bubble</button>
+      <button id="highlightStamp" type="button" class="btn subtle">Highlight text</button>
+      <button id="underlineStamp" type="button" class="btn subtle">Underline text</button>
+      ${stamp.textAnchor?'<button id="clearTextAnchor" type="button" class="btn subtle">Remove text link</button>':''}
+    </div><small class="note-format-help">Position bubble: click on the PDF. Highlight / underline: drag across the evidence.</small><div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
       $('stampTextEdit').addEventListener('input',e=>{
         stamp.text=e.target.value;
         const required=noteLayout({...stamp,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
@@ -1055,6 +1066,12 @@ let pdfRendererLoad = null;
       restoreAppearance();
       bindAppearanceEditor(stamp,'selectedStamp',true);
       bindPriority(stamp,true);
+      $('detachMarker').addEventListener('click',()=>{const before=historySnapshot();stamp.markerDetached=!stamp.markerDetached;stamp.markerX=null;stamp.markerY=null;renderStamps();renderEditor();scheduleSave();recordHistory('toggle detached marker',before);});
+      $('moveMarker').addEventListener('click',()=>{movingMarkerId=stamp.id;draft=null;movingStampId=null;anchorSelection=null;setInstruction();toast('Click on the PDF to position the letter bubble.');});
+      for(const [id,kind] of [['highlightStamp','highlight'],['underlineStamp','underline']]){
+        $(id).addEventListener('click',()=>{anchorSelection={id:stamp.id,kind,start:null};movingMarkerId=null;draft=null;movingStampId=null;setInstruction();toast('Drag across the PDF text to mark the evidence.');});
+      }
+      $('clearTextAnchor')?.addEventListener('click',()=>{const before=historySnapshot();stamp.textAnchor=null;renderStamps();renderEditor();scheduleSave();recordHistory('remove text anchor',before);});
       $('compactStamp').addEventListener('click',()=>makeStampCompact(stamp,{existing:true}));
       $('findClearSpace').addEventListener('click',()=>findStampClearSpace(stamp));
       $('moveStamp').addEventListener('click',()=>{movingStampId=stamp.id;draft=null;selectedStampId=null;renderEditor();setInstruction(); if (currentPage!==stamp.page) navigate(stamp.page);});
@@ -1129,36 +1146,30 @@ let pdfRendererLoad = null;
     return unicodeMetricFonts?.regular || {widthOfTextAtSize:(txt,size)=>Array.from(String(txt)).length*size*.54};
   }
   function noteLayout(stamp,pageWidth,pageHeight,font=pdfMeasureFont()) {
-    const width=Math.min(normalNoteWidth(stamp.noteWidth ?? state.stampStyle.noteWidth),Math.max(100,pageWidth-2*NOTE_PAD));
-    const circle=normalSize(stamp.size);
-    const circleX=6,circleY=5;
-    const textX=circleX+circle+8;
-    const headerTop=6;
-    // Text wraps beside the badge only while the circle physically occupies
-    // that row. Every subsequent line reclaims the entire left column. The
-    // same per-row x coordinates are used on screen, in preview and export.
+    const width=Math.min(normalNoteWidth(stamp.noteWidth ?? state.stampStyle.noteWidth),Math.max(MIN_NOTE_WIDTH,pageWidth-2*NOTE_PAD));
+    const slim=normalNoteMode(stamp.noteMode)==='slim';
+    const circle=normalSize(stamp.size),circleX=slim?0:3,circleY=slim?0:2;
     const fontSize=noteFontSize(stamp),lineHeight=noteLineHeight(fontSize);
-    const headerFontSize=Math.max(8,Math.min(12,Math.round(fontSize*.85*10)/10));
-    const bodyTop=headerTop+Math.max(11,headerFontSize*1.2)+5;
+    const headerFontSize=Math.max(5,Math.min(12,Math.round(fontSize*.85*10)/10));
+    const headerTop=slim?0:3,textX=slim?NOTE_INSET:circleX+circle+5;
+    const bodyTop=slim?1:headerTop+Math.max(9,headerFontSize*1.2)+3;
     const flowed=wrapStampText(stamp.text,{
       lineArea:index=>{
         const top=bodyTop+index*lineHeight;
-        const x=top<circleY+circle+4?textX:NOTE_INSET;
-        return {x,width:Math.max(30,width-x-NOTE_INSET)};
+        const x=slim||stamp.markerDetached?NOTE_INSET:top<circleY+circle+2?textX:NOTE_INSET;
+        return {x,width:Math.max(20,width-x-NOTE_INSET)};
       },
       measure:value=>font.widthOfTextAtSize(value,fontSize),
     });
-    const rows=flowed.map(entry=>entry.text);
-    const rowXs=flowed.map(entry=>entry.x);
-    const bodyX=0;
-    const minHeight=Math.ceil(Math.max(circleY+circle+7,bodyTop+rows.length*lineHeight+7));
-    const height=normalNoteHeight(stamp.noteHeight) ?? minHeight;
-    const fits=height<=pageHeight-2*NOTE_PAD;
-    const contentFits=height>=minHeight;
+    const rows=flowed.map(entry=>entry.text),rowXs=flowed.map(entry=>entry.x);
+    const minHeight=Math.ceil(slim?bodyTop+rows.length*lineHeight+1:
+      Math.max(circleY+circle+3,bodyTop+rows.length*lineHeight+2));
+    const height=Math.max(minHeight,normalNoteHeight(stamp.noteHeight)??minHeight);
+    const fits=height<=pageHeight-2*NOTE_PAD,contentFits=height>=minHeight;
     const x=Math.min(Math.max(NOTE_PAD,Number(stamp.x||0)*pageWidth),Math.max(NOTE_PAD,pageWidth-width-NOTE_PAD));
     const y=Math.min(Math.max(NOTE_PAD,Number(stamp.y||0)*pageHeight),Math.max(NOTE_PAD,pageHeight-height-NOTE_PAD));
-    return {x,y,width,height,circle,circleX,circleY,textX,headerTop,bodyX,bodyTop,
-      rows,rowXs,fontSize,headerFontSize,lineHeight,minHeight,contentFits,fits,
+    return {x,y,width,height,circle,circleX,circleY,textX,headerTop,bodyX:0,bodyTop,
+      slim,rows,rowXs,fontSize,headerFontSize,lineHeight,minHeight,contentFits,fits,
       textColor:noteTextColor(stamp),fillColor:noteFillColor(stamp),borderColor:noteBorderColor(stamp),pageWidth,pageHeight};
   }
   function noteOverlap(a,b) {
@@ -1269,7 +1280,7 @@ let pdfRendererLoad = null;
     return {candidate,requested,resolved,feedback,overlaps,covered};
   }
   function showPlacementPreview(position){
-    if(!draft&&!movingStampId){clearPlacementPreview();return;}
+    if((!draft&&!movingStampId)||anchorSelection||movingMarkerId){clearPlacementPreview();return;}
     const plan=placementPlanAt(position);
     if(!plan){clearPlacementPreview();return;}
     const {candidate,resolved,feedback,requested}=plan;
@@ -1282,8 +1293,8 @@ let pdfRendererLoad = null;
     $('stampPlacementAnchor')?.remove();
     const markup='<div id="stampPlacementPreview" aria-hidden="true" class="stamp-placement-preview '+(feedback.kind==='warning'?'is-warning':moved?'is-adjusted':'')+'"'
       +' style="left:'+resolved.x*scale+'px;top:'+resolved.y*scale+'px;width:'+resolved.width*scale+'px;height:'+resolved.height*scale+'px;background:'+noteFillColor(candidate)+'e8;color:'+textColor+';border-color:'+noteBorderColor(candidate)+'">'
-      +'<span class="preview-circle" style="left:'+resolved.circleX*scale+'px;top:'+resolved.circleY*scale+'px;width:'+resolved.circle*scale+'px;height:'+resolved.circle*scale+'px;background:'+color+';color:'+stampTextColor(candidate)+';font-size:'+Math.max(7,resolved.circle*.56*scale)+'px">'+escapeHtml(candidate.criterion)+'</span>'
-      +'<span class="preview-header" style="left:'+resolved.textX*scale+'px;top:'+resolved.headerTop*scale+'px;font-size:'+resolved.headerFontSize*scale+'px">'+escapeHtml(candidate.criterion)+' · '+tone+'</span>'
+      +(!resolved.slim?'<span class="preview-circle" style="left:'+resolved.circleX*scale+'px;top:'+resolved.circleY*scale+'px;width:'+resolved.circle*scale+'px;height:'+resolved.circle*scale+'px;background:'+color+';color:'+stampTextColor(candidate)+';font-size:'+Math.max(7,resolved.circle*.56*scale)+'px">'+escapeHtml(candidate.criterion)+'</span>':'')
+      +(!resolved.slim?'<span class="preview-header" style="left:'+resolved.textX*scale+'px;top:'+resolved.headerTop*scale+'px;font-size:'+resolved.headerFontSize*scale+'px">'+escapeHtml(candidate.criterion)+' · '+tone+'</span>':'')
       +'<span class="preview-body" style="left:'+resolved.bodyX*scale+'px;top:'+resolved.bodyTop*scale+'px;font-size:'+resolved.fontSize*scale+'px;line-height:'+resolved.lineHeight*scale+'px">'+rows+'</span></div>'
       +(moved?'<span id="stampPlacementAnchor" class="stamp-placement-anchor" aria-hidden="true" style="left:'+requested.x*scale+'px;top:'+requested.y*scale+'px"></span>':'');
     $('stampLayer').insertAdjacentHTML('beforeend',markup);
@@ -1292,8 +1303,8 @@ let pdfRendererLoad = null;
     previewPosition=position;
   }
   function queuePlacementPreview(event){
-    if(!draft&&!movingStampId)return;
-    if(event.target.closest('.onpage-stamp')){clearPlacementPreview();return;}
+    if((!draft&&!movingStampId)||anchorSelection||movingMarkerId)return;
+    if(event.target.closest('.onpage-stamp,.annotation-marker')){clearPlacementPreview();return;}
     const position=positionOnPage(event);
     // Avoid geometry searches on every raw pointer event.
     if(previewPosition&&Math.hypot((position.x-previewPosition.x)*pageWidthPt,(position.y-previewPosition.y)*pageHeightPt)<4)return;
@@ -1331,19 +1342,40 @@ let pdfRendererLoad = null;
     const overlapping=source.length
       ?preview.items.filter(({layout})=>textCoverage(layout,source)>20).length:0;
     renderStampWarnings(preview.problems,overlapping);
-    $('stampLayer').innerHTML=preview.items.map(({stamp,layout})=>{
+    const annotationArt=preview.items.map(({stamp,layout})=>{
+      const g=annotationGeometry(stamp,layout,pageWidth,pageHeight),scale=viewScale||1,tone=stampColor(stamp);
+      let out='';
+      if(g.anchor){
+        const a=g.anchor;
+        if(a.kind==='highlight')out+='<rect x="'+a.x*scale+'" y="'+a.y*scale+'" width="'+a.width*scale+'" height="'+a.height*scale+'" fill="'+tone+'" fill-opacity=".19" />';
+        else out+='<line x1="'+a.x*scale+'" y1="'+(a.y+a.height)*scale+'" x2="'+(a.x+a.width)*scale+'" y2="'+(a.y+a.height)*scale+'" stroke="'+tone+'" stroke-width="'+Math.max(.65,.9*scale)+'" />';
+      }
+      for(const line of [g.anchorLeader,g.leader])if(line)out+='<line x1="'+line.x1*scale+'" y1="'+line.y1*scale+'" x2="'+line.x2*scale+'" y2="'+line.y2*scale+'" stroke="'+tone+'" stroke-width="'+Math.max(.5,.65*scale)+'" stroke-opacity=".8" />';
+      return out;
+    }).join('');
+    $('stampLayer').innerHTML='<svg class="annotation-links" aria-hidden="true" width="100%" height="100%" viewBox="0 0 '+pageWidth*(viewScale||1)+' '+pageHeight*(viewScale||1)+'">'+annotationArt+'</svg>'+preview.items.map(({stamp,layout})=>{
       const scale=viewScale||1;
       const label=stampLabel(stamp),color=stampColor(stamp);
+      const geo=annotationGeometry(stamp,layout,pageWidth,pageHeight);
       const lines=layout.rows.map((line,i)=>`<span class="onpage-note-line" style="margin-left:${layout.rowXs[i]*scale}px">${escapeHtml(line)}</span>`).join('');
       const mismatch=preview.problems.some(issue=>issue.includes(label));
-      return `<div role="button" tabindex="0" class="onpage-stamp ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};background:${layout.fillColor};border-color:${layout.borderColor};color:${layout.textColor};border-width:${Math.max(.7,1.25*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag comment to move; drag bottom-right corner to resize">
-        <span class="onpage-border-accent" style="background:${layout.borderColor};width:${Math.max(2,3*scale)}px"></span>
-        <span class="onpage-circle" style="left:${layout.circleX*scale}px;top:${layout.circleY*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
-        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${layout.headerTop*scale}px;font-size:${layout.headerFontSize*scale}px;line-height:${Math.max(12,layout.headerFontSize*1.12)*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span>
+      const bubble=geo.detached&&geo.marker?'<button type="button" class="annotation-marker" data-marker-pin="'+escapeHtml(stamp.id)+'" aria-label="Move criterion '+label+' anchor" title="Drag to move letter bubble" style="left:'+geo.marker.x*scale+'px;top:'+geo.marker.y*scale+'px;width:'+geo.marker.size*scale+'px;height:'+geo.marker.size*scale+'px;font-size:'+Math.max(7,geo.marker.size*.53*scale)+'px;background:'+color+';color:'+stampTextColor(stamp)+'">'+escapeHtml(stamp.criterion)+'</button>':'';
+      return bubble+`<div role="button" tabindex="0" class="onpage-stamp ${layout.slim?'slim-note':''} ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};background:${layout.fillColor};border-color:${layout.borderColor};color:${layout.textColor};border-width:${Math.max(.7,1.25*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag comment to move; drag bottom-right corner to resize">
+        <span class="onpage-border-accent" style="display:${layout.slim?'none':'block'};background:${layout.borderColor};width:${Math.max(2,3*scale)}px"></span>
+        <span class="onpage-circle" style="display:${geo.detached?'none':'block'};left:${layout.circleX*scale}px;top:${layout.circleY*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
+        <span class="onpage-note-header" style="display:${layout.slim?'none':'block'};left:${layout.textX*scale}px;top:${layout.headerTop*scale}px;font-size:${layout.headerFontSize*scale}px;line-height:${Math.max(12,layout.headerFontSize*1.12)*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span>
         <span class="onpage-note-body" style="left:${layout.bodyX*scale}px;top:${layout.bodyTop*scale}px;font-size:${layout.fontSize*scale}px;line-height:${layout.lineHeight*scale}px;color:${layout.textColor}">${lines}</span>
         <button type="button" class="note-resize-handle" data-resize-pin="${escapeHtml(stamp.id)}" aria-label="Resize width and height of ${escapeHtml(label)} comment" title="Drag to resize comment width and height"></button>
       </div>`;
     }).join('');
+    $('stampLayer').querySelectorAll('[data-marker-pin]').forEach(marker=>{
+      const stamp=state.stamps.find(item=>item.id===marker.dataset.markerPin);if(!stamp)return;
+      let origin=null,moved=false;
+      marker.addEventListener('pointerdown',e=>{if(e.button!==0)return;const g=annotationGeometry(stamp,noteLayout(stamp,pageWidth,pageHeight),pageWidth,pageHeight);origin={x:e.clientX,y:e.clientY,markerX:g.marker.x,markerY:g.marker.y,before:historySnapshot()};moved=false;marker.setPointerCapture(e.pointerId);e.stopPropagation();});
+      marker.addEventListener('pointermove',e=>{if(!origin||!marker.hasPointerCapture(e.pointerId))return;const x=origin.markerX+(e.clientX-origin.x)/(viewScale||1),y=origin.markerY+(e.clientY-origin.y)/(viewScale||1);moved=moved||Math.hypot(e.clientX-origin.x,e.clientY-origin.y)>3;marker.style.left=Math.max(1,Math.min(pageWidth-normalSize(stamp.size)-1,x))*(viewScale||1)+'px';marker.style.top=Math.max(1,Math.min(pageHeight-normalSize(stamp.size)-1,y))*(viewScale||1)+'px';e.stopPropagation();});
+      marker.addEventListener('pointerup',e=>{if(!origin)return;const x=origin.markerX+(e.clientX-origin.x)/(viewScale||1),y=origin.markerY+(e.clientY-origin.y)/(viewScale||1);stamp.markerDetached=true;stamp.markerX=Math.max(0,Math.min(1,x/pageWidth));stamp.markerY=Math.max(0,Math.min(1,y/pageHeight));recordHistory('move criterion bubble',origin.before);origin=null;selectedStampId=stamp.id;renderStamps();renderEditor();scheduleSave();e.stopPropagation();});
+      marker.addEventListener('click',e=>e.stopPropagation());
+    });
     $('stampLayer').querySelectorAll('[data-pin-id]').forEach(btn=>{
       const select=()=>{
         const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
@@ -1390,10 +1422,10 @@ let pdfRendererLoad = null;
       const resizeTo=(event)=>{
         const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return null;
         const scale=viewScale||1;
-        const maxWidth=Math.min(450,pageWidth-NOTE_PAD-anchorX);
+        const maxWidth=Math.min(550,pageWidth-NOTE_PAD-anchorX);
         const maxHeight=Math.min(750,pageHeight-NOTE_PAD-anchorY);
-        const desiredWidth=Math.max(150,Math.min(maxWidth,originalWidth+(event.clientX-fromX)/scale));
-        const requestedHeight=Math.max(40,Math.min(maxHeight,originalHeight+(event.clientY-fromY)/scale));
+        const desiredWidth=Math.max(MIN_NOTE_WIDTH,Math.min(maxWidth,originalWidth+(event.clientX-fromX)/scale));
+        const requestedHeight=Math.max(12,Math.min(maxHeight,originalHeight+(event.clientY-fromY)/scale));
         const natural=noteLayout({...stamp,noteWidth:desiredWidth,noteHeight:null},pageWidth,pageHeight).minHeight;
         // A direct resize cannot silently cut off text: keep at least enough
         // height for the complete teacher comment at the chosen width.
@@ -1467,16 +1499,19 @@ let pdfRendererLoad = null;
     };
   }
   function handlePageClick(event) {
-    if(!isReady()||event.target.closest('.onpage-stamp'))return;
+    if(!isReady()||event.target.closest('.onpage-stamp')||event.target.closest('.annotation-marker'))return;
     clearPlacementPreview();
     finishFieldHistory();
     const position = positionOnPage(event);
+    if(movingMarkerId){const target=state.stamps.find(item=>item.id===movingMarkerId);movingMarkerId=null;if(target){const before=historySnapshot();target.markerDetached=true;target.markerX=position.x;target.markerY=position.y;selectedStampId=target.id;renderStamps();renderEditor();scheduleSave();recordHistory('position comment marker',before);}setInstruction();return;}
+    if(anchorSelection)return;
     if(movingStampId) {
       const stamp = state.stamps.find(s=>s.id===movingStampId);
       if(!stamp)return;
       const before=historySnapshot();
       stamp.x=position.x;stamp.y=position.y;stamp.page=currentPage;
       if(pageWidthPt&&pageHeightPt)placeNoteInFreeSpace(stamp,pageStamps(currentPage),pageWidthPt,pageHeightPt);
+      stamp.textAnchor=null;stamp.markerX=null;stamp.markerY=null;
       selectedStampId=stamp.id;movingStampId=null;renderStamps();renderEditor();setInstruction();scheduleSave();
       recordHistory('move '+stamp.criterion+' comment',before);
       toast('Stamp moved.');
@@ -1488,7 +1523,7 @@ let pdfRendererLoad = null;
     const stamp = {
       id:makeId(),page:currentPage,x:position.x,y:position.y,criterion:draft.criterion,tone:draft.tone,
       topic:draft.topic,text:draft.text.trim(),size:normalSize(draft.size),color:stampColor(draft),
-      noteWidth:normalNoteWidth(draft.noteWidth),noteHeight:normalNoteHeight(draft.noteHeight),
+      noteWidth:normalNoteWidth(draft.noteWidth),noteHeight:normalNoteHeight(draft.noteHeight),noteMode:normalNoteMode(draft.noteMode),markerDetached:false,markerX:null,markerY:null,textAnchor:null,
       fontSize:noteFontSize(draft),textColor:noteTextColor(draft),fillColor:noteFillColor(draft),
       borderColor:noteBorderColor(draft),libraryId:draft.id,createdAt:now(),priority:feedbackPriority(draft.priority),
     };
@@ -1876,6 +1911,10 @@ let pdfRendererLoad = null;
       tone:s.tone,topic:String(s.topic||'Evidence').slice(0,100),text:String(s.text||'').slice(0,1800),
       size:normalSize(s.size),color:normalColor(s.color,s.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor),
       noteWidth:normalNoteWidth(s.noteWidth ?? state.stampStyle.noteWidth),noteHeight:normalNoteHeight(s.noteHeight),
+       noteMode:normalNoteMode(s.noteMode),markerDetached:Boolean(s.markerDetached),
+       markerX:Number.isFinite(Number(s.markerX))&&s.markerX!==null?Math.max(0,Math.min(1,Number(s.markerX))):null,
+       markerY:Number.isFinite(Number(s.markerY))&&s.markerY!==null?Math.max(0,Math.min(1,Number(s.markerY))):null,
+       textAnchor:normalTextAnchor(s.textAnchor),
       fontSize:normalFontSize(s.fontSize ?? state.stampStyle.fontSize),
       textColor:normalColor(s.textColor,state.stampStyle.textColor),
       fillColor:normalColor(s.fillColor,state.stampStyle.fillColor),
@@ -2358,17 +2397,28 @@ let pdfRendererLoad = null;
         for(const {stamp,layout} of plans[i].items){
           const color=pdfColor(stamp),label=stampLabel(stamp);
           const bottom=height-layout.y-layout.height;
-          page.drawRectangle({x:layout.x,y:bottom,width:layout.width,height:layout.height,
+          const geo=annotationGeometry(stamp,layout,page.getWidth(),height);
+           const accent=pdfColor(stamp);
+           if(geo.anchor){
+             const a=geo.anchor;
+             if(a.kind==='highlight')page.drawRectangle({x:a.x,y:height-a.y-a.height,width:a.width,height:a.height,color:accent,opacity:.19});
+             else page.drawLine({start:{x:a.x,y:height-a.y-a.height},end:{x:a.x+a.width,y:height-a.y-a.height},color:accent,thickness:.9});
+           }
+           for(const leader of [geo.anchorLeader,geo.leader])if(leader){
+             page.drawLine({start:{x:leader.x1,y:height-leader.y1},end:{x:leader.x2,y:height-leader.y2},color:accent,thickness:.65,opacity:.8});
+           }
+           page.drawRectangle({x:layout.x,y:bottom,width:layout.width,height:layout.height,
             color:pdfHexColor(layout.fillColor),borderColor:pdfHexColor(layout.borderColor),borderWidth:1.25});
           page.drawRectangle({x:layout.x,y:bottom,width:3,height:layout.height,color:pdfHexColor(layout.borderColor)});
           const radius=layout.circle/2;
-          const cx=layout.x+layout.circleX+radius,cy=height-layout.y-layout.circleY-radius;
-          page.drawCircle({x:cx,y:cy,size:radius,color,borderWidth:1.1,borderColor:rgb(1,1,1)});
-          const letterSize=Math.min(layout.circle*.55,18);
-          pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
-          const fullTextColor=pdfHexColor(layout.textColor);
-          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}`,layout.x+layout.textX,height-layout.y-layout.headerTop-layout.headerFontSize*.95,layout.headerFontSize,bold,fullTextColor);
-          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.rowXs[index],height-layout.y-layout.bodyTop-layout.fontSize*.95-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
+           const cx=geo.detached&&geo.marker?geo.marker.cx:layout.x+layout.circleX+radius;
+           const cy=geo.detached&&geo.marker?height-geo.marker.cy:height-layout.y-layout.circleY-radius;
+           page.drawCircle({x:cx,y:cy,size:radius,color,borderWidth:.7,borderColor:rgb(1,1,1)});
+           const letterSize=Math.min(layout.circle*.55,18);
+           pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
+           const fullTextColor=pdfHexColor(layout.textColor);
+           if(!layout.slim)pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}`,layout.x+layout.textX,height-layout.y-layout.headerTop-layout.headerFontSize*.95,layout.headerFontSize,bold,fullTextColor);
+           layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.rowXs[index],height-layout.y-layout.bodyTop-layout.fontSize*.95-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
         }
       }
       if(isFeedback()){
@@ -2534,6 +2584,7 @@ let pdfRendererLoad = null;
     $('limitationStampColour').addEventListener('input',e=>{
       state.stampStyle.limitationColor=normalColor(e.target.value,STAMP_DEFAULTS.limitationColor);renderStampStyle();saveLibrarySettings();
     });
+    $('defaultNoteMode').addEventListener('change',e=>{state.stampStyle.noteMode=normalNoteMode(e.target.value);renderStampStyle();saveLibrarySettings();});
     $('defaultNoteFont').addEventListener('input',e=>{
       state.stampStyle.fontSize=normalFontSize(e.target.value);renderStampStyle();saveLibrarySettings();
     });
@@ -2642,6 +2693,22 @@ let pdfRendererLoad = null;
     $('pageNumber').addEventListener('change',e=>navigate(e.target.value));
     $('zoomOut').addEventListener('click',()=>{zoom=Math.max(.65,Math.round((zoom-.15)*100)/100);renderPage();});
     $('zoomIn').addEventListener('click',()=>{zoom=Math.min(2.2,Math.round((zoom+.15)*100)/100);renderPage();});
+    $('stampLayer').addEventListener('pointerdown',event=>{
+      if(!anchorSelection||event.button!==0||event.target.closest('.onpage-stamp,.annotation-marker'))return;
+      anchorSelection.start=positionOnPage(event);
+      anchorSelection.pointerId=event.pointerId;
+      $('stampLayer').setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    });
+    $('stampLayer').addEventListener('pointerup',event=>{
+      if(!anchorSelection?.start||event.pointerId!==anchorSelection.pointerId)return;
+      const anchor=textAnchorFromDrag(anchorSelection.start,positionOnPage(event),anchorSelection.kind);
+      const stamp=state.stamps.find(item=>item.id===anchorSelection.id&&item.page===currentPage);
+      if(stamp&&anchor){const before=historySnapshot();stamp.textAnchor=anchor;stamp.markerDetached=true;selectedStampId=stamp.id;recordHistory('link '+anchor.kind+' evidence',before);scheduleSave();renderStamps();renderEditor();toast('Evidence linked to criterion bubble and comment.');}
+      else toast('Drag across a wider portion of the page to mark evidence.');
+      anchorSelection=null;setInstruction();event.preventDefault();event.stopPropagation();
+    });
+    $('stampLayer').addEventListener('pointercancel',()=>{anchorSelection=null;setInstruction();});
     $('stampLayer').addEventListener('click',handlePageClick);
     $('stampLayer').addEventListener('pointermove',queuePlacementPreview);
     $('stampLayer').addEventListener('pointerleave',clearPlacementPreview);

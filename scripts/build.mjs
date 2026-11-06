@@ -4,7 +4,7 @@ import { join } from 'node:path';
 const out = 'dist';
 const vendor = join(out, 'vendor');
 mkdirSync(vendor, { recursive: true });
-for (const file of ['index.html', 'app.js', 'fast-stamp.js', 'stamp-geometry.js', 'student-checklist-pdf.js', 'comments.js', 'feedback-comments.js', 'feedback-engine.js', 'rubric.js', 'unicode-fonts.js', 'moderation-preflight.js', 'marking-history.js', 'project-vault.js', 'styles.css', 'design-polish.css', 'workspace.css', 'fast-stamp.css', 'review-polish.css', 'compact-stamps.css', 'library.html', 'library.css', 'library.js']) {
+for (const file of ['index.html', 'app.js', 'fast-stamp.js', 'stamp-geometry.js', 'annotation-geometry.js', 'student-checklist-pdf.js', 'comments.js', 'feedback-comments.js', 'feedback-engine.js', 'rubric.js', 'unicode-fonts.js', 'moderation-preflight.js', 'marking-history.js', 'project-vault.js', 'styles.css', 'design-polish.css', 'workspace.css', 'fast-stamp.css', 'review-polish.css', 'compact-stamps.css', 'linked-annotations.css', 'library.html', 'library.css', 'library.js']) {
   copyFileSync(file, join(out, file));
 }
 const deps = [
