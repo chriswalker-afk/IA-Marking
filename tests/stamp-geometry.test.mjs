@@ -66,7 +66,7 @@ test('Compact layout is used consistently for exact PDF rendering and live stamp
   const html=readFileSync('index.html','utf8');
   const css=readFileSync('compact-stamps.css','utf8');
   const build=readFileSync('scripts/build.mjs','utf8');
-  assert.ok(app.includes('bodyTop=headerTop+Math.max(11,headerFontSize*1.2)+5'));
+  assert.ok(app.includes('const bodyTop=slim?1:headerTop+Math.max(9,headerFontSize*1.2)+3'));
   assert.ok(app.includes('lineArea:index=>'));
   assert.ok(app.includes('layout.rowXs[i]*scale'));
   assert.ok(app.includes('layout.x+layout.rowXs[index]'));
