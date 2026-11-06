@@ -1156,7 +1156,7 @@ let pdfRendererLoad = null;
     const flowed=wrapStampText(stamp.text,{
       lineArea:index=>{
         const top=bodyTop+index*lineHeight;
-        const x=slim?NOTE_INSET:top<circleY+circle+2?textX:NOTE_INSET;
+        const x=slim||stamp.markerDetached?NOTE_INSET:top<circleY+circle+2?textX:NOTE_INSET;
         return {x,width:Math.max(20,width-x-NOTE_INSET)};
       },
       measure:value=>font.widthOfTextAtSize(value,fontSize),
@@ -1303,7 +1303,7 @@ let pdfRendererLoad = null;
     previewPosition=position;
   }
   function queuePlacementPreview(event){
-    if(!draft&&!movingStampId||anchorSelection||movingMarkerId)return;
+    if((!draft&&!movingStampId)||anchorSelection||movingMarkerId)return;
     if(event.target.closest('.onpage-stamp,.annotation-marker')){clearPlacementPreview();return;}
     const position=positionOnPage(event);
     // Avoid geometry searches on every raw pointer event.
