@@ -929,7 +929,7 @@ let pdfRendererLoad = null;
       <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="70" max="550" step="5" value="${width}"></label>
       <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="12" max="750" step="5" value="${heightValue}"></label>
       <button id="${prefix}HeightAuto" type="button" class="text-button note-fit-button">Fit box height to full comment</button>
-      <small class="note-format-help">Resize from the lower-right corner, or choose Auto to fit all lines. The box cannot be dragged smaller than its full comment.</small>
+      <small class="note-format-help">Resize the box or fit automatically. Text smaller than 9 pt is flagged for manual review.</small>
     </div></details>`;
   }
   function bindAppearanceEditor(item,prefix,existing) {
@@ -1280,7 +1280,7 @@ let pdfRendererLoad = null;
     return {candidate,requested,resolved,feedback,overlaps,covered};
   }
   function showPlacementPreview(position){
-    if(!draft&&!movingStampId){clearPlacementPreview();return;}
+    if((!draft&&!movingStampId)||anchorSelection||movingMarkerId){clearPlacementPreview();return;}
     const plan=placementPlanAt(position);
     if(!plan){clearPlacementPreview();return;}
     const {candidate,resolved,feedback,requested}=plan;
@@ -1293,8 +1293,8 @@ let pdfRendererLoad = null;
     $('stampPlacementAnchor')?.remove();
     const markup='<div id="stampPlacementPreview" aria-hidden="true" class="stamp-placement-preview '+(feedback.kind==='warning'?'is-warning':moved?'is-adjusted':'')+'"'
       +' style="left:'+resolved.x*scale+'px;top:'+resolved.y*scale+'px;width:'+resolved.width*scale+'px;height:'+resolved.height*scale+'px;background:'+noteFillColor(candidate)+'e8;color:'+textColor+';border-color:'+noteBorderColor(candidate)+'">'
-      +'<span class="preview-circle" style="left:'+resolved.circleX*scale+'px;top:'+resolved.circleY*scale+'px;width:'+resolved.circle*scale+'px;height:'+resolved.circle*scale+'px;background:'+color+';color:'+stampTextColor(candidate)+';font-size:'+Math.max(7,resolved.circle*.56*scale)+'px">'+escapeHtml(candidate.criterion)+'</span>'
-      +'<span class="preview-header" style="left:'+resolved.textX*scale+'px;top:'+resolved.headerTop*scale+'px;font-size:'+resolved.headerFontSize*scale+'px">'+escapeHtml(candidate.criterion)+' · '+tone+'</span>'
+      +(!resolved.slim?'<span class="preview-circle" style="left:'+resolved.circleX*scale+'px;top:'+resolved.circleY*scale+'px;width:'+resolved.circle*scale+'px;height:'+resolved.circle*scale+'px;background:'+color+';color:'+stampTextColor(candidate)+';font-size:'+Math.max(7,resolved.circle*.56*scale)+'px">'+escapeHtml(candidate.criterion)+'</span>':'')
+      +(!resolved.slim?'<span class="preview-header" style="left:'+resolved.textX*scale+'px;top:'+resolved.headerTop*scale+'px;font-size:'+resolved.headerFontSize*scale+'px">'+escapeHtml(candidate.criterion)+' · '+tone+'</span>':'')
       +'<span class="preview-body" style="left:'+resolved.bodyX*scale+'px;top:'+resolved.bodyTop*scale+'px;font-size:'+resolved.fontSize*scale+'px;line-height:'+resolved.lineHeight*scale+'px">'+rows+'</span></div>'
       +(moved?'<span id="stampPlacementAnchor" class="stamp-placement-anchor" aria-hidden="true" style="left:'+requested.x*scale+'px;top:'+requested.y*scale+'px"></span>':'');
     $('stampLayer').insertAdjacentHTML('beforeend',markup);
