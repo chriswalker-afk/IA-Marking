@@ -2397,17 +2397,28 @@ let pdfRendererLoad = null;
         for(const {stamp,layout} of plans[i].items){
           const color=pdfColor(stamp),label=stampLabel(stamp);
           const bottom=height-layout.y-layout.height;
-          page.drawRectangle({x:layout.x,y:bottom,width:layout.width,height:layout.height,
+          const geo=annotationGeometry(stamp,layout,page.getWidth(),height);
+           const accent=pdfColor(stamp);
+           if(geo.anchor){
+             const a=geo.anchor;
+             if(a.kind==='highlight')page.drawRectangle({x:a.x,y:height-a.y-a.height,width:a.width,height:a.height,color:accent,opacity:.19});
+             else page.drawLine({start:{x:a.x,y:height-a.y-a.height},end:{x:a.x+a.width,y:height-a.y-a.height},color:accent,thickness:.9});
+           }
+           for(const leader of [geo.anchorLeader,geo.leader])if(leader){
+             page.drawLine({start:{x:leader.x1,y:height-leader.y1},end:{x:leader.x2,y:height-leader.y2},color:accent,thickness:.65,opacity:.8});
+           }
+           page.drawRectangle({x:layout.x,y:bottom,width:layout.width,height:layout.height,
             color:pdfHexColor(layout.fillColor),borderColor:pdfHexColor(layout.borderColor),borderWidth:1.25});
           page.drawRectangle({x:layout.x,y:bottom,width:3,height:layout.height,color:pdfHexColor(layout.borderColor)});
           const radius=layout.circle/2;
-          const cx=layout.x+layout.circleX+radius,cy=height-layout.y-layout.circleY-radius;
-          page.drawCircle({x:cx,y:cy,size:radius,color,borderWidth:1.1,borderColor:rgb(1,1,1)});
-          const letterSize=Math.min(layout.circle*.55,18);
-          pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
-          const fullTextColor=pdfHexColor(layout.textColor);
-          pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}`,layout.x+layout.textX,height-layout.y-layout.headerTop-layout.headerFontSize*.95,layout.headerFontSize,bold,fullTextColor);
-          layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.rowXs[index],height-layout.y-layout.bodyTop-layout.fontSize*.95-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
+           const cx=geo.detached&&geo.marker?geo.marker.cx:layout.x+layout.circleX+radius;
+           const cy=geo.detached&&geo.marker?height-geo.marker.cy:height-layout.y-layout.circleY-radius;
+           page.drawCircle({x:cx,y:cy,size:radius,color,borderWidth:.7,borderColor:rgb(1,1,1)});
+           const letterSize=Math.min(layout.circle*.55,18);
+           pdfText(page,stamp.criterion,cx-bold.widthOfTextAtSize(stamp.criterion,letterSize)/2,cy-letterSize*.33,letterSize,bold,pdfTextColor(stamp));
+           const fullTextColor=pdfHexColor(layout.textColor);
+           if(!layout.slim)pdfText(page,`${label} | ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}`,layout.x+layout.textX,height-layout.y-layout.headerTop-layout.headerFontSize*.95,layout.headerFontSize,bold,fullTextColor);
+           layout.rows.forEach((row,index)=>pdfText(page,row,layout.x+layout.rowXs[index],height-layout.y-layout.bodyTop-layout.fontSize*.95-index*layout.lineHeight,layout.fontSize,font,fullTextColor));
         }
       }
       if(isFeedback()){
