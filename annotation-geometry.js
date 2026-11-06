@@ -27,10 +27,15 @@ export function normalTextAnchor(anchor){
 
 export function textAnchorFromDrag(start,end,kind){
   if(!start||!end)return null;
+  const width=Math.abs(end.x-start.x),dragHeight=Math.abs(end.y-start.y);
+  // An underline is naturally drawn horizontally. Give it a small target
+  // band instead of rejecting a perfectly level drag as a zero-area box.
+  if(width<.003)return null;
+  const minHeight=kind==='underline'?.008:.005;
   return normalTextAnchor({
-    x:Math.min(start.x,end.x),y:Math.min(start.y,end.y),
-    width:Math.abs(end.x-start.x),height:Math.abs(end.y-start.y),
-    kind,
+    x:Math.min(start.x,end.x),
+    y:dragHeight<minHeight?Math.min(start.y,end.y)-minHeight/2:Math.min(start.y,end.y),
+    width,height:Math.max(minHeight,dragHeight),kind,
   });
 }
 
