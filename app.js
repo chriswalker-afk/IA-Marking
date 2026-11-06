@@ -5,6 +5,7 @@ import {inspectModerationPages} from './moderation-preflight.js';
 import {studentChecklistItems,studentFeedbackStrengths,studentChecklistText,feedbackPriority} from './feedback-engine.js';
 import {rankStampComments,clampResultIndex,placementFeedback} from './fast-stamp.js';
 import {selectableTextRectangles,textCoverage,compactWidth,wrapStampText} from './stamp-geometry.js';
+import {MIN_NOTE_WIDTH,normalNoteMode,normalTextAnchor,textAnchorFromDrag,annotationGeometry} from './annotation-geometry.js';
 import {appendStudentChecklistPages,makeStudentChecklistModel} from './student-checklist-pdf.js';
 let pdfjsLib = window.pdfjsLib || null;
 let pdfRendererLoad = null;
@@ -34,15 +35,16 @@ let pdfRendererLoad = null;
   const activeBank=()=>isFeedback()?FEEDBACK_BANK:BANK;
   const STAMP_DEFAULTS = Object.freeze({
     size:18,strengthColor:'#477b97',limitationColor:'#b7803c',
-    fontSize:9.5,textColor:'#263d4f',fillColor:'#fbfdff',borderColor:'#477b97',noteWidth:230,
+    fontSize:9.5,textColor:'#263d4f',fillColor:'#fbfdff',borderColor:'#477b97',noteWidth:230,noteMode:'standard',
   });
   const NOTE_PAD=4;
-  const NOTE_INSET=9;
-  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(150,Math.min(450,Math.round(Number(value)/5)*5)) : 230;
+  const NOTE_INSET=2;
+  let anchorSelection=null,movingMarkerId=null;
+  const normalNoteWidth = value => Number.isFinite(Number(value)) ? Math.max(MIN_NOTE_WIDTH,Math.min(550,Math.round(Number(value)/5)*5)) : 230;
   const normalNoteHeight = value => value===null || value===undefined || value==='' ? null :
-    Number.isFinite(Number(value)) ? Math.max(40,Math.min(750,Math.round(Number(value)))) : null;
+    Number.isFinite(Number(value)) ? Math.max(12,Math.min(750,Math.round(Number(value)))) : null;
   const normalFontSize = value => value!==null && value!==undefined && value!=='' && Number.isFinite(Number(value)) ?
-    Math.max(7,Math.min(18,Math.round(Number(value)*2)/2)) : STAMP_DEFAULTS.fontSize;
+    Math.max(5,Math.min(18,Math.round(Number(value)*2)/2)) : STAMP_DEFAULTS.fontSize;
   const noteLineHeight = size => Math.round(normalFontSize(size)*1.23*10)/10;
   const normalSize = value => Number.isFinite(Number(value)) ? Math.max(14,Math.min(42,Math.round(Number(value)))) : STAMP_DEFAULTS.size;
   const normalColor = (value,fallback) => typeof value==='string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
@@ -55,7 +57,7 @@ let pdfRendererLoad = null;
       textColor:normalColor(value?.textColor,STAMP_DEFAULTS.textColor),
       fillColor:normalColor(value?.fillColor,STAMP_DEFAULTS.fillColor),
       borderColor:normalColor(value?.borderColor,STAMP_DEFAULTS.borderColor),
-      noteWidth:normalNoteWidth(value?.noteWidth),
+      noteWidth:normalNoteWidth(value?.noteWidth),noteMode:normalNoteMode(value?.noteMode),
     };
   }
   function stampColor(stamp) {
@@ -584,6 +586,7 @@ let pdfRendererLoad = null;
     $('defaultNoteBorderColour').value=state.stampStyle.borderColor;
     $('defaultNoteWidth').value=String(state.stampStyle.noteWidth);
     $('defaultNoteWidthValue').textContent=`${state.stampStyle.noteWidth} pt`;
+    $('defaultNoteMode').value=state.stampStyle.noteMode;
     for(const [id,tone,letter] of [['previewStrength','strength','A'],['previewLimitation','limitation','D']]) {
       const el=$(id),stamp={tone};const color=stampColor(stamp);
       el.style.cssText=`width:${Math.min(size+4,42)}px;height:${Math.min(size+4,42)}px;background:${color};color:${stampTextColor(stamp)}`;
@@ -879,7 +882,7 @@ let pdfRendererLoad = null;
     if(!item) return;
     selectedStampId = null; movingStampId = null;
     draft = {...item,priority:'normal',
-      size:state.stampStyle.size,noteWidth:state.stampStyle.noteWidth,noteHeight:null,
+      size:state.stampStyle.size,noteWidth:state.stampStyle.noteWidth,noteHeight:null,noteMode:state.stampStyle.noteMode,
       fontSize:state.stampStyle.fontSize,textColor:state.stampStyle.textColor,
       fillColor:state.stampStyle.fillColor,borderColor:state.stampStyle.borderColor,
       color:item.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor};
@@ -893,7 +896,7 @@ let pdfRendererLoad = null;
       id:stamp.libraryId||'repeat-'+stamp.id,
       libraryId:stamp.libraryId||'',
       criterion:stamp.criterion,tone:stamp.tone,topic:stamp.topic,text:stamp.text,priority:feedbackPriority(stamp.priority),
-      size:stamp.size,color:stamp.color,noteWidth:stamp.noteWidth,noteHeight:stamp.noteHeight,
+      size:stamp.size,color:stamp.color,noteWidth:stamp.noteWidth,noteHeight:stamp.noteHeight,noteMode:stamp.noteMode,
       fontSize:stamp.fontSize,textColor:stamp.textColor,
       fillColor:stamp.fillColor,borderColor:stamp.borderColor,
     };
@@ -914,7 +917,7 @@ let pdfRendererLoad = null;
       <label for="${prefix}Size">Circle size <output id="${prefix}SizeValue">${size} pt</output><input id="${prefix}Size" type="range" min="14" max="42" step="2" value="${size}"></label>
       <label for="${prefix}Color">Circle colour <input id="${prefix}Color" type="color" value="${color}"></label>
       <span class="comment-style-heading">Full comment formatting</span>
-      <label class="note-dimension-field" for="${prefix}Font">Font size <output id="${prefix}FontValue">${fontSize} pt</output><input id="${prefix}Font" type="range" min="7" max="18" step=".5" value="${fontSize}" aria-label="Font size for the full teacher comment"></label>
+      <label class="note-dimension-field" for="${prefix}Font">Font size <output id="${prefix}FontValue">${fontSize} pt</output><input id="${prefix}Font" type="range" min="5" max="18" step=".5" value="${fontSize}" aria-label="Font size for the full teacher comment"></label>
       <div class="note-colours">
         <label for="${prefix}TextColor">Text colour <input id="${prefix}TextColor" type="color" value="${noteTextColor(item)}"></label>
         <label for="${prefix}FillColor">Box background <input id="${prefix}FillColor" type="color" value="${noteFillColor(item)}"></label>
@@ -922,8 +925,8 @@ let pdfRendererLoad = null;
       </div>
       <span class="comment-style-heading">Text box dimensions</span>
       <small class="note-format-help">Compact layout: the circle stays above the comment, so the wording can use the full box width. Full text remains visible in the exported PDF.</small>
-      <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="150" max="450" step="5" value="${width}"></label>
-      <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="40" max="750" step="5" value="${heightValue}"></label>
+      <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="70" max="550" step="5" value="${width}"></label>
+      <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="12" max="750" step="5" value="${heightValue}"></label>
       <button id="${prefix}HeightAuto" type="button" class="text-button note-fit-button">Fit box height to full comment</button>
       <small class="note-format-help">Resize from the lower-right corner, or choose Auto to fit all lines. The box cannot be dragged smaller than its full comment.</small>
     </div></details>`;
@@ -936,6 +939,7 @@ let pdfRendererLoad = null;
       if(height===null)$(`${prefix}Height`).value=String(Math.min(750,natural));
       if(existing){renderStamps();scheduleSave();}
     };
+    $(`${prefix}Mode`).addEventListener('change',e=>{const before=existing?historySnapshot():null;item.noteMode=normalNoteMode(e.target.value);item.noteHeight=null;if(existing){renderStamps();scheduleSave();recordHistory('change box layout',before);}renderEditor();});
     $(`${prefix}Size`).addEventListener('input',e=>{
       item.size=normalSize(e.target.value);$(`${prefix}SizeValue`).textContent=`${item.size} pt`;refresh();
     });
@@ -976,7 +980,7 @@ let pdfRendererLoad = null;
       if(existing)recordHistory('fit '+item.criterion+' comment box',before);
     });
     if(existing){
-      for(const field of ['Size','Color','Width','Font','TextColor','FillColor','BorderColor','Height']){
+      for(const field of ['Size','Color','Width','Font','TextColor','FillColor','BorderColor','Height','Mode']){
         watchHistoryField($(`${prefix}${field}`),'format '+item.criterion+' comment',true);
       }
     }
@@ -1129,36 +1133,30 @@ let pdfRendererLoad = null;
     return unicodeMetricFonts?.regular || {widthOfTextAtSize:(txt,size)=>Array.from(String(txt)).length*size*.54};
   }
   function noteLayout(stamp,pageWidth,pageHeight,font=pdfMeasureFont()) {
-    const width=Math.min(normalNoteWidth(stamp.noteWidth ?? state.stampStyle.noteWidth),Math.max(100,pageWidth-2*NOTE_PAD));
-    const circle=normalSize(stamp.size);
-    const circleX=6,circleY=5;
-    const textX=circleX+circle+8;
-    const headerTop=6;
-    // Text wraps beside the badge only while the circle physically occupies
-    // that row. Every subsequent line reclaims the entire left column. The
-    // same per-row x coordinates are used on screen, in preview and export.
+    const width=Math.min(normalNoteWidth(stamp.noteWidth ?? state.stampStyle.noteWidth),Math.max(MIN_NOTE_WIDTH,pageWidth-2*NOTE_PAD));
+    const slim=normalNoteMode(stamp.noteMode)==='slim';
+    const circle=normalSize(stamp.size),circleX=slim?0:3,circleY=slim?0:2;
     const fontSize=noteFontSize(stamp),lineHeight=noteLineHeight(fontSize);
-    const headerFontSize=Math.max(8,Math.min(12,Math.round(fontSize*.85*10)/10));
-    const bodyTop=headerTop+Math.max(11,headerFontSize*1.2)+5;
+    const headerFontSize=Math.max(5,Math.min(12,Math.round(fontSize*.85*10)/10));
+    const headerTop=slim?0:3,textX=slim?NOTE_INSET:circleX+circle+5;
+    const bodyTop=slim?1:headerTop+Math.max(9,headerFontSize*1.2)+3;
     const flowed=wrapStampText(stamp.text,{
       lineArea:index=>{
         const top=bodyTop+index*lineHeight;
-        const x=top<circleY+circle+4?textX:NOTE_INSET;
-        return {x,width:Math.max(30,width-x-NOTE_INSET)};
+        const x=slim?NOTE_INSET:top<circleY+circle+2?textX:NOTE_INSET;
+        return {x,width:Math.max(20,width-x-NOTE_INSET)};
       },
       measure:value=>font.widthOfTextAtSize(value,fontSize),
     });
-    const rows=flowed.map(entry=>entry.text);
-    const rowXs=flowed.map(entry=>entry.x);
-    const bodyX=0;
-    const minHeight=Math.ceil(Math.max(circleY+circle+7,bodyTop+rows.length*lineHeight+7));
-    const height=normalNoteHeight(stamp.noteHeight) ?? minHeight;
-    const fits=height<=pageHeight-2*NOTE_PAD;
-    const contentFits=height>=minHeight;
+    const rows=flowed.map(entry=>entry.text),rowXs=flowed.map(entry=>entry.x);
+    const minHeight=Math.ceil(slim?bodyTop+rows.length*lineHeight+1:
+      Math.max(circleY+circle+3,bodyTop+rows.length*lineHeight+2));
+    const height=Math.max(minHeight,normalNoteHeight(stamp.noteHeight)??minHeight);
+    const fits=height<=pageHeight-2*NOTE_PAD,contentFits=height>=minHeight;
     const x=Math.min(Math.max(NOTE_PAD,Number(stamp.x||0)*pageWidth),Math.max(NOTE_PAD,pageWidth-width-NOTE_PAD));
     const y=Math.min(Math.max(NOTE_PAD,Number(stamp.y||0)*pageHeight),Math.max(NOTE_PAD,pageHeight-height-NOTE_PAD));
-    return {x,y,width,height,circle,circleX,circleY,textX,headerTop,bodyX,bodyTop,
-      rows,rowXs,fontSize,headerFontSize,lineHeight,minHeight,contentFits,fits,
+    return {x,y,width,height,circle,circleX,circleY,textX,headerTop,bodyX:0,bodyTop,
+      slim,rows,rowXs,fontSize,headerFontSize,lineHeight,minHeight,contentFits,fits,
       textColor:noteTextColor(stamp),fillColor:noteFillColor(stamp),borderColor:noteBorderColor(stamp),pageWidth,pageHeight};
   }
   function noteOverlap(a,b) {
@@ -1390,10 +1388,10 @@ let pdfRendererLoad = null;
       const resizeTo=(event)=>{
         const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return null;
         const scale=viewScale||1;
-        const maxWidth=Math.min(450,pageWidth-NOTE_PAD-anchorX);
+        const maxWidth=Math.min(550,pageWidth-NOTE_PAD-anchorX);
         const maxHeight=Math.min(750,pageHeight-NOTE_PAD-anchorY);
-        const desiredWidth=Math.max(150,Math.min(maxWidth,originalWidth+(event.clientX-fromX)/scale));
-        const requestedHeight=Math.max(40,Math.min(maxHeight,originalHeight+(event.clientY-fromY)/scale));
+        const desiredWidth=Math.max(MIN_NOTE_WIDTH,Math.min(maxWidth,originalWidth+(event.clientX-fromX)/scale));
+        const requestedHeight=Math.max(12,Math.min(maxHeight,originalHeight+(event.clientY-fromY)/scale));
         const natural=noteLayout({...stamp,noteWidth:desiredWidth,noteHeight:null},pageWidth,pageHeight).minHeight;
         // A direct resize cannot silently cut off text: keep at least enough
         // height for the complete teacher comment at the chosen width.
@@ -1488,7 +1486,7 @@ let pdfRendererLoad = null;
     const stamp = {
       id:makeId(),page:currentPage,x:position.x,y:position.y,criterion:draft.criterion,tone:draft.tone,
       topic:draft.topic,text:draft.text.trim(),size:normalSize(draft.size),color:stampColor(draft),
-      noteWidth:normalNoteWidth(draft.noteWidth),noteHeight:normalNoteHeight(draft.noteHeight),
+      noteWidth:normalNoteWidth(draft.noteWidth),noteHeight:normalNoteHeight(draft.noteHeight),noteMode:normalNoteMode(draft.noteMode),markerDetached:false,markerX:null,markerY:null,textAnchor:null,
       fontSize:noteFontSize(draft),textColor:noteTextColor(draft),fillColor:noteFillColor(draft),
       borderColor:noteBorderColor(draft),libraryId:draft.id,createdAt:now(),priority:feedbackPriority(draft.priority),
     };
@@ -1876,6 +1874,10 @@ let pdfRendererLoad = null;
       tone:s.tone,topic:String(s.topic||'Evidence').slice(0,100),text:String(s.text||'').slice(0,1800),
       size:normalSize(s.size),color:normalColor(s.color,s.tone==='strength'?state.stampStyle.strengthColor:state.stampStyle.limitationColor),
       noteWidth:normalNoteWidth(s.noteWidth ?? state.stampStyle.noteWidth),noteHeight:normalNoteHeight(s.noteHeight),
+       noteMode:normalNoteMode(s.noteMode),markerDetached:Boolean(s.markerDetached),
+       markerX:Number.isFinite(Number(s.markerX))&&s.markerX!==null?Math.max(0,Math.min(1,Number(s.markerX))):null,
+       markerY:Number.isFinite(Number(s.markerY))&&s.markerY!==null?Math.max(0,Math.min(1,Number(s.markerY))):null,
+       textAnchor:normalTextAnchor(s.textAnchor),
       fontSize:normalFontSize(s.fontSize ?? state.stampStyle.fontSize),
       textColor:normalColor(s.textColor,state.stampStyle.textColor),
       fillColor:normalColor(s.fillColor,state.stampStyle.fillColor),
@@ -2534,6 +2536,7 @@ let pdfRendererLoad = null;
     $('limitationStampColour').addEventListener('input',e=>{
       state.stampStyle.limitationColor=normalColor(e.target.value,STAMP_DEFAULTS.limitationColor);renderStampStyle();saveLibrarySettings();
     });
+    $('defaultNoteMode').addEventListener('change',e=>{state.stampStyle.noteMode=normalNoteMode(e.target.value);renderStampStyle();saveLibrarySettings();});
     $('defaultNoteFont').addEventListener('input',e=>{
       state.stampStyle.fontSize=normalFontSize(e.target.value);renderStampStyle();saveLibrarySettings();
     });
