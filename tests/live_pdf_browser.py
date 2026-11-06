@@ -248,7 +248,7 @@ with tempfile.TemporaryDirectory() as folder:
         font_slider=page.locator('#selectedStampFont')
         font_slider.focus()
         font_slider.press('Home')
-        for _ in range(12):
+        for _ in range(16):
             font_slider.press('ArrowRight')
         expect(font_slider).to_have_value('13')
         for control, colour in [
