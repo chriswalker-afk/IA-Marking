@@ -221,6 +221,21 @@ with tempfile.TemporaryDirectory() as folder:
         circle=page.locator('.onpage-circle').first.bounding_box()
         note_text=page.locator('.onpage-note-body').first.bounding_box()
         assert first_box and pdf_box and circle and note_text
+        # Regression: the embedded A-E glyph must sit at the centre of the
+        # circle. The CSS grid must not be overridden by inline display:block.
+        centred=page.locator('.onpage-circle').first.evaluate("""el => {
+            const circle=el.getBoundingClientRect();
+            const text=document.createRange();
+            text.selectNodeContents(el);
+            const glyph=text.getBoundingClientRect();
+            return {
+                display:getComputedStyle(el).display,
+                dx:Math.abs((glyph.left+glyph.right)/2-(circle.left+circle.right)/2),
+                dy:Math.abs((glyph.top+glyph.bottom)/2-(circle.top+circle.bottom)/2)
+            };
+        }""")
+        assert centred['display']=='grid', f'Embedded badge lost grid centring: {centred}'
+        assert centred['dx'] < 2 and centred['dy'] < 2, f'Criterion letter is not centred: {centred}'
         assert first_box['x'] >= pdf_box['x'] and first_box['x'] + first_box['width'] <= pdf_box['x'] + pdf_box['width'] + 2
         # The new compact header is ABOVE the full-width comment; no
         # permanent left gutter is wasted beneath the criterion badge.
