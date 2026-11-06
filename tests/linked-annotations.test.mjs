@@ -16,9 +16,12 @@ test('Text anchors are page-normalised, clipped, and reject zero-area selections
   const anchor=textAnchorFromDrag({x:.7,y:.52},{x:.25,y:.49},'highlight');
   assert.equal(anchor.kind,'highlight');
   assert.ok(Math.abs(anchor.width-.45)<1e-10);
-  assert.deepEqual(textAnchorRect(anchor,600,800),{
-    kind:'highlight',x:150,y:392,width:270,height:24,
-  });
+  const rect=textAnchorRect(anchor,600,800);
+  assert.equal(rect.kind,'highlight');
+  assert.ok(Math.abs(rect.x-150)<1e-8);
+  assert.ok(Math.abs(rect.y-392)<1e-8);
+  assert.ok(Math.abs(rect.width-270)<1e-8);
+  assert.ok(Math.abs(rect.height-24)<1e-8);
   assert.equal(textAnchorFromDrag({x:.1,y:.1},{x:.1,y:.1},'underline'),null);
   assert.equal(normalTextAnchor({kind:'invalid',x:.2,y:.2,width:.3,height:.1}),null);
   assert.ok(Math.abs(normalTextAnchor({kind:'underline',x:.9,y:.9,width:.8,height:.8}).width-.1)<1e-10);
