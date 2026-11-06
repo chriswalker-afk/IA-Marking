@@ -1342,19 +1342,40 @@ let pdfRendererLoad = null;
     const overlapping=source.length
       ?preview.items.filter(({layout})=>textCoverage(layout,source)>20).length:0;
     renderStampWarnings(preview.problems,overlapping);
-    $('stampLayer').innerHTML=preview.items.map(({stamp,layout})=>{
+    const annotationArt=preview.items.map(({stamp,layout})=>{
+      const g=annotationGeometry(stamp,layout,pageWidth,pageHeight),scale=viewScale||1,tone=stampColor(stamp);
+      let out='';
+      if(g.anchor){
+        const a=g.anchor;
+        if(a.kind==='highlight')out+='<rect x="'+a.x*scale+'" y="'+a.y*scale+'" width="'+a.width*scale+'" height="'+a.height*scale+'" fill="'+tone+'" fill-opacity=".19" />';
+        else out+='<line x1="'+a.x*scale+'" y1="'+(a.y+a.height)*scale+'" x2="'+(a.x+a.width)*scale+'" y2="'+(a.y+a.height)*scale+'" stroke="'+tone+'" stroke-width="'+Math.max(.65,.9*scale)+'" />';
+      }
+      for(const line of [g.anchorLeader,g.leader])if(line)out+='<line x1="'+line.x1*scale+'" y1="'+line.y1*scale+'" x2="'+line.x2*scale+'" y2="'+line.y2*scale+'" stroke="'+tone+'" stroke-width="'+Math.max(.5,.65*scale)+'" stroke-opacity=".8" />';
+      return out;
+    }).join('');
+    $('stampLayer').innerHTML='<svg class="annotation-links" aria-hidden="true" width="100%" height="100%" viewBox="0 0 '+pageWidth*(viewScale||1)+' '+pageHeight*(viewScale||1)+'">'+annotationArt+'</svg>'+preview.items.map(({stamp,layout})=>{
       const scale=viewScale||1;
       const label=stampLabel(stamp),color=stampColor(stamp);
+      const geo=annotationGeometry(stamp,layout,pageWidth,pageHeight);
       const lines=layout.rows.map((line,i)=>`<span class="onpage-note-line" style="margin-left:${layout.rowXs[i]*scale}px">${escapeHtml(line)}</span>`).join('');
       const mismatch=preview.problems.some(issue=>issue.includes(label));
-      return `<div role="button" tabindex="0" class="onpage-stamp ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};background:${layout.fillColor};border-color:${layout.borderColor};color:${layout.textColor};border-width:${Math.max(.7,1.25*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag comment to move; drag bottom-right corner to resize">
-        <span class="onpage-border-accent" style="background:${layout.borderColor};width:${Math.max(2,3*scale)}px"></span>
-        <span class="onpage-circle" style="left:${layout.circleX*scale}px;top:${layout.circleY*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
-        <span class="onpage-note-header" style="left:${layout.textX*scale}px;top:${layout.headerTop*scale}px;font-size:${layout.headerFontSize*scale}px;line-height:${Math.max(12,layout.headerFontSize*1.12)*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span>
+      const bubble=geo.detached&&geo.marker?'<button type="button" class="annotation-marker" data-marker-pin="'+escapeHtml(stamp.id)+'" aria-label="Move criterion '+label+' anchor" title="Drag to move letter bubble" style="left:'+geo.marker.x*scale+'px;top:'+geo.marker.y*scale+'px;width:'+geo.marker.size*scale+'px;height:'+geo.marker.size*scale+'px;font-size:'+Math.max(7,geo.marker.size*.53*scale)+'px;background:'+color+';color:'+stampTextColor(stamp)+'">'+escapeHtml(stamp.criterion)+'</button>':'';
+      return bubble+`<div role="button" tabindex="0" class="onpage-stamp ${layout.slim?'slim-note':''} ${stamp.id===selectedStampId?'active':''} ${mismatch?'note-conflict':''}" data-pin-id="${escapeHtml(stamp.id)}" style="left:${layout.x*scale}px;top:${layout.y*scale}px;width:${layout.width*scale}px;height:${layout.height*scale}px;--onpage-accent:${color};background:${layout.fillColor};border-color:${layout.borderColor};color:${layout.textColor};border-width:${Math.max(.7,1.25*scale)}px;border-radius:${Math.max(4,7*scale)}px;padding:0" aria-label="${escapeHtml(label+': '+stamp.text)}" title="Drag comment to move; drag bottom-right corner to resize">
+        <span class="onpage-border-accent" style="display:${layout.slim?'none':'block'};background:${layout.borderColor};width:${Math.max(2,3*scale)}px"></span>
+        <span class="onpage-circle" style="display:${geo.detached?'none':'block'};left:${layout.circleX*scale}px;top:${layout.circleY*scale}px;width:${layout.circle*scale}px;height:${layout.circle*scale}px;font-size:${Math.max(7,layout.circle*.56*scale)}px;background:${color};color:${stampTextColor(stamp)}">${escapeHtml(stamp.criterion)}</span>
+        <span class="onpage-note-header" style="display:${layout.slim?'none':'block'};left:${layout.textX*scale}px;top:${layout.headerTop*scale}px;font-size:${layout.headerFontSize*scale}px;line-height:${Math.max(12,layout.headerFontSize*1.12)*scale}px;color:${layout.textColor}">${escapeHtml(label)} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</span>
         <span class="onpage-note-body" style="left:${layout.bodyX*scale}px;top:${layout.bodyTop*scale}px;font-size:${layout.fontSize*scale}px;line-height:${layout.lineHeight*scale}px;color:${layout.textColor}">${lines}</span>
         <button type="button" class="note-resize-handle" data-resize-pin="${escapeHtml(stamp.id)}" aria-label="Resize width and height of ${escapeHtml(label)} comment" title="Drag to resize comment width and height"></button>
       </div>`;
     }).join('');
+    $('stampLayer').querySelectorAll('[data-marker-pin]').forEach(marker=>{
+      const stamp=state.stamps.find(item=>item.id===marker.dataset.markerPin);if(!stamp)return;
+      let origin=null,moved=false;
+      marker.addEventListener('pointerdown',e=>{if(e.button!==0)return;const g=annotationGeometry(stamp,noteLayout(stamp,pageWidth,pageHeight),pageWidth,pageHeight);origin={x:e.clientX,y:e.clientY,markerX:g.marker.x,markerY:g.marker.y,before:historySnapshot()};moved=false;marker.setPointerCapture(e.pointerId);e.stopPropagation();});
+      marker.addEventListener('pointermove',e=>{if(!origin||!marker.hasPointerCapture(e.pointerId))return;const x=origin.markerX+(e.clientX-origin.x)/(viewScale||1),y=origin.markerY+(e.clientY-origin.y)/(viewScale||1);moved=moved||Math.hypot(e.clientX-origin.x,e.clientY-origin.y)>3;marker.style.left=Math.max(1,Math.min(pageWidth-normalSize(stamp.size)-1,x))*(viewScale||1)+'px';marker.style.top=Math.max(1,Math.min(pageHeight-normalSize(stamp.size)-1,y))*(viewScale||1)+'px';e.stopPropagation();});
+      marker.addEventListener('pointerup',e=>{if(!origin)return;const x=origin.markerX+(e.clientX-origin.x)/(viewScale||1),y=origin.markerY+(e.clientY-origin.y)/(viewScale||1);stamp.markerDetached=true;stamp.markerX=Math.max(0,Math.min(1,x/pageWidth));stamp.markerY=Math.max(0,Math.min(1,y/pageHeight));recordHistory('move criterion bubble',origin.before);origin=null;selectedStampId=stamp.id;renderStamps();renderEditor();scheduleSave();e.stopPropagation();});
+      marker.addEventListener('click',e=>e.stopPropagation());
+    });
     $('stampLayer').querySelectorAll('[data-pin-id]').forEach(btn=>{
       const select=()=>{
         const stamp=state.stamps.find(x=>x.id===btn.dataset.pinId);if(!stamp)return;
