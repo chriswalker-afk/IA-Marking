@@ -1303,8 +1303,8 @@ let pdfRendererLoad = null;
     previewPosition=position;
   }
   function queuePlacementPreview(event){
-    if(!draft&&!movingStampId)return;
-    if(event.target.closest('.onpage-stamp')){clearPlacementPreview();return;}
+    if(!draft&&!movingStampId||anchorSelection||movingMarkerId)return;
+    if(event.target.closest('.onpage-stamp,.annotation-marker')){clearPlacementPreview();return;}
     const position=positionOnPage(event);
     // Avoid geometry searches on every raw pointer event.
     if(previewPosition&&Math.hypot((position.x-previewPosition.x)*pageWidthPt,(position.y-previewPosition.y)*pageHeightPt)<4)return;
@@ -1511,6 +1511,7 @@ let pdfRendererLoad = null;
       const before=historySnapshot();
       stamp.x=position.x;stamp.y=position.y;stamp.page=currentPage;
       if(pageWidthPt&&pageHeightPt)placeNoteInFreeSpace(stamp,pageStamps(currentPage),pageWidthPt,pageHeightPt);
+      stamp.textAnchor=null;stamp.markerX=null;stamp.markerY=null;
       selectedStampId=stamp.id;movingStampId=null;renderStamps();renderEditor();setInstruction();scheduleSave();
       recordHistory('move '+stamp.criterion+' comment',before);
       toast('Stamp moved.');
@@ -2681,6 +2682,22 @@ let pdfRendererLoad = null;
     $('pageNumber').addEventListener('change',e=>navigate(e.target.value));
     $('zoomOut').addEventListener('click',()=>{zoom=Math.max(.65,Math.round((zoom-.15)*100)/100);renderPage();});
     $('zoomIn').addEventListener('click',()=>{zoom=Math.min(2.2,Math.round((zoom+.15)*100)/100);renderPage();});
+    $('stampLayer').addEventListener('pointerdown',event=>{
+      if(!anchorSelection||event.button!==0||event.target.closest('.onpage-stamp,.annotation-marker'))return;
+      anchorSelection.start=positionOnPage(event);
+      anchorSelection.pointerId=event.pointerId;
+      $('stampLayer').setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    });
+    $('stampLayer').addEventListener('pointerup',event=>{
+      if(!anchorSelection?.start||event.pointerId!==anchorSelection.pointerId)return;
+      const anchor=textAnchorFromDrag(anchorSelection.start,positionOnPage(event),anchorSelection.kind);
+      const stamp=state.stamps.find(item=>item.id===anchorSelection.id&&item.page===currentPage);
+      if(stamp&&anchor){const before=historySnapshot();stamp.textAnchor=anchor;stamp.markerDetached=true;selectedStampId=stamp.id;recordHistory('link '+anchor.kind+' evidence',before);scheduleSave();renderStamps();renderEditor();toast('Evidence linked to criterion bubble and comment.');}
+      else toast('Drag across a wider portion of the page to mark evidence.');
+      anchorSelection=null;setInstruction();event.preventDefault();event.stopPropagation();
+    });
+    $('stampLayer').addEventListener('pointercancel',()=>{anchorSelection=null;setInstruction();});
     $('stampLayer').addEventListener('click',handlePageClick);
     $('stampLayer').addEventListener('pointermove',queuePlacementPreview);
     $('stampLayer').addEventListener('pointerleave',clearPlacementPreview);
