@@ -21,7 +21,7 @@ test('Text anchors are page-normalised, clipped, and reject zero-area selections
   });
   assert.equal(textAnchorFromDrag({x:.1,y:.1},{x:.1,y:.1},'underline'),null);
   assert.equal(normalTextAnchor({kind:'invalid',x:.2,y:.2,width:.3,height:.1}),null);
-  assert.equal(normalTextAnchor({kind:'underline',x:.9,y:.9,width:.8,height:.8}).width,.1);
+  assert.ok(Math.abs(normalTextAnchor({kind:'underline',x:.9,y:.9,width:.8,height:.8}).width-.1)<1e-10);
 });
 
 test('Detached marker uses PDF coordinates and thin leader avoids covering badge',()=>{
