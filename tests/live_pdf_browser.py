@@ -1032,6 +1032,7 @@ with tempfile.TemporaryDirectory() as folder:
         linked.locator('#openReview').click()
         linked.locator('#buildReviewPreview').click()
         linked.locator('#reviewPreviewBox:not(.hidden)').wait_for(timeout=45000)
+        expect(linked.locator('#reviewPreviewPage')).to_contain_text('Page 1 / ',timeout=30000)
         total_pages=int(linked.locator('#reviewPreviewPage').inner_text().split('/')[-1].strip())
         for number in range(2,total_pages+1):
             linked.locator('#reviewPreviewNext').click()
