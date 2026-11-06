@@ -918,13 +918,14 @@ let pdfRendererLoad = null;
       <label for="${prefix}Color">Circle colour <input id="${prefix}Color" type="color" value="${color}"></label>
       <span class="comment-style-heading">Full comment formatting</span>
       <label class="note-dimension-field" for="${prefix}Font">Font size <output id="${prefix}FontValue">${fontSize} pt</output><input id="${prefix}Font" type="range" min="5" max="18" step=".5" value="${fontSize}" aria-label="Font size for the full teacher comment"></label>
+      <label for="${prefix}Mode">Box layout<select id="${prefix}Mode"><option value="standard" ${normalNoteMode(item.noteMode)==="standard"?"selected":""}>Standard · margin note</option><option value="slim" ${normalNoteMode(item.noteMode)==="slim"?"selected":""}>Slim · between lines</option></select></label>
       <div class="note-colours">
         <label for="${prefix}TextColor">Text colour <input id="${prefix}TextColor" type="color" value="${noteTextColor(item)}"></label>
         <label for="${prefix}FillColor">Box background <input id="${prefix}FillColor" type="color" value="${noteFillColor(item)}"></label>
         <label for="${prefix}BorderColor">Box border <input id="${prefix}BorderColor" type="color" value="${noteBorderColor(item)}"></label>
       </div>
       <span class="comment-style-heading">Text box dimensions</span>
-      <small class="note-format-help">Compact layout: the circle stays above the comment, so the wording can use the full box width. Full text remains visible in the exported PDF.</small>
+      <small class="note-format-help">Slim layout removes the heading and places the letter bubble outside the note. Both layouts print the full text.</small>
       <label class="note-dimension-field" for="${prefix}Width">Box width <output id="${prefix}WidthValue">${width} pt</output><input id="${prefix}Width" type="range" min="70" max="550" step="5" value="${width}"></label>
       <label class="note-dimension-field" for="${prefix}Height">Box height <output id="${prefix}HeightValue">${manualHeight===null?'Auto · '+natural+' pt':manualHeight+' pt'}</output><input id="${prefix}Height" type="range" min="12" max="750" step="5" value="${heightValue}"></label>
       <button id="${prefix}HeightAuto" type="button" class="text-button note-fit-button">Fit box height to full comment</button>
@@ -1044,7 +1045,13 @@ let pdfRendererLoad = null;
       });
     };
     if(stamp) {
-      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} ${isFeedback()?'feedback':'evidence'} stamp</strong><small>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${priorityField(stamp)}<div class="note-quick-actions"><button id="compactStamp" class="btn subtle" type="button" title="Find the smallest readable box and fit every line of text">Compact &amp; fit</button><button id="findClearSpace" class="btn subtle" type="button" title="Find a nearby position avoiding selectable PDF text where possible">Find clear space</button></div>${appearanceEditor(stamp,'selectedStamp')}<div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
+      $('selectionEditor').innerHTML = `<div class="selection-active"><div class="selection-title"><strong>Edit ${stamp.criterion} ${isFeedback()?'feedback':'evidence'} stamp</strong><small>Page ${stamp.page} · ${stamp.tone==='strength'?'Strength':isFeedback()?'Improvement':'Limitation'}</small></div><textarea id="stampTextEdit" maxlength="1800" aria-label="Edit only this placed stamp comment">${escapeHtml(stamp.text)}</textarea>${priorityField(stamp)}<div class="note-quick-actions"><button id="compactStamp" class="btn subtle" type="button" title="Find the smallest readable box and fit every line of text">Compact &amp; fit</button><button id="findClearSpace" class="btn subtle" type="button" title="Find a nearby position avoiding selectable PDF text where possible">Find clear space</button></div>${appearanceEditor(stamp,'selectedStamp')}<div class="annotation-anchor-controls">
+      <button id="detachMarker" type="button" class="btn subtle">${stamp.markerDetached||normalNoteMode(stamp.noteMode)==='slim'?'Reattach bubble':'Detach bubble'}</button>
+      <button id="moveMarker" type="button" class="btn subtle">Position bubble</button>
+      <button id="highlightStamp" type="button" class="btn subtle">Highlight text</button>
+      <button id="underlineStamp" type="button" class="btn subtle">Underline text</button>
+      ${stamp.textAnchor?'<button id="clearTextAnchor" type="button" class="btn subtle">Remove text link</button>':''}
+    </div><small class="note-format-help">Position bubble: click on the PDF. Highlight / underline: drag across the evidence.</small><div class="edit-stamp-toolbar"><button id="moveStamp" class="btn subtle" type="button">Move position</button><button id="copyStamp" class="btn subtle" type="button">Copy text</button><button id="duplicateStamp" class="btn subtle" type="button">Duplicate &amp; place</button><button id="deleteStamp" class="link-button danger-link" type="button">Delete stamp</button></div></div>`;
       $('stampTextEdit').addEventListener('input',e=>{
         stamp.text=e.target.value;
         const required=noteLayout({...stamp,noteHeight:null},pageWidthPt||595,pageHeightPt||842).minHeight;
@@ -1059,6 +1066,12 @@ let pdfRendererLoad = null;
       restoreAppearance();
       bindAppearanceEditor(stamp,'selectedStamp',true);
       bindPriority(stamp,true);
+      $('detachMarker').addEventListener('click',()=>{const before=historySnapshot();stamp.markerDetached=!stamp.markerDetached;stamp.markerX=null;stamp.markerY=null;renderStamps();renderEditor();scheduleSave();recordHistory('toggle detached marker',before);});
+      $('moveMarker').addEventListener('click',()=>{movingMarkerId=stamp.id;draft=null;movingStampId=null;anchorSelection=null;setInstruction();toast('Click on the PDF to position the letter bubble.');});
+      for(const [id,kind] of [['highlightStamp','highlight'],['underlineStamp','underline']]){
+        $(id).addEventListener('click',()=>{anchorSelection={id:stamp.id,kind,start:null};movingMarkerId=null;draft=null;movingStampId=null;setInstruction();toast('Drag across the PDF text to mark the evidence.');});
+      }
+      $('clearTextAnchor')?.addEventListener('click',()=>{const before=historySnapshot();stamp.textAnchor=null;renderStamps();renderEditor();scheduleSave();recordHistory('remove text anchor',before);});
       $('compactStamp').addEventListener('click',()=>makeStampCompact(stamp,{existing:true}));
       $('findClearSpace').addEventListener('click',()=>findStampClearSpace(stamp));
       $('moveStamp').addEventListener('click',()=>{movingStampId=stamp.id;draft=null;selectedStampId=null;renderEditor();setInstruction(); if (currentPage!==stamp.page) navigate(stamp.page);});
@@ -1465,10 +1478,12 @@ let pdfRendererLoad = null;
     };
   }
   function handlePageClick(event) {
-    if(!isReady()||event.target.closest('.onpage-stamp'))return;
+    if(!isReady()||event.target.closest('.onpage-stamp')||event.target.closest('.annotation-marker'))return;
     clearPlacementPreview();
     finishFieldHistory();
     const position = positionOnPage(event);
+    if(movingMarkerId){const target=state.stamps.find(item=>item.id===movingMarkerId);movingMarkerId=null;if(target){const before=historySnapshot();target.markerDetached=true;target.markerX=position.x;target.markerY=position.y;selectedStampId=target.id;renderStamps();renderEditor();scheduleSave();recordHistory('position comment marker',before);}setInstruction();return;}
+    if(anchorSelection)return;
     if(movingStampId) {
       const stamp = state.stamps.find(s=>s.id===movingStampId);
       if(!stamp)return;
