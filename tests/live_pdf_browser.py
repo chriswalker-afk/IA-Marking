@@ -981,6 +981,8 @@ with tempfile.TemporaryDirectory() as folder:
         linked.on('pageerror',lambda e: linked_errors.append(str(e)))
         linked.goto(base_url+'/index.html')
         linked.locator('#pdfInput').set_input_files(str(sample))
+        expect(linked.locator('#pageShell')).to_be_visible(timeout=30000)
+        expect(linked.locator('#documentName')).to_have_text('example-ia.pdf',timeout=30000)
         expect(linked.locator('#pageNumber')).to_have_value('1',timeout=20000)
         linked.locator('#commentList [data-comment-id]').first.click()
         linked.locator('#draftTextEdit').fill('Check the working here.')
